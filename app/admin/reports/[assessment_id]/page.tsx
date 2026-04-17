@@ -2,11 +2,7 @@
 import { createClient } from "@/src/lib/supabaseServer";
 import { createClient as createSupabaseAdmin } from "@supabase/supabase-js";
 
-async function firstSignedUrl(
-  supabaseAdmin: ReturnType<typeof createSupabaseAdmin>,
-  bucket: string,
-  candidates: string[]
-) {
+async function firstSignedUrl(supabaseAdmin: any, bucket: string, candidates: string[]) {
   for (const c of candidates) {
     const { data, error } = await supabaseAdmin.storage.from(bucket).createSignedUrl(c, 60 * 10);
     if (!error && data?.signedUrl) return { signedUrl: data.signedUrl, usedPath: c };
