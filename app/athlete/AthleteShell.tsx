@@ -149,7 +149,13 @@ export default function AthleteShell({ children }: { children: React.ReactNode }
   background: var(--card);
   border-right: 1px solid var(--border);
   box-shadow: var(--shadow);
-  transform: translateX(${open ? "0" : "-105%"});
+  transform: translateX();
+  transition: transform .22s ease;
+  padding: 12px;
+  display:grid;
+  grid-template-rows: auto 1fr;
+  gap: 10px;
+});
   transition: transform .22s ease;
   padding: 12px;                 /* ↓ menos “ar” */
   display:grid;
@@ -159,7 +165,7 @@ export default function AthleteShell({ children }: { children: React.ReactNode }
         .athDrawerTop{
   display:flex; align-items:center; justify-content:space-between;
   gap: 10px;
-  padding: 2px 2px 6px;          /* ↓ compacta topo */
+  padding: 2px 2px 6px;
 }
         .athDrawerTitle{
           display:flex; align-items:center; gap:10px;
@@ -178,22 +184,22 @@ export default function AthleteShell({ children }: { children: React.ReactNode }
         .athNavList{
   display:flex;
   flex-direction:column;
-  gap: 6px;                      /* ↓ sem blocão */
-  border: none;                  /* ↓ remove “card grande” */
+  gap: 6px;
+  border: none;
   border-radius: 0;
   background: transparent;
 }
 
 .athNavItem{
   display:flex; align-items:center; justify-content:space-between;
-  padding: 12px 12px;            /* touch-friendly sem exagero */
+  padding: 12px 12px;
   text-decoration:none;
   color: var(--text);
   font-weight: 700;
   font-size: 15px;
   border: 1px solid var(--border);
   background:#fff;
-  border-radius: 14px;           /* cards pequenos e elegantes */
+  border-radius: 14px;
 }
 
 .athNavItem span:last-child{
@@ -201,7 +207,10 @@ export default function AthleteShell({ children }: { children: React.ReactNode }
   font-size: 18px;
 }
         .athNavItem:last-child{ border-bottom:none; }
-        .athNavItem span:last-child{ color:#9ca3af; }
+        .athNavItem span:last-child{
+  color:#9ca3af;
+  font-size: 18px;
+}
 
         /* ===== Mobile rules ===== */
         @media (max-width: 899px) {
@@ -212,7 +221,20 @@ export default function AthleteShell({ children }: { children: React.ReactNode }
         @media (min-width: 900px) {
           .athHamburger{ display:none; }
           .athOverlay{ display:none; }
-          .athDrawer{ display:none; }
+          .athDrawer{
+  position:fixed; top:0; left:0; z-index:70;
+  width: 280px; max-width: 86vw;
+  height: 100vh;
+  background: var(--card);
+  border-right: 1px solid var(--border);
+  box-shadow: var(--shadow);
+  transform: translateX();
+  transition: transform .22s ease;
+  padding: 12px;
+  display:grid;
+  grid-template-rows: auto 1fr;
+  gap: 10px;
+}
         }
         @media (max-width: 420px){
           .athGrid{ padding: 10px; }
