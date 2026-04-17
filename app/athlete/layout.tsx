@@ -173,11 +173,11 @@ export default function AthleteLayout({ children }: { children: React.ReactNode 
 
       {/* Responsive CSS */}
       <style>{`
-  /* Mobile-first: hide desktop wrap; show hamburger + drawer */
+  /* Mobile-first: sempre drawer no mobile */
   .athleteDesktopWrap { display: none; }
   .athleteHamburger { display: inline-flex; align-items: center; justify-content: center; }
 
-  /* Força modo mobile em dispositivos touch, mesmo que a largura "engane" */
+  /* Dispositivos touch: forçar modo mobile, independente de largura */
   @media (hover: none) and (pointer: coarse) {
     .athleteDesktopWrap { display: none !important; }
     .athleteHamburger { display: inline-flex !important; }
@@ -185,7 +185,7 @@ export default function AthleteLayout({ children }: { children: React.ReactNode 
     .athleteSidebar { display: block !important; }
   }
 
-  /* Desktop real */
+  /* Desktop real: mouse/trackpad */
   @media (min-width: 900px) and (hover: hover) and (pointer: fine) {
     .athleteDesktopWrap { display: grid; }
     .athleteHamburger { display: none; }
@@ -194,7 +194,7 @@ export default function AthleteLayout({ children }: { children: React.ReactNode 
     .athleteMain { padding: 20px; }
   }
 
-  /* Extra conforto em telas pequenas */
+  /* Ajustes pequenos */
   @media (max-width: 420px) {
     .athleteMain { padding: 12px; }
   }
