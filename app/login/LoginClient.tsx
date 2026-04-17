@@ -21,52 +21,54 @@ export default function LoginClient() {
     setMsg("");
     setLoading(true);
 
-    const { data, error } = await supabaseBrowser.auth.signInWithPassword({
-      email: email.trim(),
-      password,
+    // ✅ login via server (seta cookies SSR) — resolve loop em produção
+    const res = await fetch("/api/auth/login", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ email: email.trim(), password }),
     });
 
-    if (error) {
+    const data = await res.json().catch(() => ({}));
+    if (!res.ok || !data?.ok) {
       setLoading(false);
-      setMsg(`LOGIN ERROR: ${error.message}`);
+      setMsg(`LOGIN ERROR: ${data?.error ?? `HTTP ${res.status}`}`);
       return;
     }
 
-    const { data: sess } = await supabaseBrowser.auth.getSession();
-    if (!sess.session) {
-      setLoading(false);
-      setMsg("LOGIN OK, mas não consegui obter session. Tente novamente.");
-      return;
-    }
+    // ✅ garante que client também “enxerga” a sessão
+    await supabaseBrowser.auth.getSession();
 
-    const userId = data.user?.id ?? sess.session.user.id;
-
-    const { data: profile, error: pErr } = await supabaseBrowser
-      .from("profiles")
-      .select("role")
-      .eq("user_id", userId)
-      .single();
-
-    setLoading(false);
-
-    if (pErr) {
-      setMsg(`LOGIN OK, mas erro ao ler profiles.role: ${pErr.message}`);
-      return;
-    }
-
-    const role = profile?.role ?? "unknown";
-    setMsg(`LOGIN OK: role=${role}`);
-
+    // Agora decide destino
     if (nextUrl && nextUrl.startsWith("/")) {
+      setLoading(false);
       router.push(nextUrl);
       router.refresh();
       return;
     }
 
+    // Fallback por role (lê do banco com sessão já válida)
+    const { data: sess } = await supabaseBrowser.auth.getSession();
+    const userId = sess.session?.user?.id;
+
+    if (!userId) {
+      setLoading(false);
+      router.push("/athlete/pending");
+      return;
+    }
+
+    const { data: profile } = await supabaseBrowser
+      .from("profiles")
+      .select("role")
+      .eq("user_id", userId)
+      .single();
+
+    const role = profile?.role ?? "unknown";
+
+    setLoading(false);
+
     if (role === "admin") router.push("/admin/dashboard");
     else if (role === "coach") router.push("/coach/dashboard");
-    else if (role === "athlete") router.push("/athlete");
-    else router.push("/login");
+    else router.push("/athlete/pending");
 
     router.refresh();
   }
