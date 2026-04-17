@@ -1,4 +1,7 @@
-﻿"use client";
+﻿cd C:\endure-app
+
+@'
+"use client";
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
@@ -267,3 +270,4 @@ export default function AthleteShell({ children }: { children: React.ReactNode }
     </div>
   );
 }
+'@ | Out-File -FilePath "app\athlete\AthleteShell.tsx" -Encoding utf8 -Force
