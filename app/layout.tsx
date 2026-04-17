@@ -1,12 +1,16 @@
 ﻿import type { Metadata } from "next";
+import { Inter } from "next/font/google";
 
-// ✅ Meta padrão do app (pode ajustar depois)
+const inter = Inter({
+  subsets: ["latin"],
+  display: "swap",
+});
+
 export const metadata: Metadata = {
   title: "ENDURE",
   description: "Avaliação socioemocional em atletas",
 };
 
-// ✅ Viewport correto para mobile (resolve render “desktop” no celular)
 export const viewport = {
   width: "device-width",
   initialScale: 1,
@@ -15,12 +19,11 @@ export const viewport = {
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
-    <html lang="pt-br">
+    <html lang="pt-br" className={inter.className}>
       <head>
-        {/* redundante, mas “à prova de navegador” */}
         <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
       </head>
-      <body style={{ margin: 0, background: "#f9fafb" }}>
+      <body style={{ margin: 0, background: "#f9fafb", color: "#111827" }}>
         {children}
       </body>
     </html>
