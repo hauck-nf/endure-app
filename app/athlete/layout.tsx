@@ -105,7 +105,7 @@ export default function AthleteLayout({ children }: { children: React.ReactNode 
           top: 0,
           left: 0,
           height: "100vh",
-          width: 280,
+          width: 240,
           background: "#fff",
           borderRight: "1px solid #e5e7eb",
           padding: 16,
@@ -173,23 +173,32 @@ export default function AthleteLayout({ children }: { children: React.ReactNode 
 
       {/* Responsive CSS */}
       <style>{`
-        /* Mobile-first: hide desktop wrap; show hamburger + drawer */
-        .athleteDesktopWrap { display: none; }
-        .athleteHamburger { display: inline-flex; align-items: center; justify-content: center; }
+  /* Mobile-first: hide desktop wrap; show hamburger + drawer */
+  .athleteDesktopWrap { display: none; }
+  .athleteHamburger { display: inline-flex; align-items: center; justify-content: center; }
 
-        @media (min-width: 900px) {
-          /* Desktop: show fixed sidebar layout; hide hamburger/drawer */
-          .athleteDesktopWrap { display: grid; }
-          .athleteHamburger { display: none; }
-          .athleteOverlay { display: none; }
-          .athleteSidebar { display: none; }
-          .athleteMain { padding: 20px; }
-        }
+  /* Força modo mobile em dispositivos touch, mesmo que a largura "engane" */
+  @media (hover: none) and (pointer: coarse) {
+    .athleteDesktopWrap { display: none !important; }
+    .athleteHamburger { display: inline-flex !important; }
+    .athleteOverlay { display: block !important; }
+    .athleteSidebar { display: block !important; }
+  }
 
-        @media (max-width: 420px) {
-          .athleteMain { padding: 12px; }
-        }
-      `}</style>
+  /* Desktop real */
+  @media (min-width: 900px) and (hover: hover) and (pointer: fine) {
+    .athleteDesktopWrap { display: grid; }
+    .athleteHamburger { display: none; }
+    .athleteOverlay { display: none; }
+    .athleteSidebar { display: none; }
+    .athleteMain { padding: 20px; }
+  }
+
+  /* Extra conforto em telas pequenas */
+  @media (max-width: 420px) {
+    .athleteMain { padding: 12px; }
+  }
+`}</style>
     </div>
   );
 }
