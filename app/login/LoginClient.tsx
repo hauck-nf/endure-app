@@ -21,7 +21,7 @@ export default function LoginClient() {
     setMsg("");
     setLoading(true);
 
-    // ✅ login via server (seta cookies SSR) — resolve loop em produção
+    // 1) Login no server para gravar cookies SSR
     const res = await fetch("/api/auth/login", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
@@ -35,10 +35,21 @@ export default function LoginClient() {
       return;
     }
 
-    // ✅ garante que client também “enxerga” a sessão
-    await supabaseBrowser.auth.getSession();
+    // 2) Sincroniza cookies -> localStorage (client)
+    const sessRes = await fetch("/api/auth/session");
+    const sessJson: any = await sessRes.json().catch(() => ({}));
+    if (!sessRes.ok || !sessJson?.ok) {
+      setLoading(false);
+      setMsg(`LOGIN OK, mas não consegui obter sessão do servidor: ${sessJson?.error ?? `HTTP ${sessRes.status}`}`);
+      return;
+    }
 
-    // Agora decide destino
+    await supabaseBrowser.auth.setSession({
+      access_token: sessJson.access_token,
+      refresh_token: sessJson.refresh_token,
+    });
+
+    // 3) Redireciona
     if (nextUrl && nextUrl.startsWith("/")) {
       setLoading(false);
       router.push(nextUrl);
@@ -46,13 +57,14 @@ export default function LoginClient() {
       return;
     }
 
-    // Fallback por role (lê do banco com sessão já válida)
+    // fallback por role
     const { data: sess } = await supabaseBrowser.auth.getSession();
     const userId = sess.session?.user?.id;
 
     if (!userId) {
       setLoading(false);
       router.push("/athlete/pending");
+      router.refresh();
       return;
     }
 
