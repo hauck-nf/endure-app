@@ -5,7 +5,7 @@ export async function requireAthlete() {
   const supabase = await createClient();
 
   const { data: { user } } = await supabase.auth.getUser();
-  if (!user) redirect("/login?next=/athlete");
+  if (!user) redirect("/login?next=/athlete/pending");
 
   const { data: profile, error } = await supabase
     .from("profiles")
@@ -13,8 +13,12 @@ export async function requireAthlete() {
     .eq("user_id", user.id)
     .single();
 
-  if (error) redirect("/login?next=/athlete");
-  if (profile?.role !== "athlete") redirect("/login");
+  if (error) redirect("/login?next=/athlete/pending");
 
-  return { supabase, user, role: profile.role };
+  const role = profile?.role ?? "unknown";
+
+  // ✅ permite admin entrar no /athlete (admin view)
+  if (role !== "athlete" && role !== "admin") redirect("/login");
+
+  return { supabase, user, role };
 }
