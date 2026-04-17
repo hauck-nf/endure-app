@@ -143,23 +143,24 @@ export default function AthleteShell({ children }: { children: React.ReactNode }
           display: ${open ? "block" : "none"};
         }
         .athDrawer{
-          position:fixed; top:0; left:0; z-index:70;
-          width: var(--drawerW); max-width: 86vw;
-          height: 100vh;
-          background: var(--card);
-          border-right: 1px solid var(--border);
-          box-shadow: var(--shadow);
-          transform: translateX(${open ? "0" : "-105%"});
-          transition: transform .22s ease;
-          padding: 14px;
-          display:grid;
-          grid-template-rows: auto 1fr;
-          gap: 12px;
-        }
+  position:fixed; top:0; left:0; z-index:70;
+  width: 280px; max-width: 86vw;
+  height: 100vh;
+  background: var(--card);
+  border-right: 1px solid var(--border);
+  box-shadow: var(--shadow);
+  transform: translateX(${open ? "0" : "-105%"});
+  transition: transform .22s ease;
+  padding: 12px;                 /* ↓ menos “ar” */
+  display:grid;
+  grid-template-rows: auto 1fr;
+  gap: 10px;                      /* ↓ menos gap */
+}
         .athDrawerTop{
-          display:flex; align-items:center; justify-content:space-between;
-          gap: 10px;
-        }
+  display:flex; align-items:center; justify-content:space-between;
+  gap: 10px;
+  padding: 2px 2px 6px;          /* ↓ compacta topo */
+}
         .athDrawerTitle{
           display:flex; align-items:center; gap:10px;
           font-weight: 800;
@@ -175,20 +176,30 @@ export default function AthleteShell({ children }: { children: React.ReactNode }
         }
 
         .athNavList{
-          display:grid;
-          border: 1px solid var(--border);
-          border-radius: 14px;
-          overflow:hidden;
-          background:#fff;
-        }
-        .athNavItem{
-          display:flex; align-items:center; justify-content:space-between;
-          padding: 12px 12px;
-          text-decoration:none;
-          color: var(--text);
-          font-weight: 650;
-          border-bottom: 1px solid var(--border);
-        }
+  display:flex;
+  flex-direction:column;
+  gap: 6px;                      /* ↓ sem blocão */
+  border: none;                  /* ↓ remove “card grande” */
+  border-radius: 0;
+  background: transparent;
+}
+
+.athNavItem{
+  display:flex; align-items:center; justify-content:space-between;
+  padding: 12px 12px;            /* touch-friendly sem exagero */
+  text-decoration:none;
+  color: var(--text);
+  font-weight: 700;
+  font-size: 15px;
+  border: 1px solid var(--border);
+  background:#fff;
+  border-radius: 14px;           /* cards pequenos e elegantes */
+}
+
+.athNavItem span:last-child{
+  color:#9ca3af;
+  font-size: 18px;
+}
         .athNavItem:last-child{ border-bottom:none; }
         .athNavItem span:last-child{ color:#9ca3af; }
 
