@@ -2,7 +2,11 @@
 import { createServerClient } from "@supabase/ssr";
 
 export async function middleware(request: NextRequest) {
-  let response = NextResponse.next({ request });
+  let response = NextResponse.next({
+    request: {
+      headers: request.headers,
+    },
+  });
 
   const supabase = createServerClient(
     process.env.NEXT_PUBLIC_SUPABASE_URL!,
@@ -14,9 +18,6 @@ export async function middleware(request: NextRequest) {
         },
         setAll(cookiesToSet) {
           cookiesToSet.forEach(({ name, value, options }) => {
-            // Atualiza cookies na request (para uso durante o ciclo atual)
-            request.cookies.set(name, value);
-            // Garante que a resposta também carregue os cookies atualizados
             response.cookies.set(name, value, options);
           });
         },
@@ -24,13 +25,14 @@ export async function middleware(request: NextRequest) {
     }
   );
 
-  // Importante: isso atualiza/valida a sessão quando necessário
+  // Importante: isso força o Supabase a ler/atualizar a sessão e escrever cookies no response
   await supabase.auth.getUser();
 
   return response;
 }
 
-// Não aplicar middleware em assets estáticos
 export const config = {
-  matcher: ["/((?!_next/static|_next/image|favicon.ico).*)"],
+  matcher: [
+    "/((?!_next/static|_next/image|favicon.ico|endure_logo.png).*)",
+  ],
 };
