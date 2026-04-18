@@ -1,64 +1,46 @@
 ﻿"use client";
 
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import RoleSwitcher from "@/app/_components/RoleSwitcher";
 
-const linkStyle: React.CSSProperties = {
-  display: "flex",
-  alignItems: "center",
-  justifyContent: "space-between",
-  padding: "12px 12px",
-  borderRadius: 14,
-  border: "1px solid #e5e7eb",
-  background: "#fff",
-  textDecoration: "none",
-  color: "#111827",
-  fontWeight: 700,
-  fontSize: 15,
-};
+const items = [
+  { href: "/admin/dashboard", label: "Dashboard" },
+  { href: "/admin/athletes", label: "Meus atletas" },
+  { href: "/admin/assign/evaluation", label: "Designar avaliação" },
+  { href: "/admin/requests", label: "Designações (antiga)" },
+];
 
 export default function AdminShell({ children }: { children: React.ReactNode }) {
   const [open, setOpen] = useState(false);
 
-  // fecha drawer ao navegar (melhor UX)
-  useEffect(() => {
-    const onPop = () => setOpen(false);
-    window.addEventListener("popstate", onPop);
-    return () => window.removeEventListener("popstate", onPop);
-  }, []);
-
-  const Menu = () => (
-    $16 }}>
-      <a href="/admin/dashboard" style={linkStyle}>Dashboard</a>
-      <a href="/admin/athletes" style={linkStyle}>Meus atletas</a>
-      <a href="/admin/assign/evaluation" style={linkStyle}>Designar avaliação</a>
-      <a href="/admin/requests" style={linkStyle}>Designações (antiga)</a>
-    </nav>
-  );
-
   return (
-    <div style={{ minHeight: "100vh", background: "#f9fafb" }}>
+    <div className="admWrap">
       <style>{`
-        :root{ --border:#e5e7eb; }
+        :root{
+          --bg:#f9fafb; --card:#fff; --border:#e5e7eb;
+          --text:#111827; --muted:#6b7280;
+          --shadow:0 14px 40px rgba(17,24,39,.08);
+          --radius:14px; --sidebarW:260px; --drawerW:280px;
+        }
+        .admWrap{ min-height:100vh; background:var(--bg); color:var(--text); }
+
+        /* Top bar */
         .admTop{
           position: sticky; top:0; z-index:50;
-          padding: 14px 16px;
+          padding: 12px 12px;
           border-bottom: 1px solid var(--border);
           background: rgba(255,255,255,.92);
           backdrop-filter: blur(12px);
           display:flex; align-items:center; justify-content:space-between;
           gap: 12px;
         }
-        .admBrand{ display:flex; align-items:center; gap:10px; text-decoration:none; color:inherit; }
+        .admLeft{ display:flex; align-items:center; gap:10px; min-width:0; }
+        .admBrand{ display:flex; align-items:center; gap:10px; text-decoration:none; color:inherit; min-width:0; }
         .admBrand img{ width:28px; height:28px; object-fit:contain; border-radius:6px; }
         .admBrand strong{ letter-spacing:.4px; }
-        .admBrand span{ font-size:12px; color:#6b7280; }
+        .admBrand span{ font-size:12px; color:var(--muted); }
 
-        .admGrid{ display:grid; grid-template-columns: 260px 1fr; gap:16px; }
-        .admSide{ padding:16px; border-right: 1px solid var(--border); background:#fff; min-height: calc(100vh - 57px); }
-        .admMain{ padding:16px; }
-
-        /* Mobile: esconde sidebar e usa drawer */
+        /* Hamburger */
         .admHamb{
           width: 40px; height: 40px;
           border-radius: 12px;
@@ -69,29 +51,61 @@ export default function AdminShell({ children }: { children: React.ReactNode }) 
         }
         .admHamb svg{ width:18px; height:18px; }
 
+        /* Layout desktop */
+        .admGrid{ display:grid; grid-template-columns: var(--sidebarW) 1fr; gap:16px; max-width:1200px; margin:0 auto; }
+        .admSide{
+          padding: 16px;
+          border-right: 1px solid var(--border);
+          background:#fff;
+          min-height: calc(100vh - 57px);
+        }
+        .admMain{ padding: 16px; min-width:0; }
+
+        /* Sidebar links (desktop) */
+        .admNavTitle{ font-size:12px; color:var(--muted); margin-bottom:10px; }
+        .admNavCards{ display:grid; gap:10px; }
+        .admNavCards a{
+          display:flex; align-items:center; justify-content:space-between;
+          padding: 12px 12px;
+          border-radius: 14px;
+          border: 1px solid var(--border);
+          background:#fff;
+          text-decoration:none;
+          color: var(--text);
+          font-weight: 700;
+          font-size: 15px;
+        }
+        .admNavCards a span:last-child{ color:#9ca3af; font-size:18px; }
+
+        /* Mobile drawer */
         .admOverlay{ position:fixed; inset:0; z-index:60; background:rgba(17,24,39,.45); display:none; }
         .admDrawer{
           position:fixed; top:0; left:0; z-index:70;
-          width: 280px; max-width: 86vw; height: 100vh;
-          background:#fff; border-right:1px solid var(--border);
-          box-shadow: 0 14px 40px rgba(17,24,39,.10);
-          transform: translateX(-105%); transition: transform .22s ease;
+          width: var(--drawerW); max-width: 86vw; height: 100vh;
+          background:#fff;
+          border-right: 1px solid var(--border);
+          box-shadow: var(--shadow);
+          transform: translateX(-105%);
+          transition: transform .22s ease;
           padding: 12px;
-          display:grid; grid-template-rows:auto 1fr; gap: 10px;
+          display:grid;
+          grid-template-rows:auto 1fr;
+          gap: 10px;
         }
         .admDrawerTop{ display:flex; align-items:center; justify-content:space-between; gap:10px; padding:2px 2px 6px; }
         .admClose{ width:38px; height:38px; border-radius:12px; border:1px solid var(--border); background:#fff; font-size:18px; }
 
+        /* Mobile: hide sidebar, show hamburger */
         @media (max-width: 899px){
           .admGrid{ grid-template-columns: 1fr; }
           .admSide{ display:none; }
-          .admMain{ padding:12px; }
+          .admMain{ padding: 12px; }
           .admHamb{ display:inline-flex; }
         }
       `}</style>
 
       <div className="admTop">
-        <div style={{ display:"flex", alignItems:"center", gap:10 }}>
+        <div className="admLeft">
           <button className="admHamb" type="button" aria-label="Abrir menu" onClick={() => setOpen(true)}>
             <svg viewBox="0 0 24 24" fill="none" aria-hidden="true">
               <path d="M4 7h16M4 12h16M4 17h16" stroke="currentColor" strokeWidth="2" strokeLinecap="round"/>
@@ -106,7 +120,6 @@ export default function AdminShell({ children }: { children: React.ReactNode }) 
             </div>
           </a>
         </div>
-
         <RoleSwitcher />
       </div>
 
@@ -120,13 +133,25 @@ export default function AdminShell({ children }: { children: React.ReactNode }) 
           </div>
           <button className="admClose" type="button" aria-label="Fechar" onClick={() => setOpen(false)}>✕</button>
         </div>
-        <Menu />
+        <nav className="admNavCards">
+          {items.map((it) => (
+            <a key={it.href} href={it.href} onClick={() => setOpen(false)}>
+              <span>{it.label}</span><span>›</span>
+            </a>
+          ))}
+        </nav>
       </aside>
 
       <div className="admGrid">
         <aside className="admSide">
-          <div style={{ fontSize: 12, color: "#6b7280", marginBottom: 10 }}>Menu</div>
-          <Menu />
+          <div className="admNavTitle">Menu</div>
+          <nav className="admNavCards">
+            {items.map((it) => (
+              <a key={it.href} href={it.href}>
+                <span>{it.label}</span><span>›</span>
+              </a>
+            ))}
+          </nav>
         </aside>
         <main className="admMain">{children}</main>
       </div>
