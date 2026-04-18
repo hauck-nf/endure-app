@@ -15,6 +15,7 @@ export default function AthleteShell({ children }: { children: React.ReactNode }
     { href: "/athlete/dashboard", label: "Dashboard" },
     { href: "/athlete/pending", label: "Pendentes" },
     { href: "/athlete/history", label: "Histórico" },
+    { href: "/athlete/me", label: "Meus dados" },
   ];
 
   return (
