@@ -1,4 +1,5 @@
 ﻿import RoleSwitcher from "@/app/_components/RoleSwitcher";
+import AdminProfileSwitcher from "@/src/components/AdminProfileSwitcher";
 
 const linkStyle: React.CSSProperties = {
   display: "block",

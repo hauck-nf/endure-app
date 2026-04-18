@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useEffect, useState } from "react";
-import ProfileSwitcher from "@/src/components/ProfileSwitcher";
+import AthleteProfileSwitcher from "@/src/components/AthleteProfileSwitcher";
 
 export default function AthleteShell({ children }: { children: React.ReactNode }) {
   const [open, setOpen] = useState(false);
@@ -146,7 +146,7 @@ export default function AthleteShell({ children }: { children: React.ReactNode }
           <div className="athTitle"><b>ENDURE</b><span>Área do atleta</span></div>
         </div>
 
-        <div className="athRight"><ProfileSwitcher /></div>
+        <div className="athRight"><AthleteProfileSwitcher /></div>
       </header>
 
       <div className="athOverlay" onClick={() => setOpen(false)} />
