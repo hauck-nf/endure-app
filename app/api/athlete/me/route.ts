@@ -14,11 +14,8 @@ export async function GET() {
     .maybeSingle();
 
   if (error) return NextResponse.json({ ok: false, error: error.message }, { status: 400 });
-
   return NextResponse.json({ ok: true, athlete: data ?? null });
 }
-import { NextResponse } from "next/server";
-import { createClient } from "@/src/lib/supabaseServer";
 
 export async function POST(req: Request) {
   const supabase = await createClient();
@@ -26,23 +23,22 @@ export async function POST(req: Request) {
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) return NextResponse.json({ ok: false, error: "not_authenticated" }, { status: 401 });
 
-  const body = await req.json().catch(() => ({}));
+  const body = await req.json().catch(() => ({} as any));
 
-  // whitelist de campos editáveis pelo atleta
   const patch: any = {
-    full_name: body.full_name ?? null,
-    phone: body.phone ?? null,
-    birth_date: body.birth_date ?? null,
-    sex: body.sex ?? null,
-    gender: body.gender ?? null,
-    team: body.team ?? null,
-    coach_name: body.coach_name ?? null,
-    sport_primary: body.sport_primary ?? null,
-    address_city: body.address_city ?? null,
-    address_state: body.address_state ?? null,
+    full_name: body.full_name,
+    phone: body.phone,
+    birth_date: body.birth_date,
+    sex: body.sex,
+    gender: body.gender,
+    team: body.team,
+    coach_name: body.coach_name,
+    sport_primary: body.sport_primary,
+    address_city: body.address_city,
+    address_state: body.address_state,
   };
 
-  // remove undefined (não mexe no campo)
+  // remove undefined para não apagar campos sem querer
   Object.keys(patch).forEach((k) => patch[k] === undefined && delete patch[k]);
 
   const { data: updated, error } = await supabase
@@ -53,6 +49,5 @@ export async function POST(req: Request) {
     .single();
 
   if (error) return NextResponse.json({ ok: false, error: error.message }, { status: 400 });
-
   return NextResponse.json({ ok: true, athlete: updated });
 }
