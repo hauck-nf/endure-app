@@ -16,14 +16,16 @@ export default function AthleteDashboard() {
   const [rows, setRows] = useState<Row[]>([]);
   const [err, setErr] = useState<string | null>(null);
   const [scale, setScale] = useState<string>("");
+  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     (async () => {
       try {
+        setLoading(true);
         setErr(null);
+
         const athleteId = await getMyAthleteId();
 
-        // assessments submitted + scores
         const { data, error } = await supabase
           .from("assessments")
           .select(
@@ -45,12 +47,13 @@ export default function AthleteDashboard() {
 
         setRows(out);
 
-        // escala default: primeira disponível
         const first = out.find((x) => x.scores_json?.scales)?.scores_json?.scales;
         const firstScale = first ? Object.keys(first)[0] : "";
         setScale(firstScale || "");
       } catch (e: any) {
         setErr(e.message ?? "Erro ao carregar dashboard.");
+      } finally {
+        setLoading(false);
       }
     })();
   }, []);
@@ -77,7 +80,7 @@ export default function AthleteDashboard() {
         const sc = r.scores_json.scales[scale];
         const dt = r.submitted_at ? new Date(r.submitted_at) : null;
         return {
-          dateLabel: dt ? dt.toLocaleDateString() : "",
+          dateLabel: dt ? dt.toLocaleDateString("pt-BR") : "",
           ts: dt ? dt.getTime() : 0,
           percentile: typeof sc.percentile === "number" ? sc.percentile : null,
         };
@@ -85,18 +88,43 @@ export default function AthleteDashboard() {
       .sort((a, b) => a.ts - b.ts);
   }, [rows, scale]);
 
+  const lastDate = useMemo(() => {
+    const last = [...rows].reverse().find((r) => r.submitted_at);
+    return last?.submitted_at
+      ? new Date(last.submitted_at).toLocaleDateString("pt-BR")
+      : null;
+  }, [rows]);
+
   return (
-    <div style={{ maxWidth: 950, margin: "40px auto", fontFamily: "system-ui" }}>
-      <a href="/athlete">← Voltar</a>
-      <h2 style={{ marginTop: 12 }}>Dashboard socioemocional</h2>
+    <div style={{ display: "grid", gap: 16 }}>
+      <section
+        style={{
+          background: "#fff",
+          border: "1px solid #e5e7eb",
+          borderRadius: 20,
+          padding: 20,
+          boxShadow: "0 14px 40px rgba(17,24,39,.06)",
+        }}
+      >
+        <div style={{ fontSize: 13, color: "#6b7280", fontWeight: 700 }}>
+          Área do atleta
+        </div>
+        <h1 style={{ margin: "8px 0 8px", fontSize: 30 }}>
+          Dashboard socioemocional
+        </h1>
+        <p style={{ margin: 0, color: "#6b7280", lineHeight: 1.7 }}>
+          Acompanhe sua prontidão mais recente e a evolução dos percentis nas
+          escalas disponíveis.
+        </p>
+      </section>
 
       {err && (
         <div
           style={{
-            marginTop: 12,
-            padding: 12,
-            border: "1px solid #ef4444",
-            borderRadius: 12,
+            padding: 14,
+            border: "1px solid #fecaca",
+            background: "#fef2f2",
+            borderRadius: 16,
             color: "#b91c1c",
           }}
         >
@@ -104,45 +132,168 @@ export default function AthleteDashboard() {
         </div>
       )}
 
-      <div style={{ marginTop: 14, display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 }}>
-        <div style={{ border: "1px solid #e5e7eb", borderRadius: 12, padding: 14 }}>
-          <div style={{ color: "#6b7280" }}>Prontidão socioemocional (última)</div>
-          <div style={{ fontSize: 34, fontWeight: 700, marginTop: 6 }}>
-            {latestReadiness === null ? "—" : latestReadiness.toFixed(2)}
+      <section
+        style={{
+          display: "grid",
+          gridTemplateColumns: "repeat(3, minmax(0, 1fr))",
+          gap: 16,
+        }}
+      >
+        <StatCard
+          label="Prontidão socioemocional"
+          value={loading ? "..." : latestReadiness === null ? "—" : latestReadiness.toFixed(2)}
+          helper="Último valor disponível"
+        />
+        <StatCard
+          label="Avaliações concluídas"
+          value={loading ? "..." : String(rows.length)}
+          helper="Total submetido até o momento"
+        />
+        <StatCard
+          label="Última atualização"
+          value={loading ? "..." : lastDate ?? "—"}
+          helper="Data da avaliação mais recente"
+        />
+      </section>
+
+      <section
+        style={{
+          background: "#fff",
+          border: "1px solid #e5e7eb",
+          borderRadius: 20,
+          padding: 20,
+          boxShadow: "0 14px 40px rgba(17,24,39,.06)",
+          display: "grid",
+          gap: 16,
+        }}
+      >
+        <div
+          style={{
+            display: "flex",
+            justifyContent: "space-between",
+            gap: 16,
+            alignItems: "end",
+            flexWrap: "wrap",
+          }}
+        >
+          <div>
+            <div style={{ fontWeight: 900, fontSize: 20 }}>
+              Evolução por escala
+            </div>
+            <div style={{ marginTop: 4, color: "#6b7280", fontSize: 14 }}>
+              Selecione uma escala para visualizar a série temporal dos percentis.
+            </div>
+          </div>
+
+          <div style={{ minWidth: 260 }}>
+            <label style={{ display: "grid", gap: 6 }}>
+              <span style={{ fontSize: 13, color: "#6b7280", fontWeight: 700 }}>
+                Escala
+              </span>
+              <select
+                value={scale}
+                onChange={(e) => setScale(e.target.value)}
+                style={{
+                  width: "100%",
+                  height: 46,
+                  padding: "0 12px",
+                  borderRadius: 14,
+                  border: "1px solid #d1d5db",
+                  background: "#fff",
+                }}
+                disabled={availableScales.length === 0}
+              >
+                {availableScales.length === 0 ? (
+                  <option value="">Sem escalas disponíveis</option>
+                ) : (
+                  availableScales.map((s) => (
+                    <option key={s} value={s}>
+                      {s}
+                    </option>
+                  ))
+                )}
+              </select>
+            </label>
           </div>
         </div>
 
-        <div style={{ border: "1px solid #e5e7eb", borderRadius: 12, padding: 14 }}>
-          <div style={{ color: "#6b7280" }}>Escala</div>
-          <select
-            value={scale}
-            onChange={(e) => setScale(e.target.value)}
-            style={{ width: "100%", padding: 10, marginTop: 8 }}
-          >
-            {availableScales.map((s) => (
-              <option key={s} value={s}>
-                {s}
-              </option>
-            ))}
-          </select>
-        </div>
-      </div>
-
-      <div style={{ marginTop: 16, border: "1px solid #e5e7eb", borderRadius: 12, overflow: "hidden" }}>
-        <div style={{ padding: 12, background: "#fafafa", borderBottom: "1px solid #e5e7eb" }}>
-          <b>{scale || "—"}</b>
-        </div>
-
-        {series.length === 0 ? (
-          <div style={{ padding: 14, color: "#6b7280" }}>Sem dados para essa escala.</div>
+        {loading ? (
+          <EmptyBox text="Carregando dados do dashboard..." />
+        ) : rows.length === 0 ? (
+          <EmptyBox text="Seu dashboard aparecerá aqui após a primeira avaliação submetida." />
+        ) : series.length === 0 ? (
+          <EmptyBox text="Não há dados disponíveis para a escala selecionada." />
         ) : (
-          <PercentileChart
-            points={series
-              .filter((p) => typeof p.percentile === "number")
-              .map((p) => ({ label: p.dateLabel, y: Number(p.percentile) }))}
-          />
+          <div
+            style={{
+              border: "1px solid #e5e7eb",
+              borderRadius: 18,
+              overflow: "hidden",
+            }}
+          >
+            <div
+              style={{
+                padding: 14,
+                borderBottom: "1px solid #e5e7eb",
+                background: "#f9fafb",
+              }}
+            >
+              <strong>{scale}</strong>
+            </div>
+
+            <PercentileChart
+              points={series
+                .filter((p) => typeof p.percentile === "number")
+                .map((p) => ({
+                  label: p.dateLabel,
+                  y: Number(p.percentile),
+                }))}
+            />
+          </div>
         )}
-      </div>
+      </section>
+    </div>
+  );
+}
+
+function StatCard({
+  label,
+  value,
+  helper,
+}: {
+  label: string;
+  value: string;
+  helper: string;
+}) {
+  return (
+    <div
+      style={{
+        background: "#fff",
+        border: "1px solid #e5e7eb",
+        borderRadius: 18,
+        padding: 20,
+        boxShadow: "0 14px 40px rgba(17,24,39,.06)",
+      }}
+    >
+      <div style={{ color: "#6b7280", fontSize: 14 }}>{label}</div>
+      <div style={{ fontSize: 32, fontWeight: 900, marginTop: 8 }}>{value}</div>
+      <div style={{ marginTop: 8, color: "#6b7280", fontSize: 13 }}>{helper}</div>
+    </div>
+  );
+}
+
+function EmptyBox({ text }: { text: string }) {
+  return (
+    <div
+      style={{
+        border: "1px dashed #d1d5db",
+        borderRadius: 18,
+        padding: 24,
+        color: "#6b7280",
+        background: "#fcfcfd",
+      }}
+    >
+      {text}
     </div>
   );
 }
@@ -165,7 +316,9 @@ function PercentileChart({ points }: { points: { label: string; y: number }[] })
   );
   const ys = points.map((p) => padT + innerH * (1 - clamp(p.y) / 100));
 
-  const path = xs.map((x, i) => `${i === 0 ? "M" : "L"} ${x.toFixed(2)} ${ys[i].toFixed(2)}`).join(" ");
+  const path = xs
+    .map((x, i) => `${i === 0 ? "M" : "L"} ${x.toFixed(2)} ${ys[i].toFixed(2)}`)
+    .join(" ");
 
   const grid = [0, 25, 50, 75, 100];
   const maxLabels = 6;
@@ -189,7 +342,7 @@ function PercentileChart({ points }: { points: { label: string; y: number }[] })
         <line x1={padL} y1={padT} x2={padL} y2={H - padB} stroke="#9ca3af" strokeWidth="1" />
         <line x1={padL} y1={H - padB} x2={W - padR} y2={H - padB} stroke="#9ca3af" strokeWidth="1" />
 
-        <path d={path} fill="none" stroke="#111827" strokeWidth="2" />
+        <path d={path} fill="none" stroke="#111827" strokeWidth="2.4" />
         {xs.map((x, i) => (
           <circle key={i} cx={x} cy={ys[i]} r="4" fill="#111827" />
         ))}
