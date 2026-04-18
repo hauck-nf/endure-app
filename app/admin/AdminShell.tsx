@@ -65,16 +65,18 @@ export default function AdminShell({ children }: { children: React.ReactNode }) 
         .admNavTitle{ font-size:12px; color:var(--muted); margin-bottom:10px; }
         .admNavCards{ display:grid; gap:10px; }
         .admNavCards a{
-          display:flex; align-items:center; justify-content:space-between;
-          padding: 12px 12px;
-          border-radius: 14px;
-          border: 1px solid var(--border);
-          background:#fff;
-          text-decoration:none;
-          color: var(--text);
-          font-weight: 700;
-          font-size: 15px;
-        }
+  display:flex; align-items:center; justify-content:space-between;
+  padding: 12px 12px;
+  border-radius: 14px;
+  border: 1px solid var(--border);
+  background:#fff;
+  text-decoration:none;      /* <- tira sublinhado */
+  color: var(--text);        /* <- tira roxo */
+  font-weight: 700;
+  font-size: 15px;
+}
+.admNavCards a:visited{ color: var(--text); }
+.admNavCards a:hover{ background:#f9fafb; }
         .admNavCards a span:last-child{ color:#9ca3af; font-size:18px; }
 
         /* Mobile drawer */
@@ -122,10 +124,18 @@ export default function AdminShell({ children }: { children: React.ReactNode }) 
           /* admNavCards-mobile-compact */
           .admNavCards{ gap: 6px; }
           .admNavCards a{
-            padding: 10px 12px;
-            font-size: 14px;
-            border-radius: 14px;
-          }
+  display:flex; align-items:center; justify-content:space-between;
+  padding: 12px 12px;
+  border-radius: 14px;
+  border: 1px solid var(--border);
+  background:#fff;
+  text-decoration:none;      /* <- tira sublinhado */
+  color: var(--text);        /* <- tira roxo */
+  font-weight: 700;
+  font-size: 15px;
+}
+.admNavCards a:visited{ color: var(--text); }
+.admNavCards a:hover{ background:#f9fafb; }
           .admNavCards a span:last-child{ font-size: 16px; }
           .admGrid{ grid-template-columns: 1fr; }
           .admSide{ display:none; }
