@@ -96,7 +96,29 @@ export default function AdminShell({ children }: { children: React.ReactNode }) 
         .admClose{ width:38px; height:38px; border-radius:12px; border:1px solid var(--border); background:#fff; font-size:18px; }
 
         /* Mobile: hide sidebar, show hamburger */
-        @media (max-width: 899px){
+        /* Drawer mobile (compact like athlete) */
+        .admNavList{
+          display:flex;
+          flex-direction:column;
+          gap: 6px;
+          border: none;
+          background: transparent;
+        }
+        .admNavItem{
+          display:flex;
+          align-items:center;
+          justify-content:space-between;
+          padding: 12px 12px;
+          border-radius: 14px;
+          border: 1px solid var(--border);
+          background:#fff;
+          text-decoration:none;
+          color: var(--text);
+          font-weight: 700;
+          font-size: 15px;
+        }
+        .admNavItem span:last-child{ color:#9ca3af; font-size: 18px; }
+
           /* admNavCards-mobile-compact */
           .admNavCards{ gap: 6px; }
           .admNavCards a{
@@ -141,7 +163,7 @@ export default function AdminShell({ children }: { children: React.ReactNode }) 
           </div>
           <button className="admClose" type="button" aria-label="Fechar" onClick={() => setOpen(false)}>✕</button>
         </div>
-        <nav className="admNavCards">
+        <nav className="admNavList">
           {items.map((it) => (
             <a key={it.href} href={it.href} onClick={() => setOpen(false)}>
               <span>{it.label}</span><span>›</span>
@@ -153,7 +175,7 @@ export default function AdminShell({ children }: { children: React.ReactNode }) 
       <div className="admGrid">
         <aside className="admSide">
           <div className="admNavTitle">Menu</div>
-          <nav className="admNavCards">
+          <nav className="admNavList">
             {items.map((it) => (
               <a key={it.href} href={it.href}>
                 <span>{it.label}</span><span>›</span>
