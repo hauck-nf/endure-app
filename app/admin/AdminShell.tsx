@@ -7,7 +7,6 @@ const items = [
   { href: "/admin/dashboard", label: "Dashboard" },
   { href: "/admin/athletes", label: "Meus atletas" },
   { href: "/admin/assign/evaluation", label: "Designar avaliação" },
-  { href: "/admin/requests", label: "Designações (antiga)" },
 ];
 
 export default function AdminShell({ children }: { children: React.ReactNode }) {
