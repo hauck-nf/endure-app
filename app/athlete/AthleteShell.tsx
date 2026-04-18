@@ -4,6 +4,7 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useEffect, useMemo, useState } from "react";
 import AthleteProfileSwitcher from "@/src/components/AthleteProfileSwitcher";
+import LogoutButton from "@/app/_components/LogoutButton";
 
 function sectionTitle(pathname: string) {
   if (pathname.startsWith("/athlete/flow/")) return "Questionário";
@@ -225,7 +226,9 @@ export default function AthleteShell({ children }: { children: React.ReactNode }
               <span>{it.label}</span><span className="chev">›</span>
             </Link>
           ))}
-        </nav>
+        
+          <LogoutButton className="navItem" onDone={() => setOpen(false)} />
+</nav>
       </aside>
 
       <div className="athContent">
@@ -238,7 +241,9 @@ export default function AthleteShell({ children }: { children: React.ReactNode }
                   <span>{it.label}</span><span className="chev">›</span>
                 </Link>
               ))}
-            </nav>
+            
+              <LogoutButton className="navItem" />
+</nav>
           </aside>
 
           <main className="athMain">{children}</main>

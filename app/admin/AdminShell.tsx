@@ -3,6 +3,7 @@
 import { useMemo, useState } from "react";
 import { usePathname } from "next/navigation";
 import RoleSwitcher from "@/app/_components/RoleSwitcher";
+import LogoutButton from "@/app/_components/LogoutButton";
 
 const items = [
   { href: "/admin/dashboard", label: "Dashboard" },
@@ -223,7 +224,9 @@ export default function AdminShell({ children }: { children: React.ReactNode }) 
               <span>{it.label}</span><span className="chev">›</span>
             </a>
           ))}
-        </nav>
+        
+          <LogoutButton className="navItem" onDone={() => setOpen(false)} />
+</nav>
       </aside>
 
       <div className="admContent">
@@ -236,7 +239,9 @@ export default function AdminShell({ children }: { children: React.ReactNode }) 
                   <span>{it.label}</span><span className="chev">›</span>
                 </a>
               ))}
-            </nav>
+            
+              <LogoutButton className="navItem" />
+</nav>
           </aside>
 
           <main className="admMain">{children}</main>

@@ -26,7 +26,7 @@ export default function LogoutButton({
 
   return (
     <button type="button" onClick={doLogout} className={className} aria-label="Sair">
-      {label}
+      <span>{label}</span>
       <span aria-hidden="true" className="chev">›</span>
     </button>
   );
