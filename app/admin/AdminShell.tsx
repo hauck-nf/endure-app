@@ -54,8 +54,7 @@ export default function AdminShell({ children }: { children: React.ReactNode }) 
           border-radius: var(--radius);
           box-shadow: var(--shadow);
           padding: 14px;
-          height: calc(100vh - 92px);
-          position: sticky;
+          height: fit-content; height: auto; position: sticky;
           top: 92px;
           align-self: start;
         }
