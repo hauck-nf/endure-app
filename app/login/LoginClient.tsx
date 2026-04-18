@@ -1,4 +1,3 @@
-
 "use client";
 
 import { useState } from "react";
@@ -257,7 +256,7 @@ export default function LoginClient() {
               margin: 0,
             }}
           >
-            A ENDURE é uma bateria de avaliação construída para investigar
+            A ENDURE reúne uma bateria de avaliação construída para investigar
             dimensões psicológicas empiricamente relacionadas ao desempenho em
             atletas, transformando avaliação em inteligência aplicada para
             monitoramento, pesquisa e desenvolvimento humano no contexto
