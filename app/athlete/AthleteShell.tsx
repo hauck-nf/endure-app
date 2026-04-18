@@ -11,14 +11,13 @@ function sectionTitle(pathname: string) {
   if (pathname.startsWith("/athlete/history")) return "Histórico";
   if (pathname.startsWith("/athlete/dashboard")) return "Dashboard";
   if (pathname.startsWith("/athlete/me")) return "Meus dados";
-  if (pathname.startsWith("/athlete")) return "Área do atleta";
-  return "ENDURE";
+  return "Área do atleta";
 }
 
 export default function AthleteShell({ children }: { children: React.ReactNode }) {
   const [open, setOpen] = useState(false);
-  const pathname = usePathname();
-  const title = useMemo(() => sectionTitle(pathname || ""), [pathname]);
+  const pathname = usePathname() || "";
+  const title = useMemo(() => sectionTitle(pathname), [pathname]);
 
   useEffect(() => setOpen(false), [pathname]);
 
@@ -30,125 +29,132 @@ export default function AthleteShell({ children }: { children: React.ReactNode }
   ];
 
   return (
-    <div className="athWrap">
+    <div className="athApp">
       <style>{`
         :root{
           --bg:#f7f8fb;
-          --card:#fff;
+          --card:#ffffff;
           --border:#e5e7eb;
           --text:#111827;
           --muted:#6b7280;
-          --action:#111827;
           --shadow:0 14px 40px rgba(17,24,39,.08);
           --radius:16px;
           --sidebarW:280px;
-          --drawerW:320px;
-          --maxW:1180px;
         }
 
         *{ box-sizing:border-box; }
-        .athWrap{ min-height:100vh; background:var(--bg); color:var(--text); }
+        a{ color:inherit; text-decoration:none; }
+        a:visited{ color:inherit; }
+
+        /* app layout: footer no bottom */
+        .athApp{
+          min-height:100vh;
+          display:flex;
+          flex-direction:column;
+          background:var(--bg);
+          color:var(--text);
+        }
+        .athContent{ flex:1; }
 
         /* header */
-        .topbar{
-          position: sticky; top:0; z-index:50;
-          background: rgba(255,255,255,.92);
+        .athTop{
+          position:sticky; top:0; z-index:50;
+          background:rgba(255,255,255,.92);
           backdrop-filter: blur(12px);
-          border-bottom: 1px solid var(--border);
+          border-bottom:1px solid var(--border);
         }
-        .topbarInner{
-          max-width: var(--maxW);
-          margin: 0 auto;
+        .athTopInner{
+          width:100%;
           padding: 12px 14px;
-          display:flex;
-          align-items:center;
-          justify-content:space-between;
-          gap: 12px;
+          display:flex; align-items:center; justify-content:space-between;
+          gap:12px;
         }
-        .leftCluster{ display:flex; align-items:center; gap:10px; min-width:0; }
-
-        .hamb{
+        .athLeft{ display:flex; align-items:center; gap:10px; min-width:0; }
+        .athHamb{
           width:44px; height:44px;
-          border-radius: 14px;
-          border: 1px solid var(--border);
-          background: #fff;
+          border-radius:14px;
+          border:1px solid var(--border);
+          background:#fff;
           display:none;
           align-items:center; justify-content:center;
         }
-        .hamb svg{ width:18px; height:18px; }
+        .athHamb svg{ width:18px; height:18px; }
 
-        .brand{
-          display:flex; align-items:center; gap:10px;
-          text-decoration:none; color:inherit;
-          min-width:0;
-        }
-        .brand img{ width:26px; height:26px; object-fit:contain; display:block; }
-        .brandText{ display:flex; flex-direction:column; line-height:1.05; min-width:0; }
-        .brandText strong{ letter-spacing:.6px; font-size:14px; font-weight:900; }
-        .brandText span{
-          font-size:12px; color:var(--muted);
-          white-space:nowrap; overflow:hidden; text-overflow:ellipsis;
-          max-width: 44vw;
+        .athBrand{ display:flex; align-items:center; gap:10px; min-width:0; }
+        .athBrand img{ width:26px; height:26px; object-fit:contain; display:block; }
+        .athBrandText{ display:flex; flex-direction:column; line-height:1.05; min-width:0; }
+        .athBrandText strong{ font-size:14px; font-weight:900; letter-spacing:.6px; }
+        .athBrandText span{ font-size:12px; color:var(--muted); white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+
+        /* mobile minimal: NÃO repetir título */
+        @media (max-width:720px){
+          .athHamb{ display:inline-flex; }
+          .athBrandText span{ display:none; }
         }
 
-        /* layout */
-        .page{
-          max-width: var(--maxW);
-          margin: 0 auto;
-          padding: 16px 14px 22px;
+        /* desktop layout */
+        .athGrid{
+          width:100%;
           display:grid;
           grid-template-columns: var(--sidebarW) 1fr;
           gap: 16px;
+          padding: 16px 14px 18px;
         }
-        .sidebar{
-          background: var(--card);
-          border: 1px solid var(--border);
+        .athSide{
+          background:var(--card);
+          border:1px solid var(--border);
           border-radius: var(--radius);
           box-shadow: var(--shadow);
           padding: 12px;
           height: fit-content;
           position: sticky;
           top: 86px;
+          align-self:start;
         }
-        .main{ min-width:0; }
+        .athMain{ min-width:0; }
 
-        /* nav cards */
+        /* menu cards */
         .navTitle{ font-size:12px; color:var(--muted); padding: 8px 10px 6px; }
-        .navList{ display:grid; gap:10px; }
+        .navList{ display:flex; flex-direction:column; gap:10px; }
         .navItem{
-          text-decoration:none; color:var(--text);
           border:1px solid var(--border);
           background:#fff;
           border-radius:14px;
           padding: 12px 12px;
           font-weight:700;
-          display:flex; align-items:center; justify-content:space-between;
           min-height:44px;
+          display:flex; align-items:center; justify-content:space-between;
         }
-        .navItem:hover{ background:#f9fafb; }
         .chev{ color:#9ca3af; font-size:18px; }
 
-        /* drawer mobile */
+        @media (max-width:720px){
+          .athGrid{ grid-template-columns:1fr; padding: 12px 12px 18px; }
+          .athSide{ display:none; }
+        }
+
+        /* drawer mobile em FLEX (evita "quadrados gigantes") */
         .overlay{
           position:fixed; inset:0; z-index:60;
           background: rgba(17,24,39,.45);
-          display:none;
+          display: none;
         }
         .drawer{
           position:fixed; top:0; left:0; z-index:70;
-          width: var(--drawerW); max-width:86vw;
-          height:100vh;
-          background:var(--card);
-          border-right:1px solid var(--border);
-          box-shadow:var(--shadow);
+          width: 320px; max-width: 86vw; height: 100vh;
+          background:#fff;
+          border-right: 1px solid var(--border);
+          box-shadow: var(--shadow);
           transform: translateX(-105%);
           transition: transform .22s ease;
-          padding:12px;
-          display:grid;
-          grid-template-rows:auto 1fr;
-          gap:10px;
+          padding: 12px;
+          display:flex;
+          flex-direction:column;
+          gap: 10px;
         }
-        .drawerTop{ display:flex; align-items:center; justify-content:space-between; gap:10px; padding:2px 2px 6px; }
+        .drawerTop{
+          display:flex; align-items:center; justify-content:space-between;
+          gap:10px; padding: 2px 2px 6px;
+        }
         .drawerTitle{ display:flex; align-items:center; gap:10px; font-weight:900; }
         .close{
           width:44px; height:44px;
@@ -158,15 +164,16 @@ export default function AthleteShell({ children }: { children: React.ReactNode }
           display:inline-flex; align-items:center; justify-content:center;
           font-size:18px;
         }
+        .drawerNav{ display:flex; flex-direction:column; gap:10px; }
 
         /* footer */
         .footer{
-          border-top: 1px solid var(--border);
+          margin-top:auto;
+          border-top:1px solid var(--border);
           background: rgba(255,255,255,.9);
         }
         .footerInner{
-          max-width: var(--maxW);
-          margin: 0 auto;
+          width:100%;
           padding: 14px 14px;
           display:flex;
           gap: 12px;
@@ -177,26 +184,20 @@ export default function AthleteShell({ children }: { children: React.ReactNode }
         .footLeft{ display:flex; align-items:center; gap:10px; color:var(--muted); font-size:12px; }
         .footLeft img{ width:18px; height:18px; object-fit:contain; }
         .footRight{ color:var(--muted); font-size:12px; }
-
-        @media (max-width: 720px){
-          .hamb{ display:inline-flex; }
-          .page{ grid-template-columns: 1fr; padding: 12px 12px 18px; }
-          .sidebar{ display:none; }
-        }
       `}</style>
 
-      <header className="topbar">
-        <div className="topbarInner">
-          <div className="leftCluster">
-            <button className="hamb" type="button" aria-label="Abrir menu" onClick={() => setOpen(true)}>
+      <header className="athTop">
+        <div className="athTopInner">
+          <div className="athLeft">
+            <button className="athHamb" type="button" aria-label="Abrir menu" onClick={() => setOpen(true)}>
               <svg viewBox="0 0 24 24" fill="none" aria-hidden="true">
                 <path d="M4 7h16M4 12h16M4 17h16" stroke="currentColor" strokeWidth="2" strokeLinecap="round"/>
               </svg>
             </button>
 
-            <Link href="/athlete/pending" className="brand">
+            <Link href="/athlete/pending" className="athBrand">
               <img src="/endure_logo.png" alt="ENDURE" />
-              <div className="brandText">
+              <div className="athBrandText">
                 <strong>ENDURE</strong>
                 <span>{title}</span>
               </div>
@@ -218,7 +219,7 @@ export default function AthleteShell({ children }: { children: React.ReactNode }
           <button className="close" type="button" aria-label="Fechar" onClick={() => setOpen(false)}>✕</button>
         </div>
 
-        <nav className="navList">
+        <nav className="drawerNav">
           {items.map((it) => (
             <Link key={it.href} href={it.href} className="navItem" onClick={() => setOpen(false)}>
               <span>{it.label}</span><span className="chev">›</span>
@@ -227,19 +228,21 @@ export default function AthleteShell({ children }: { children: React.ReactNode }
         </nav>
       </aside>
 
-      <div className="page">
-        <aside className="sidebar" aria-label="Menu">
-          <div className="navTitle">Menu</div>
-          <nav className="navList">
-            {items.map((it) => (
-              <Link key={it.href} href={it.href} className="navItem">
-                <span>{it.label}</span><span className="chev">›</span>
-              </Link>
-            ))}
-          </nav>
-        </aside>
+      <div className="athContent">
+        <div className="athGrid">
+          <aside className="athSide" aria-label="Menu">
+            <div className="navTitle">Menu</div>
+            <nav className="navList">
+              {items.map((it) => (
+                <Link key={it.href} href={it.href} className="navItem">
+                  <span>{it.label}</span><span className="chev">›</span>
+                </Link>
+              ))}
+            </nav>
+          </aside>
 
-        <main className="main">{children}</main>
+          <main className="athMain">{children}</main>
+        </div>
       </div>
 
       <footer className="footer">

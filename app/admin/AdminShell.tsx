@@ -14,17 +14,16 @@ function sectionTitle(pathname: string) {
   if (pathname.startsWith("/admin/assign/evaluation")) return "Designar avaliação";
   if (pathname.startsWith("/admin/athletes")) return "Meus atletas";
   if (pathname.startsWith("/admin/dashboard")) return "Dashboard";
-  if (pathname.startsWith("/admin")) return "Admin";
-  return "ENDURE";
+  return "Admin";
 }
 
 export default function AdminShell({ children }: { children: React.ReactNode }) {
   const [open, setOpen] = useState(false);
-  const pathname = usePathname();
-  const title = useMemo(() => sectionTitle(pathname || ""), [pathname]);
+  const pathname = usePathname() || "";
+  const title = useMemo(() => sectionTitle(pathname), [pathname]);
 
   return (
-    <div className="shell">
+    <div className="admApp">
       <style>{`
         :root{
           --bg:#f7f8fb;
@@ -32,96 +31,106 @@ export default function AdminShell({ children }: { children: React.ReactNode }) 
           --border:#e5e7eb;
           --text:#111827;
           --muted:#6b7280;
-          --action:#111827;
           --shadow:0 14px 40px rgba(17,24,39,.08);
           --radius:16px;
           --sidebarW:280px;
-          --maxW:1180px;
         }
 
         *{ box-sizing:border-box; }
-        .shell{ min-height:100vh; background:var(--bg); color:var(--text); }
+        a{ color:inherit; text-decoration:none; }
+        a:visited{ color:inherit; }
 
-        /* topbar */
-        .topbar{
-          position: sticky; top:0; z-index:40;
-          background: rgba(255,255,255,.92);
-          backdrop-filter: blur(12px);
-          border-bottom: 1px solid var(--border);
-        }
-        .topbarInner{
-          max-width: var(--maxW);
-          margin: 0 auto;
-          padding: 12px 14px;
+        /* app layout: footer no bottom */
+        .admApp{
+          min-height:100vh;
           display:flex;
-          align-items:center;
-          justify-content:space-between;
-          gap: 12px;
+          flex-direction:column;
+          background:var(--bg);
+          color:var(--text);
         }
-        .leftCluster{ display:flex; align-items:center; gap:10px; min-width:0; }
+        .admContent{ flex:1; }
 
-        .hamb{
+        /* header */
+        .admTop{
+          position:sticky; top:0; z-index:50;
+          background:rgba(255,255,255,.92);
+          backdrop-filter: blur(12px);
+          border-bottom:1px solid var(--border);
+        }
+        .admTopInner{
+          width:100%;
+          padding: 12px 14px;
+          display:flex; align-items:center; justify-content:space-between;
+          gap:12px;
+        }
+        .admLeft{ display:flex; align-items:center; gap:10px; min-width:0; }
+        .admHamb{
           width:44px; height:44px;
-          border-radius: 14px;
-          border: 1px solid var(--border);
-          background: #fff;
+          border-radius:14px;
+          border:1px solid var(--border);
+          background:#fff;
           display:none;
           align-items:center; justify-content:center;
         }
-        .hamb svg{ width:18px; height:18px; }
+        .admHamb svg{ width:18px; height:18px; }
 
-        .brand{
+        .admBrand{
           display:flex; align-items:center; gap:10px;
-          text-decoration:none; color:inherit;
           min-width:0;
         }
-        .brand img{ width:26px; height:26px; object-fit:contain; display:block; }
-        .brandText{ display:flex; flex-direction:column; line-height:1.05; min-width:0; }
-        .brandText strong{ letter-spacing:.6px; font-size:14px; font-weight:900; }
-        .brandText span{
-          font-size:12px; color:var(--muted);
-          white-space:nowrap; overflow:hidden; text-overflow:ellipsis;
-          max-width: 44vw;
+        .admBrand img{ width:26px; height:26px; object-fit:contain; display:block; }
+        .admBrandText{ display:flex; flex-direction:column; line-height:1.05; min-width:0; }
+        .admBrandText strong{ font-size:14px; font-weight:900; letter-spacing:.6px; }
+        .admBrandText span{ font-size:12px; color:var(--muted); white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+
+        /* IMPORTANTE: no mobile NÃO repetir título (deixa só ENDURE) */
+        @media (max-width:720px){
+          .admHamb{ display:inline-flex; }
+          .admBrandText span{ display:none; }
         }
 
-        /* layout desktop */
-        .page{
-          max-width: var(--maxW);
-          margin: 0 auto;
-          padding: 16px 14px 22px;
+        /* desktop layout */
+        .admGrid{
+          width:100%;
           display:grid;
           grid-template-columns: var(--sidebarW) 1fr;
           gap: 16px;
+          padding: 16px 14px 18px;
         }
-        .sidebar{
-          background: var(--card);
-          border: 1px solid var(--border);
+        .admSide{
+          background:var(--card);
+          border:1px solid var(--border);
           border-radius: var(--radius);
           box-shadow: var(--shadow);
           padding: 12px;
           height: fit-content;
           position: sticky;
           top: 86px;
+          align-self:start;
         }
-        .main{ min-width:0; }
+        .admMain{ min-width:0; }
 
-        /* nav cards */
+        /* menu cards (desktop) */
         .navTitle{ font-size:12px; color:var(--muted); padding: 8px 10px 6px; }
-        .navList{ display:grid; gap:10px; }
+        .navList{ display:flex; flex-direction:column; gap:10px; }
         .navItem{
-          text-decoration:none; color:var(--text);
           border:1px solid var(--border);
           background:#fff;
           border-radius:14px;
           padding: 12px 12px;
           font-weight:700;
-          display:flex; align-items:center; justify-content:space-between;
           min-height:44px;
+          display:flex; align-items:center; justify-content:space-between;
         }
-        .navItem:hover{ background:#f9fafb; }
         .chev{ color:#9ca3af; font-size:18px; }
 
-        /* drawer mobile */
+        /* mobile: sem sidebar fixa */
+        @media (max-width:720px){
+          .admGrid{ grid-template-columns:1fr; padding: 12px 12px 18px; }
+          .admSide{ display:none; }
+        }
+
+        /* drawer mobile (NÃO usar grid para o menu -> evita "quadrados gigantes") */
         .overlay{
           position:fixed; inset:0; z-index:60;
           background: rgba(17,24,39,.45);
@@ -136,32 +145,33 @@ export default function AdminShell({ children }: { children: React.ReactNode }) 
           transform: translateX(-105%);
           transition: transform .22s ease;
           padding: 12px;
-          display:grid;
-          grid-template-rows: auto 1fr;
+          display:flex;
+          flex-direction:column;
           gap: 10px;
         }
         .drawerTop{
           display:flex; align-items:center; justify-content:space-between;
-          gap: 10px; padding: 2px 2px 6px;
+          gap:10px; padding: 2px 2px 6px;
         }
         .drawerTitle{ display:flex; align-items:center; gap:10px; font-weight:900; }
         .close{
           width:44px; height:44px;
           border-radius:14px;
-          border: 1px solid var(--border);
+          border:1px solid var(--border);
           background:#fff;
-          font-size: 18px;
           display:inline-flex; align-items:center; justify-content:center;
+          font-size:18px;
         }
+        .drawerNav{ display:flex; flex-direction:column; gap:10px; }
 
         /* footer */
         .footer{
-          border-top: 1px solid var(--border);
+          margin-top:auto;
+          border-top:1px solid var(--border);
           background: rgba(255,255,255,.9);
         }
         .footerInner{
-          max-width: var(--maxW);
-          margin: 0 auto;
+          width:100%;
           padding: 14px 14px;
           display:flex;
           gap: 12px;
@@ -172,26 +182,20 @@ export default function AdminShell({ children }: { children: React.ReactNode }) 
         .footLeft{ display:flex; align-items:center; gap:10px; color:var(--muted); font-size:12px; }
         .footLeft img{ width:18px; height:18px; object-fit:contain; }
         .footRight{ color:var(--muted); font-size:12px; }
-
-        @media (max-width: 720px){
-          .hamb{ display:inline-flex; }
-          .page{ grid-template-columns: 1fr; padding: 12px 12px 18px; }
-          .sidebar{ display:none; }
-        }
       `}</style>
 
-      <div className="topbar">
-        <div className="topbarInner">
-          <div className="leftCluster">
-            <button className="hamb" type="button" aria-label="Abrir menu" onClick={() => setOpen(true)}>
+      <header className="admTop">
+        <div className="admTopInner">
+          <div className="admLeft">
+            <button className="admHamb" type="button" aria-label="Abrir menu" onClick={() => setOpen(true)}>
               <svg viewBox="0 0 24 24" fill="none" aria-hidden="true">
                 <path d="M4 7h16M4 12h16M4 17h16" stroke="currentColor" strokeWidth="2" strokeLinecap="round"/>
               </svg>
             </button>
 
-            <a href="/admin/dashboard" className="brand">
+            <a href="/admin/dashboard" className="admBrand">
               <img src="/endure_logo.png" alt="ENDURE" />
-              <div className="brandText">
+              <div className="admBrandText">
                 <strong>ENDURE</strong>
                 <span>{title}</span>
               </div>
@@ -200,7 +204,7 @@ export default function AdminShell({ children }: { children: React.ReactNode }) 
 
           <RoleSwitcher />
         </div>
-      </div>
+      </header>
 
       {/* Drawer mobile */}
       <div className="overlay" style={{ display: open ? "block" : "none" }} onClick={() => setOpen(false)} />
@@ -213,7 +217,7 @@ export default function AdminShell({ children }: { children: React.ReactNode }) 
           <button className="close" type="button" aria-label="Fechar" onClick={() => setOpen(false)}>✕</button>
         </div>
 
-        <nav className="navList">
+        <nav className="drawerNav">
           {items.map((it) => (
             <a key={it.href} href={it.href} className="navItem" onClick={() => setOpen(false)}>
               <span>{it.label}</span><span className="chev">›</span>
@@ -222,19 +226,21 @@ export default function AdminShell({ children }: { children: React.ReactNode }) 
         </nav>
       </aside>
 
-      <div className="page">
-        <aside className="sidebar" aria-label="Menu">
-          <div className="navTitle">Menu</div>
-          <nav className="navList">
-            {items.map((it) => (
-              <a key={it.href} href={it.href} className="navItem">
-                <span>{it.label}</span><span className="chev">›</span>
-              </a>
-            ))}
-          </nav>
-        </aside>
+      <div className="admContent">
+        <div className="admGrid">
+          <aside className="admSide" aria-label="Menu">
+            <div className="navTitle">Menu</div>
+            <nav className="navList">
+              {items.map((it) => (
+                <a key={it.href} href={it.href} className="navItem">
+                  <span>{it.label}</span><span className="chev">›</span>
+                </a>
+              ))}
+            </nav>
+          </aside>
 
-        <main className="main">{children}</main>
+          <main className="admMain">{children}</main>
+        </div>
       </div>
 
       <footer className="footer">
