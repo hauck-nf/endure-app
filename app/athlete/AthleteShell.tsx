@@ -64,8 +64,7 @@ export default function AthleteShell({ children }: { children: React.ReactNode }
           grid-template-columns: var(--sidebarW) 1fr;
           gap:16px;
           padding:16px;
-          max-width:1200px;
-          margin:0 auto;
+          
         }
         .athSidebar{
           border:1px solid var(--border);
