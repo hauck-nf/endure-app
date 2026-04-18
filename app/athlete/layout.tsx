@@ -1,7 +1,5 @@
-﻿import { requireAthlete } from "@/src/lib/requireAthlete";
-import AthleteShell from "./AthleteShell";
+﻿import AthleteShell from "./AthleteShell";
 
-export default async function AthleteLayout({ children }: { children: React.ReactNode }) {
-  await requireAthlete();
+export default function AthleteLayout({ children }: { children: React.ReactNode }) {
   return <AthleteShell>{children}</AthleteShell>;
 }
