@@ -53,10 +53,10 @@ export default function ProfileSwitcher() {
   }, [actualRole]);
 
   function onChange(next: string) {
-    if (next === "admin") router.push("/admin/dashboard");
-    else router.push("/athlete/pending");
-    router.refresh();
-  }
+  // hard redirect = mais confiável em mobile/produção
+  if (next === "admin") window.location.assign("/admin/dashboard");
+  else window.location.assign("/athlete/pending");
+}
 
   return (
     <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
