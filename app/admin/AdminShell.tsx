@@ -4,15 +4,17 @@ import { useEffect, useState } from "react";
 import RoleSwitcher from "@/app/_components/RoleSwitcher";
 
 const linkStyle: React.CSSProperties = {
-  display: "block",
-  padding: "10px 12px",
-  borderRadius: 12,
+  display: "flex",
+  alignItems: "center",
+  justifyContent: "space-between",
+  padding: "12px 12px",
+  borderRadius: 14,
   border: "1px solid #e5e7eb",
   background: "#fff",
   textDecoration: "none",
   color: "#111827",
-  fontWeight: 650,
-  fontSize: 13,
+  fontWeight: 700,
+  fontSize: 15,
 };
 
 export default function AdminShell({ children }: { children: React.ReactNode }) {
@@ -26,7 +28,7 @@ export default function AdminShell({ children }: { children: React.ReactNode }) 
   }, []);
 
   const Menu = () => (
-    <nav style={{ display: "grid", gap: 10 }}>
+    $16 }}>
       <a href="/admin/dashboard" style={linkStyle}>Dashboard</a>
       <a href="/admin/athletes" style={linkStyle}>Meus atletas</a>
       <a href="/admin/assign/evaluation" style={linkStyle}>Designar avaliação</a>
