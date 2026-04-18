@@ -97,6 +97,14 @@ export default function AdminShell({ children }: { children: React.ReactNode }) 
 
         /* Mobile: hide sidebar, show hamburger */
         @media (max-width: 899px){
+          /* admNavCards-mobile-compact */
+          .admNavCards{ gap: 6px; }
+          .admNavCards a{
+            padding: 10px 12px;
+            font-size: 14px;
+            border-radius: 14px;
+          }
+          .admNavCards a span:last-child{ font-size: 16px; }
           .admGrid{ grid-template-columns: 1fr; }
           .admSide{ display:none; }
           .admMain{ padding: 12px; }
