@@ -23,6 +23,16 @@ export default function AdminShell({ children }: { children: React.ReactNode }) 
           --radius:14px; --sidebarW:260px; --drawerW:280px;
         }
         .admWrap{ min-height:100vh; background:var(--bg); color:var(--text); }
+        /* adm-link-reset: prevent purple/underline defaults */
+        .admWrap a,
+        .admWrap a:visited{
+          color: var(--text);
+          text-decoration: none;
+        }
+        .admWrap a:hover{
+          text-decoration: none;
+        }
+
 
         /* Top bar */
         .admTop{
