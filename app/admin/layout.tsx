@@ -1,5 +1,4 @@
 ﻿import RoleSwitcher from "@/app/_components/RoleSwitcher";
-import AdminProfileSwitcher from "@/src/components/AdminProfileSwitcher";
 
 const linkStyle: React.CSSProperties = {
   display: "block",
@@ -62,14 +61,8 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
             <a href="/admin/dashboard" style={linkStyle}>Dashboard</a>
             <a href="/admin/athletes" style={linkStyle}>Meus atletas</a>
             <a href="/admin/assign/evaluation" style={linkStyle}>Designar avaliação</a>
-
-            {/* Se você tiver essa rota ainda, pode manter; se não tiver, pode apagar */}
             <a href="/admin/requests" style={linkStyle}>Designações (antiga)</a>
           </nav>
-
-          <div style={{ marginTop: 14, fontSize: 12, color: "#9ca3af" }}>
-            Visual premium/minimalista
-          </div>
         </aside>
 
         {/* Content */}

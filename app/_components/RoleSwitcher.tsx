@@ -1,82 +1,72 @@
 ﻿"use client";
 
-import { useEffect, useState } from "react";
-import { useRouter } from "next/navigation";
-import { supabaseBrowser } from "@/src/lib/supabaseBrowser";
+import { useEffect, useMemo, useState } from "react";
+import { usePathname, useRouter } from "next/navigation";
 
-type ProfileRow = {
-  roles: string[] | null;
-  active_role: string | null;
-};
+type Role = "admin" | "athlete" | "coach";
 
-function routeFor(role: string) {
+function roleFromPath(pathname: string | null): Role {
+  const p = pathname ?? "";
+  if (p.startsWith("/admin")) return "admin";
+  if (p.startsWith("/coach")) return "coach";
+  return "athlete";
+}
+
+function targetPathForRole(role: Role): string {
   if (role === "admin") return "/admin/dashboard";
-  if (role === "coach") return "/coach/dashboard";
-  return "/athlete";
+  if (role === "coach") return "/coach";
+  return "/athlete/pending";
 }
 
 export default function RoleSwitcher() {
   const router = useRouter();
-  const [roles, setRoles] = useState<string[]>([]);
-  const [activeRole, setActiveRole] = useState<string>("");
-  const [msg, setMsg] = useState("");
+  const pathname = usePathname();
 
+  const roleByRoute = useMemo(() => roleFromPath(pathname), [pathname]);
+  const [value, setValue] = useState<Role>(roleByRoute);
+
+  // Sempre que a rota mudar, o seletor acompanha (evita ficar “preso” em athlete)
   useEffect(() => {
-    (async () => {
-      const { data: auth } = await supabaseBrowser.auth.getUser();
-      const userId = auth.user?.id;
-      if (!userId) return;
+    setValue(roleByRoute);
+    try {
+      localStorage.setItem("endure_role_view", roleByRoute);
+    } catch {}
+  }, [roleByRoute]);
 
-      const { data, error } = await supabaseBrowser
-        .from("profiles")
-        .select("roles, active_role")
-        .eq("user_id", userId)
-        .single<ProfileRow>();
+  async function onChange(next: Role) {
+    setValue(next);
+    try {
+      localStorage.setItem("endure_role_view", next);
+    } catch {}
 
-      if (error) {
-        setMsg(error.message);
-        return;
-      }
+    const dest = targetPathForRole(next);
 
-      const r = data?.roles ?? [];
-      const a = data?.active_role ?? (r[0] ?? "");
-
-      setRoles(r);
-      setActiveRole(a);
-    })();
-  }, []);
-
-  async function onChange(newRole: string) {
-    setMsg("");
-    setActiveRole(newRole);
-
-    const { error } = await supabaseBrowser.rpc("set_active_role", { p_role: newRole });
-    if (error) {
-      setMsg(error.message);
-      return;
-    }
-
-    router.push(routeFor(newRole));
+    // navega e força refresh (importante no mobile)
+    router.push(dest);
     router.refresh();
   }
 
-  if (!roles || roles.length <= 1) return null;
-
   return (
-    <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-      <span style={{ fontSize: 12, opacity: 0.75 }}>Perfil:</span>
+    <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+      <div style={{ fontSize: 12, color: "#6b7280" }}>Perfil:</div>
+
       <select
-        value={activeRole}
-        onChange={(e) => onChange(e.target.value)}
-        style={{ padding: "6px 10px", borderRadius: 10 }}
+        value={value}
+        onChange={(e) => onChange(e.target.value as Role)}
+        style={{
+          padding: "10px 12px",
+          borderRadius: 12,
+          border: "1px solid #e5e7eb",
+          background: "#fff",
+          fontWeight: 700,
+          fontSize: 14,
+          outline: "none",
+        }}
       >
-        {roles.map((r) => (
-          <option key={r} value={r}>
-            {r}
-          </option>
-        ))}
+        <option value="athlete">athlete</option>
+        <option value="admin">admin</option>
+        <option value="coach">coach</option>
       </select>
-      {msg ? <span style={{ fontSize: 12, opacity: 0.85 }}>{msg}</span> : null}
     </div>
   );
 }
