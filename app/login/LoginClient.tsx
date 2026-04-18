@@ -21,7 +21,6 @@ export default function LoginClient() {
     setMsg("");
     setLoading(true);
 
-    // 1) Login no server para gravar cookies SSR
     const res = await fetch("/api/auth/login", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
@@ -35,7 +34,6 @@ export default function LoginClient() {
       return;
     }
 
-    // 2) Sincroniza cookies -> localStorage (client)
     const sessRes = await fetch("/api/auth/session");
     const sessJson: any = await sessRes.json().catch(() => ({}));
     if (!sessRes.ok || !sessJson?.ok) {
@@ -49,7 +47,6 @@ export default function LoginClient() {
       refresh_token: sessJson.refresh_token,
     });
 
-    // 3) Redireciona
     if (nextUrl && nextUrl.startsWith("/")) {
       setLoading(false);
       router.push(nextUrl);
@@ -104,49 +101,101 @@ export default function LoginClient() {
   }
 
   return (
-    <div style={{ padding: 24, maxWidth: 460 }}>
-      <h1 style={{ fontSize: 22, fontWeight: 800, marginBottom: 12 }}>Login</h1>
+    <div style={{ minHeight: "100vh", display: "grid", placeItems: "center", padding: 16, background: "#f9fafb" }}>
+      <div style={{ width: "100%", maxWidth: 420, background: "#fff", border: "1px solid #e5e7eb", borderRadius: 16, boxShadow: "0 14px 40px rgba(17,24,39,.08)", overflow: "hidden" }}>
+        <div style={{ padding: 16, borderBottom: "1px solid #e5e7eb", display: "flex", gap: 10, alignItems: "center" }}>
+          <img src="/endure_logo.png" alt="ENDURE" style={{ width: 26, height: 26, objectFit: "contain" }} />
+          <div style={{ display: "grid", lineHeight: 1.1 }}>
+            <div style={{ fontWeight: 800, letterSpacing: 0.4 }}>ENDURE</div>
+            <div style={{ fontSize: 12, color: "#6b7280" }}>Acesso à plataforma</div>
+          </div>
+        </div>
 
-      <div style={{ display: "flex", gap: 8, marginBottom: 12 }}>
-        <button
-          onClick={() => { setMode("login"); setMsg(""); }}
-          style={{ padding: "8px 10px", borderRadius: 10, fontWeight: 700, opacity: mode === "login" ? 1 : 0.6 }}
-          type="button"
-        >
-          Entrar
-        </button>
-        <button
-          onClick={() => { setMode("reset"); setMsg(""); }}
-          style={{ padding: "8px 10px", borderRadius: 10, fontWeight: 700, opacity: mode === "reset" ? 1 : 0.6 }}
-          type="button"
-        >
-          Esqueci minha senha
-        </button>
+        <div style={{ padding: 16, display: "grid", gap: 12 }}>
+          <div style={{ display: "flex", gap: 8 }}>
+            <button
+              onClick={() => { setMode("login"); setMsg(""); }}
+              type="button"
+              style={{
+                flex: 1,
+                height: 42,
+                borderRadius: 12,
+                border: "1px solid #e5e7eb",
+                background: mode === "login" ? "#111827" : "#fff",
+                color: mode === "login" ? "#fff" : "#111827",
+                fontWeight: 800
+              }}
+            >
+              Entrar
+            </button>
+            <button
+              onClick={() => { setMode("reset"); setMsg(""); }}
+              type="button"
+              style={{
+                flex: 1,
+                height: 42,
+                borderRadius: 12,
+                border: "1px solid #e5e7eb",
+                background: mode === "reset" ? "#111827" : "#fff",
+                color: mode === "reset" ? "#fff" : "#111827",
+                fontWeight: 800
+              }}
+            >
+              Redefinir senha
+            </button>
+          </div>
+
+          <form onSubmit={mode === "login" ? onLogin : onReset} style={{ display: "grid", gap: 10 }}>
+            <label style={{ display: "grid", gap: 6 }}>
+              <div style={{ fontSize: 12, color: "#6b7280" }}>Email</div>
+              <input
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+                autoComplete="email"
+                style={{ height: 44, padding: "0 12px", borderRadius: 12, border: "1px solid #e5e7eb", outline: "none" }}
+              />
+            </label>
+
+            {mode === "login" ? (
+              <label style={{ display: "grid", gap: 6 }}>
+                <div style={{ fontSize: 12, color: "#6b7280" }}>Senha</div>
+                <input
+                  type="password"
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                  autoComplete="current-password"
+                  style={{ height: 44, padding: "0 12px", borderRadius: 12, border: "1px solid #e5e7eb", outline: "none" }}
+                />
+              </label>
+            ) : null}
+
+            <button
+              disabled={loading}
+              style={{
+                height: 44,
+                borderRadius: 12,
+                border: "1px solid #111827",
+                background: "#111827",
+                color: "#fff",
+                fontWeight: 900
+              }}
+              type="submit"
+            >
+              {loading ? "Processando..." : mode === "login" ? "Entrar" : "Enviar link"}
+            </button>
+
+            {msg ? (
+              <pre style={{ whiteSpace: "pre-wrap", fontSize: 12, color: "#fff", background: "#111", padding: 12, borderRadius: 12, border: "1px solid #222" }}>
+                {msg}
+              </pre>
+            ) : null}
+          </form>
+
+          <div style={{ fontSize: 12, color: "#6b7280" }}>
+            Dica: se você abriu um link de avaliação, faça login e volte automaticamente.
+          </div>
+        </div>
       </div>
-
-      <form onSubmit={mode === "login" ? onLogin : onReset} style={{ display: "grid", gap: 10 }}>
-        <label style={{ display: "grid", gap: 6 }}>
-          <div style={{ fontSize: 12, opacity: 0.8 }}>Email</div>
-          <input value={email} onChange={(e) => setEmail(e.target.value)} style={{ padding: 10, borderRadius: 10 }} />
-        </label>
-
-        {mode === "login" ? (
-          <label style={{ display: "grid", gap: 6 }}>
-            <div style={{ fontSize: 12, opacity: 0.8 }}>Senha</div>
-            <input type="password" value={password} onChange={(e) => setPassword(e.target.value)} style={{ padding: 10, borderRadius: 10 }} />
-          </label>
-        ) : null}
-
-        <button disabled={loading} style={{ padding: 10, borderRadius: 10, fontWeight: 800 }} type="submit">
-          {loading ? "Processando..." : mode === "login" ? "Entrar" : "Enviar link de redefinição"}
-        </button>
-
-        {msg ? (
-          <pre style={{ whiteSpace: "pre-wrap", fontSize: 13, color: "#fff", background: "#111", padding: 12, borderRadius: 10, border: "1px solid #222" }}>
-            {msg}
-          </pre>
-        ) : null}
-      </form>
     </div>
   );
 }
