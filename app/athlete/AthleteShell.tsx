@@ -54,7 +54,7 @@ export default function AthleteShell({ children }: { children: React.ReactNode }
         .athLogo img{ width:22px; height:22px; object-fit:contain; display:block; }
         .athTitle{ display:flex; flex-direction:column; line-height:1.05; min-width:0; }
         .athTitle b{ font-size:14px; letter-spacing:.6px; font-weight:800; }
-        .athTitle span{ font-size:12px; color:var(--muted); white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+        .athTitle span{ display:none; }
         .athRight{ display:flex; align-items:center; justify-content:flex-end; gap:10px; }
 
         /* Layout */
