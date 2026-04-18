@@ -185,7 +185,7 @@ export default function AdminShell({ children }: { children: React.ReactNode }) 
         </div>
         <nav className="admNavList">
           {items.map((it) => (
-            <a key={it.href} href={it.href} onClick={() => setOpen(false)}>
+            <a key={it.href} href={it.href} className="admNavItem" onClick={() => setOpen(false)}>
               <span>{it.label}</span><span>›</span>
             </a>
           ))}
@@ -197,7 +197,7 @@ export default function AdminShell({ children }: { children: React.ReactNode }) 
           <div className="admNavTitle">Menu</div>
           <nav className="admNavList">
             {items.map((it) => (
-              <a key={it.href} href={it.href}>
+              <a key={it.href} href={it.href} className="admNavItem">
                 <span>{it.label}</span><span>›</span>
               </a>
             ))}
