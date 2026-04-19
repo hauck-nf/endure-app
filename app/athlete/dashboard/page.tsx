@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import { useEffect, useMemo, useState } from "react";
 import { supabase } from "../../../src/lib/supabaseClient";
 import { getMyAthleteId } from "../../../src/lib/athlete";
@@ -12,8 +13,16 @@ type Row = {
   scores_json: any;
 };
 
+type PendingRequest = {
+  request_id: string;
+  title: string | null;
+  status: string | null;
+  created_at: string | null;
+};
+
 export default function AthleteDashboard() {
   const [rows, setRows] = useState<Row[]>([]);
+  const [pendingRequests, setPendingRequests] = useState<PendingRequest[]>([]);
   const [err, setErr] = useState<string | null>(null);
   const [scale, setScale] = useState<string>("");
   const [loading, setLoading] = useState(true);
@@ -26,18 +35,29 @@ export default function AthleteDashboard() {
 
         const athleteId = await getMyAthleteId();
 
-        const { data, error } = await supabase
-          .from("assessments")
-          .select(
-            "assessment_id, submitted_at, raw_meta, assessment_scores(readiness_score, scores_json)"
-          )
-          .eq("athlete_id", athleteId)
-          .eq("status", "submitted")
-          .order("submitted_at", { ascending: true });
+        const [{ data: assessmentsData, error: assessmentsError }, { data: pendingData, error: pendingError }] =
+          await Promise.all([
+            supabase
+              .from("assessments")
+              .select(
+                "assessment_id, submitted_at, raw_meta, assessment_scores(readiness_score, scores_json)"
+              )
+              .eq("athlete_id", athleteId)
+              .eq("status", "submitted")
+              .order("submitted_at", { ascending: true }),
 
-        if (error) throw error;
+            supabase
+              .from("assessment_requests")
+              .select("request_id, title, status, created_at")
+              .eq("athlete_id", athleteId)
+              .in("status", ["pending", "in_progress"])
+              .order("created_at", { ascending: false }),
+          ]);
 
-        const out: Row[] = (data as any[]).map((r) => ({
+        if (assessmentsError) throw assessmentsError;
+        if (pendingError) throw pendingError;
+
+        const out: Row[] = (assessmentsData as any[]).map((r) => ({
           assessment_id: r.assessment_id,
           submitted_at: r.submitted_at,
           raw_meta: r.raw_meta,
@@ -46,6 +66,7 @@ export default function AthleteDashboard() {
         }));
 
         setRows(out);
+        setPendingRequests((pendingData as PendingRequest[]) ?? []);
 
         const first = out.find((x) => x.scores_json?.scales)?.scores_json?.scales;
         const firstScale = first ? Object.keys(first)[0] : "";
@@ -94,6 +115,9 @@ export default function AthleteDashboard() {
       ? new Date(last.submitted_at).toLocaleDateString("pt-BR")
       : null;
   }, [rows]);
+
+  const pendingCount = pendingRequests.length;
+  const latestPending = pendingRequests[0] ?? null;
 
   return (
     <div style={{ display: "grid", gap: 18 }}>
@@ -146,8 +170,8 @@ export default function AthleteDashboard() {
             fontSize: 15,
           }}
         >
-          Acompanhe sua prontidão mais recente e a evolução das escalas
-          disponíveis ao longo do tempo.
+          Acompanhe sua prontidão mais recente, visualize a evolução das escalas
+          e veja rapidamente se existe alguma avaliação pendente.
         </p>
       </section>
 
@@ -163,6 +187,118 @@ export default function AthleteDashboard() {
         >
           {err}
         </div>
+      )}
+
+      {loading ? null : pendingCount > 0 ? (
+        <section
+          style={{
+            background: "linear-gradient(180deg, #fff7ed 0%, #fffbeb 100%)",
+            border: "1px solid #fed7aa",
+            borderRadius: 24,
+            padding: 22,
+            boxShadow: "0 18px 48px rgba(15,23,42,.05)",
+            display: "flex",
+            justifyContent: "space-between",
+            gap: 18,
+            alignItems: "center",
+            flexWrap: "wrap",
+          }}
+        >
+          <div style={{ minWidth: 0 }}>
+            <div
+              style={{
+                display: "inline-flex",
+                alignItems: "center",
+                gap: 8,
+                border: "1px solid #fdba74",
+                background: "#fff",
+                color: "#9a3412",
+                borderRadius: 999,
+                padding: "6px 10px",
+                fontSize: 12,
+                fontWeight: 800,
+              }}
+            >
+              Atenção
+            </div>
+
+            <div
+              style={{
+                marginTop: 10,
+                fontSize: 22,
+                fontWeight: 900,
+                color: "#7c2d12",
+              }}
+            >
+              Você tem {pendingCount} {pendingCount > 1 ? "avaliações pendentes" : "avaliação pendente"}.
+            </div>
+
+            <div
+              style={{
+                marginTop: 8,
+                color: "#9a3412",
+                lineHeight: 1.7,
+                fontSize: 14,
+                maxWidth: 720,
+              }}
+            >
+              {latestPending?.title
+                ? `A mais recente é "${latestPending.title}".`
+                : "Há uma avaliação aguardando sua resposta."}{" "}
+              Acesse suas pendências para responder.
+            </div>
+          </div>
+
+          <Link
+            href="/athlete/pending"
+            style={{
+              height: 46,
+              padding: "0 18px",
+              borderRadius: 14,
+              border: "1px solid #9a3412",
+              background: "#9a3412",
+              color: "#fff",
+              display: "inline-flex",
+              alignItems: "center",
+              textDecoration: "none",
+              fontWeight: 800,
+              whiteSpace: "nowrap",
+            }}
+          >
+            Ver pendências
+          </Link>
+        </section>
+      ) : (
+        <section
+          style={{
+            background: "linear-gradient(180deg, #f0fdf4 0%, #f8fafc 100%)",
+            border: "1px solid #bbf7d0",
+            borderRadius: 24,
+            padding: 20,
+            boxShadow: "0 18px 48px rgba(15,23,42,.04)",
+          }}
+        >
+          <div
+            style={{
+              fontWeight: 800,
+              color: "#166534",
+              fontSize: 16,
+            }}
+          >
+            Nenhuma avaliação pendente no momento.
+          </div>
+          <div
+            style={{
+              marginTop: 6,
+              color: "#4b5563",
+              fontSize: 14,
+              lineHeight: 1.7,
+            }}
+          >
+            Quando uma nova solicitação for designada, ela aparecerá aqui e na
+            sua área de pendências.
+          </div>
+        </section>
       )}
 
       <section
