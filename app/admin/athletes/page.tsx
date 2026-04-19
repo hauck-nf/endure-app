@@ -17,10 +17,9 @@ function actionLinkStyle(primary = false): React.CSSProperties {
     display: "inline-flex",
     alignItems: "center",
     justifyContent: "center",
-    minHeight: 36,
-    minWidth: 108,
+    minHeight: 34,
     padding: "0 12px",
-    borderRadius: 12,
+    borderRadius: 999,
     border: primary ? "1px solid #0f172a" : "1px solid #d1d5db",
     background: primary ? "#0f172a" : "#ffffff",
     color: primary ? "#ffffff" : "#0f172a",
@@ -206,7 +205,7 @@ export default async function AdminAthletesPage() {
                   style={{
                     display: "grid",
                     gap: 12,
-                    padding: "16px 18px",
+                    padding: "14px 18px",
                     borderTop: index === 0 ? "none" : "1px solid #f1f5f9",
                     background: "#ffffff",
                   }}
@@ -214,7 +213,7 @@ export default async function AdminAthletesPage() {
                   <div
                     style={{
                       display: "grid",
-                      gap: 4,
+                      gap: 2,
                     }}
                   >
                     <div
@@ -246,6 +245,7 @@ export default async function AdminAthletesPage() {
                       display: "flex",
                       flexWrap: "wrap",
                       gap: 8,
+                      alignItems: "center",
                     }}
                   >
                     <Link
@@ -323,7 +323,6 @@ export default async function AdminAthletesPage() {
 
           .athlete-actions {
             justify-content: flex-end;
-            align-items: center;
           }
         }
       `}</style>
