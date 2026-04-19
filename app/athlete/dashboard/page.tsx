@@ -1,4 +1,4 @@
-﻿"use client";
+"use client";
 
 import { useEffect, useMemo, useState } from "react";
 import { supabase } from "../../../src/lib/supabaseClient";
@@ -96,25 +96,58 @@ export default function AthleteDashboard() {
   }, [rows]);
 
   return (
-    <div style={{ display: "grid", gap: 16 }}>
+    <div style={{ display: "grid", gap: 18 }}>
       <section
         style={{
-          background: "#fff",
+          background:
+            "linear-gradient(180deg, rgba(255,255,255,1) 0%, rgba(248,250,252,1) 100%)",
           border: "1px solid #e5e7eb",
-          borderRadius: 20,
-          padding: 20,
-          boxShadow: "0 14px 40px rgba(17,24,39,.06)",
+          borderRadius: 24,
+          padding: 24,
+          boxShadow: "0 18px 48px rgba(15,23,42,.06)",
         }}
       >
-        <div style={{ fontSize: 13, color: "#6b7280", fontWeight: 700 }}>
+        <div
+          style={{
+            display: "inline-flex",
+            alignItems: "center",
+            gap: 8,
+            border: "1px solid #dbeafe",
+            background: "#eff6ff",
+            color: "#1d4ed8",
+            borderRadius: 999,
+            padding: "8px 12px",
+            fontSize: 12,
+            fontWeight: 800,
+            letterSpacing: 0.3,
+          }}
+        >
           Área do atleta
         </div>
-        <h1 style={{ margin: "8px 0 8px", fontSize: 30 }}>
+
+        <h1
+          style={{
+            margin: "14px 0 10px",
+            fontSize: 34,
+            lineHeight: 1.1,
+            letterSpacing: -0.8,
+            color: "#0f172a",
+          }}
+        >
           Dashboard socioemocional
         </h1>
-        <p style={{ margin: 0, color: "#6b7280", lineHeight: 1.7 }}>
-          Acompanhe sua prontidão mais recente e a evolução dos percentis nas
-          escalas disponíveis.
+
+        <p
+          style={{
+            margin: 0,
+            color: "#64748b",
+            lineHeight: 1.75,
+            maxWidth: 760,
+            fontSize: 15,
+          }}
+        >
+          Acompanhe sua prontidão mais recente e a evolução das escalas
+          disponíveis ao longo do tempo.
         </p>
       </section>
 
@@ -160,11 +193,11 @@ export default function AthleteDashboard() {
         style={{
           background: "#fff",
           border: "1px solid #e5e7eb",
-          borderRadius: 20,
-          padding: 20,
-          boxShadow: "0 14px 40px rgba(17,24,39,.06)",
+          borderRadius: 24,
+          padding: 22,
+          boxShadow: "0 18px 48px rgba(15,23,42,.06)",
           display: "grid",
-          gap: 16,
+          gap: 18,
         }}
       >
         <div
@@ -177,17 +210,35 @@ export default function AthleteDashboard() {
           }}
         >
           <div>
-            <div style={{ fontWeight: 900, fontSize: 20 }}>
+            <div
+              style={{
+                fontWeight: 900,
+                fontSize: 22,
+                color: "#0f172a",
+              }}
+            >
               Evolução por escala
             </div>
-            <div style={{ marginTop: 4, color: "#6b7280", fontSize: 14 }}>
+            <div
+              style={{
+                marginTop: 4,
+                color: "#64748b",
+                fontSize: 14,
+              }}
+            >
               Selecione uma escala para visualizar a série temporal dos percentis.
             </div>
           </div>
 
           <div style={{ minWidth: 260 }}>
             <label style={{ display: "grid", gap: 6 }}>
-              <span style={{ fontSize: 13, color: "#6b7280", fontWeight: 700 }}>
+              <span
+                style={{
+                  fontSize: 13,
+                  color: "#64748b",
+                  fontWeight: 700,
+                }}
+              >
                 Escala
               </span>
               <select
@@ -200,6 +251,7 @@ export default function AthleteDashboard() {
                   borderRadius: 14,
                   border: "1px solid #d1d5db",
                   background: "#fff",
+                  color: "#0f172a",
                 }}
                 disabled={availableScales.length === 0}
               >
@@ -227,18 +279,21 @@ export default function AthleteDashboard() {
           <div
             style={{
               border: "1px solid #e5e7eb",
-              borderRadius: 18,
+              borderRadius: 20,
               overflow: "hidden",
+              background: "#fff",
             }}
           >
             <div
               style={{
                 padding: 14,
                 borderBottom: "1px solid #e5e7eb",
-                background: "#f9fafb",
+                background: "#f8fafc",
+                fontWeight: 800,
+                color: "#0f172a",
               }}
             >
-              <strong>{scale}</strong>
+              {scale}
             </div>
 
             <PercentileChart
@@ -268,16 +323,36 @@ function StatCard({
   return (
     <div
       style={{
-        background: "#fff",
+        background:
+          "linear-gradient(180deg, rgba(255,255,255,1) 0%, rgba(250,250,252,1) 100%)",
         border: "1px solid #e5e7eb",
-        borderRadius: 18,
+        borderRadius: 22,
         padding: 20,
-        boxShadow: "0 14px 40px rgba(17,24,39,.06)",
+        boxShadow: "0 18px 48px rgba(15,23,42,.06)",
       }}
     >
-      <div style={{ color: "#6b7280", fontSize: 14 }}>{label}</div>
-      <div style={{ fontSize: 32, fontWeight: 900, marginTop: 8 }}>{value}</div>
-      <div style={{ marginTop: 8, color: "#6b7280", fontSize: 13 }}>{helper}</div>
+      <div style={{ color: "#64748b", fontSize: 14 }}>{label}</div>
+      <div
+        style={{
+          fontSize: 34,
+          fontWeight: 900,
+          marginTop: 10,
+          color: "#0f172a",
+          lineHeight: 1,
+        }}
+      >
+        {value}
+      </div>
+      <div
+        style={{
+          marginTop: 10,
+          color: "#64748b",
+          fontSize: 13,
+          lineHeight: 1.6,
+        }}
+      >
+        {helper}
+      </div>
     </div>
   );
 }
@@ -289,7 +364,7 @@ function EmptyBox({ text }: { text: string }) {
         border: "1px dashed #d1d5db",
         borderRadius: 18,
         padding: 24,
-        color: "#6b7280",
+        color: "#64748b",
         background: "#fcfcfd",
       }}
     >
@@ -342,9 +417,9 @@ function PercentileChart({ points }: { points: { label: string; y: number }[] })
         <line x1={padL} y1={padT} x2={padL} y2={H - padB} stroke="#9ca3af" strokeWidth="1" />
         <line x1={padL} y1={H - padB} x2={W - padR} y2={H - padB} stroke="#9ca3af" strokeWidth="1" />
 
-        <path d={path} fill="none" stroke="#111827" strokeWidth="2.4" />
+        <path d={path} fill="none" stroke="#0f172a" strokeWidth="2.4" />
         {xs.map((x, i) => (
-          <circle key={i} cx={x} cy={ys[i]} r="4" fill="#111827" />
+          <circle key={i} cx={x} cy={ys[i]} r="4" fill="#0f172a" />
         ))}
 
         {points.map((p, i) => {
@@ -361,7 +436,7 @@ function PercentileChart({ points }: { points: { label: string; y: number }[] })
         </text>
       </svg>
 
-      <div style={{ marginTop: 10, color: "#6b7280" }}>
+      <div style={{ marginTop: 10, color: "#64748b" }}>
         Último percentil: <b>{points[points.length - 1].y.toFixed(1)}</b>
       </div>
     </div>
