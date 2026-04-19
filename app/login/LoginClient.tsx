@@ -1,4 +1,4 @@
-"use client";
+﻿"use client";
 
 import { useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
@@ -41,7 +41,6 @@ export default function LoginClient() {
 
     const sessRes = await fetch("/api/auth/session");
     const sessJson: any = await sessRes.json().catch(() => ({}));
-
     if (!sessRes.ok || !sessJson?.ok) {
       setLoading(false);
       setMsgTone("error");
@@ -70,7 +69,7 @@ export default function LoginClient() {
 
     if (!userId) {
       setLoading(false);
-      router.push("/athlete/pending");
+      router.push("/athlete/dashboard");
       router.refresh();
       return;
     }
@@ -88,7 +87,7 @@ export default function LoginClient() {
     if (role === "admin") {
       router.push("/admin/dashboard");
     } else {
-      router.push("/athlete/pending");
+      router.push("/athlete/dashboard");
     }
 
     router.refresh();
@@ -121,9 +120,9 @@ export default function LoginClient() {
   const messageStyle =
     msgTone === "error"
       ? {
-          background: "#fff1f2",
-          border: "1px solid #fecdd3",
-          color: "#be123c",
+          background: "#fef2f2",
+          border: "1px solid #fecaca",
+          color: "#b91c1c",
         }
       : msgTone === "success"
       ? {
@@ -132,7 +131,7 @@ export default function LoginClient() {
           color: "#166534",
         }
       : {
-          background: "#f8fafc",
+          background: "#f9fafb",
           border: "1px solid #e5e7eb",
           color: "#374151",
         };
@@ -142,8 +141,8 @@ export default function LoginClient() {
       style={{
         minHeight: "100vh",
         background:
-          "radial-gradient(circle at top left, rgba(59,130,246,.10), transparent 28%), radial-gradient(circle at bottom right, rgba(15,23,42,.08), transparent 28%), linear-gradient(180deg, #f8fafc 0%, #eef2ff 48%, #f8fafc 100%)",
-        padding: "24px 20px",
+          "linear-gradient(180deg, #f8fafc 0%, #eef2ff 45%, #f8fafc 100%)",
+        padding: 20,
         display: "grid",
         placeItems: "center",
       }}
@@ -151,21 +150,19 @@ export default function LoginClient() {
       <div
         style={{
           width: "100%",
-          maxWidth: 1200,
+          maxWidth: 1120,
           display: "grid",
-          gridTemplateColumns: "1.08fr .92fr",
-          gap: 28,
+          gridTemplateColumns: "1.05fr .95fr",
+          gap: 24,
           alignItems: "stretch",
         }}
       >
         <section
           style={{
-            position: "relative",
-            padding: "16px 8px 16px 4px",
+            padding: 12,
             display: "flex",
             flexDirection: "column",
             justifyContent: "center",
-            minWidth: 0,
           }}
         >
           <div
@@ -173,62 +170,30 @@ export default function LoginClient() {
               display: "inline-flex",
               alignItems: "center",
               gap: 8,
-              border: "1px solid rgba(59,130,246,.18)",
-              background: "rgba(239,246,255,.85)",
+              border: "1px solid #dbeafe",
+              background: "#eff6ff",
               color: "#1d4ed8",
               borderRadius: 999,
-              padding: "9px 14px",
-              fontSize: 12,
-              fontWeight: 800,
-              letterSpacing: 0.3,
+              padding: "8px 12px",
+              fontSize: 13,
+              fontWeight: 700,
               width: "fit-content",
-              boxShadow: "0 10px 24px rgba(29,78,216,.06)",
-              backdropFilter: "blur(6px)",
             }}
           >
-            Plataforma de avaliação socioemocional em atletas
+            Plataforma segura e organizada
           </div>
 
-          <div
-            style={{
-              display: "flex",
-              alignItems: "center",
-              gap: 14,
-              marginTop: 22,
-            }}
-          >
-            <div
-              style={{
-                width: 54,
-                height: 54,
-                borderRadius: 18,
-                background:
-                  "linear-gradient(180deg, rgba(255,255,255,.96) 0%, rgba(241,245,249,.96) 100%)",
-                border: "1px solid rgba(229,231,235,.9)",
-                boxShadow: "0 16px 40px rgba(15,23,42,.08)",
-                display: "grid",
-                placeItems: "center",
-              }}
-            >
-              <img
-                src="/endure_logo.png"
-                alt="ENDURE"
-                style={{ width: 30, height: 30, objectFit: "contain" }}
-              />
-            </div>
-
+          <div style={{ display: "flex", alignItems: "center", gap: 12, marginTop: 20 }}>
+            <img
+              src="/endure_logo.png"
+              alt="ENDURE"
+              style={{ width: 42, height: 42, objectFit: "contain" }}
+            />
             <div>
-              <div
-                style={{
-                  fontWeight: 900,
-                  letterSpacing: 1,
-                  fontSize: 24,
-                  color: "#0f172a",
-                }}
-              >
+              <div style={{ fontWeight: 900, letterSpacing: 0.8, fontSize: 22 }}>
                 ENDURE
               </div>
-              <div style={{ color: "#64748b", fontSize: 14 }}>
+              <div style={{ color: "#6b7280", fontSize: 14 }}>
                 Avaliação socioemocional em atletas
               </div>
             </div>
@@ -236,94 +201,69 @@ export default function LoginClient() {
 
           <h1
             style={{
-              margin: "24px 0 14px",
-              fontSize: "clamp(2.25rem, 4.8vw, 4.35rem)",
-              lineHeight: 1.02,
-              letterSpacing: -1.8,
-              color: "#0f172a",
-              maxWidth: 760,
+              margin: "22px 0 12px",
+              fontSize: "clamp(2rem, 5vw, 3.5rem)",
+              lineHeight: 1.05,
+              letterSpacing: -1.2,
             }}
           >
-            Avaliação socioemocional com rigor científico e aplicação prática.
+            Acompanhe o seu desenvolvimento socioemocional.
           </h1>
 
           <p
             style={{
-              maxWidth: 700,
-              color: "#475569",
+              maxWidth: 620,
+              color: "#4b5563",
               fontSize: 18,
-              lineHeight: 1.8,
+              lineHeight: 1.7,
               margin: 0,
             }}
           >
-            A ENDURE reúne uma bateria de avaliação construída para investigar
-            dimensões psicológicas empiricamente relacionadas ao desempenho em
-            atletas, transformando avaliação em inteligência aplicada para
-            monitoramento, pesquisa e desenvolvimento humano no contexto
-            esportivo.
+            Realize autoavaliações e receba seus relatórios com métricas detalhadas. Acompanhe o seu histórico socioemocional
+            em um ambiente simples, confiável e feito para a rotina
+            do atleta e da equipe técnica.
           </p>
 
           <div
             style={{
               display: "grid",
               gridTemplateColumns: "repeat(3, minmax(0, 1fr))",
-              gap: 14,
-              marginTop: 30,
+              gap: 12,
+              marginTop: 28,
             }}
           >
             {[
               {
-                title: "Rigor psicométrico",
-                text: "Construída com base em princípios técnicos sólidos e foco em qualidade de medida.",
+                title: "Relatórios",
+                text: "Resultados organizados para leitura mais rápida.",
               },
               {
-                title: "Aplicação prática",
-                text: "Útil para acompanhamento, tomada de decisão e integração com a rotina esportiva.",
+                title: "Histórico",
+                text: "Acesse avaliações anteriores com facilidade.",
               },
               {
-                title: "Leitura estruturada",
-                text: "Histórico, relatórios e resultados organizados em um só ambiente.",
+                title: "Fluxo claro",
+                text: "Saiba exatamente o que está pendente e o que já foi concluído.",
               },
+              
             ].map((item) => (
               <div
                 key={item.title}
                 style={{
-                  position: "relative",
-                  background: "rgba(255,255,255,.78)",
-                  border: "1px solid rgba(226,232,240,.9)",
-                  borderRadius: 22,
-                  padding: 18,
-                  boxShadow: "0 18px 44px rgba(15,23,42,.06)",
-                  backdropFilter: "blur(8px)",
-                  minHeight: 148,
+                  background: "rgba(255,255,255,.72)",
+                  border: "1px solid #e5e7eb",
+                  borderRadius: 18,
+                  padding: 16,
+                  boxShadow: "0 14px 40px rgba(17,24,39,.05)",
                 }}
               >
-                <div
-                  style={{
-                    width: 34,
-                    height: 34,
-                    borderRadius: 12,
-                    background:
-                      "linear-gradient(180deg, rgba(15,23,42,.06) 0%, rgba(59,130,246,.10) 100%)",
-                    border: "1px solid rgba(203,213,225,.8)",
-                    marginBottom: 14,
-                  }}
-                />
-                <div
-                  style={{
-                    fontWeight: 800,
-                    color: "#0f172a",
-                    fontSize: 15,
-                  }}
-                >
-                  {item.title}
-                </div>
+                <div style={{ fontWeight: 800 }}>{item.title}</div>
                 <div
                   style={{
                     marginTop: 8,
-                    color: "#64748b",
+                    color: "#6b7280",
                     fontSize: 14,
-                    lineHeight: 1.65,
+                    lineHeight: 1.6,
                   }}
                 >
                   {item.text}
@@ -331,94 +271,46 @@ export default function LoginClient() {
               </div>
             ))}
           </div>
-
-          <div
-            style={{
-              marginTop: 22,
-              maxWidth: 700,
-              color: "#64748b",
-              fontSize: 14,
-              lineHeight: 1.7,
-            }}
-          >
-            Desenvolvida para atletas e equipe técnica, a plataforma organiza
-            avaliações, histórico e acesso aos resultados em uma experiência
-            simples, clara e confiável.
-          </div>
         </section>
 
         <section
           style={{
             width: "100%",
-            background: "rgba(255,255,255,.92)",
-            border: "1px solid rgba(226,232,240,.95)",
-            borderRadius: 28,
-            boxShadow: "0 28px 70px rgba(15,23,42,.12)",
+            background: "#ffffff",
+            border: "1px solid #e5e7eb",
+            borderRadius: 24,
+            boxShadow: "0 20px 50px rgba(17,24,39,.08)",
             overflow: "hidden",
-            backdropFilter: "blur(10px)",
-            alignSelf: "center",
           }}
         >
           <div
             style={{
-              padding: 24,
+              padding: 20,
               borderBottom: "1px solid #e5e7eb",
-              background:
-                "linear-gradient(180deg, rgba(255,255,255,1) 0%, rgba(248,250,252,1) 100%)",
+              background: "linear-gradient(180deg, #ffffff 0%, #f8fafc 100%)",
             }}
           >
-            <div
-              style={{
-                display: "inline-flex",
-                alignItems: "center",
-                gap: 8,
-                padding: "7px 11px",
-                borderRadius: 999,
-                fontSize: 12,
-                fontWeight: 800,
-                color: "#334155",
-                background: "#f8fafc",
-                border: "1px solid #e2e8f0",
-              }}
-            >
-              Acesso seguro
+            <div style={{ fontSize: 12, color: "#6b7280", fontWeight: 700 }}>
+              Acesso à plataforma
             </div>
-
-            <div
-              style={{
-                fontSize: 28,
-                fontWeight: 900,
-                marginTop: 14,
-                color: "#0f172a",
-              }}
-            >
-              {mode === "login" ? "Entrar na plataforma" : "Redefinir senha"}
+            <div style={{ fontSize: 24, fontWeight: 900, marginTop: 4 }}>
+              {mode === "login" ? "Entrar" : "Redefinir senha"}
             </div>
-
-            <div
-              style={{
-                color: "#64748b",
-                marginTop: 8,
-                lineHeight: 1.7,
-                fontSize: 15,
-                maxWidth: 420,
-              }}
-            >
+            <div style={{ color: "#6b7280", marginTop: 6, lineHeight: 1.6 }}>
               {mode === "login"
-                ? "Use seu email e senha para acessar sua área de avaliações, histórico e relatórios."
-                : "Informe seu email para receber o link de redefinição de senha."}
+                ? "Use seu email e senha para acessar sua área."
+                : "Informe seu email para receber o link de redefinição."}
             </div>
           </div>
 
-          <div style={{ padding: 24, display: "grid", gap: 18 }}>
+          <div style={{ padding: 20, display: "grid", gap: 16 }}>
             <div
               style={{
                 display: "flex",
                 gap: 8,
-                background: "#f1f5f9",
+                background: "#f3f4f6",
                 padding: 6,
-                borderRadius: 18,
-                border: "1px solid #e2e8f0",
+                borderRadius: 16,
               }}
             >
               <button
@@ -429,20 +321,13 @@ export default function LoginClient() {
                 type="button"
                 style={{
                   flex: 1,
-                  height: 46,
-                  borderRadius: 14,
+                  height: 44,
+                  borderRadius: 12,
                   border: "1px solid transparent",
-                  background:
-                    mode === "login"
-                      ? "linear-gradient(180deg, #111827 0%, #0f172a 100%)"
-                      : "transparent",
-                  color: mode === "login" ? "#fff" : "#0f172a",
+                  background: mode === "login" ? "#111827" : "transparent",
+                  color: mode === "login" ? "#fff" : "#111827",
                   fontWeight: 800,
                   cursor: "pointer",
-                  boxShadow:
-                    mode === "login"
-                      ? "0 12px 28px rgba(15,23,42,.14)"
-                      : "none",
                 }}
               >
                 Entrar
@@ -456,20 +341,13 @@ export default function LoginClient() {
                 type="button"
                 style={{
                   flex: 1,
-                  height: 46,
-                  borderRadius: 14,
+                  height: 44,
+                  borderRadius: 12,
                   border: "1px solid transparent",
-                  background:
-                    mode === "reset"
-                      ? "linear-gradient(180deg, #111827 0%, #0f172a 100%)"
-                      : "transparent",
-                  color: mode === "reset" ? "#fff" : "#0f172a",
+                  background: mode === "reset" ? "#111827" : "transparent",
+                  color: mode === "reset" ? "#fff" : "#111827",
                   fontWeight: 800,
                   cursor: "pointer",
-                  boxShadow:
-                    mode === "reset"
-                      ? "0 12px 28px rgba(15,23,42,.14)"
-                      : "none",
                 }}
               >
                 Redefinir senha
@@ -478,16 +356,10 @@ export default function LoginClient() {
 
             <form
               onSubmit={mode === "login" ? onLogin : onReset}
-              style={{ display: "grid", gap: 14 }}
+              style={{ display: "grid", gap: 12 }}
             >
-              <label style={{ display: "grid", gap: 7 }}>
-                <span
-                  style={{
-                    fontSize: 13,
-                    color: "#475569",
-                    fontWeight: 800,
-                  }}
-                >
+              <label style={{ display: "grid", gap: 6 }}>
+                <span style={{ fontSize: 13, color: "#6b7280", fontWeight: 700 }}>
                   Email
                 </span>
                 <input
@@ -496,28 +368,19 @@ export default function LoginClient() {
                   autoComplete="email"
                   placeholder="voce@exemplo.com"
                   style={{
-                    height: 52,
-                    padding: "0 16px",
-                    borderRadius: 16,
-                    border: "1px solid #cbd5e1",
-                    background: "#ffffff",
+                    height: 48,
+                    padding: "0 14px",
+                    borderRadius: 14,
+                    border: "1px solid #d1d5db",
                     outline: "none",
                     fontSize: 15,
-                    color: "#0f172a",
-                    boxShadow: "inset 0 1px 2px rgba(15,23,42,.03)",
                   }}
                 />
               </label>
 
               {mode === "login" && (
-                <label style={{ display: "grid", gap: 7 }}>
-                  <span
-                    style={{
-                      fontSize: 13,
-                      color: "#475569",
-                      fontWeight: 800,
-                    }}
-                  >
+                <label style={{ display: "grid", gap: 6 }}>
+                  <span style={{ fontSize: 13, color: "#6b7280", fontWeight: 700 }}>
                     Senha
                   </span>
                   <input
@@ -527,15 +390,12 @@ export default function LoginClient() {
                     autoComplete="current-password"
                     placeholder="Digite sua senha"
                     style={{
-                      height: 52,
-                      padding: "0 16px",
-                      borderRadius: 16,
-                      border: "1px solid #cbd5e1",
-                      background: "#ffffff",
+                      height: 48,
+                      padding: "0 14px",
+                      borderRadius: 14,
+                      border: "1px solid #d1d5db",
                       outline: "none",
                       fontSize: 15,
-                      color: "#0f172a",
-                      boxShadow: "inset 0 1px 2px rgba(15,23,42,.03)",
                     }}
                   />
                 </label>
@@ -545,17 +405,13 @@ export default function LoginClient() {
                 disabled={loading}
                 type="submit"
                 style={{
-                  height: 52,
-                  borderRadius: 16,
-                  border: "1px solid #0f172a",
-                  background: loading
-                    ? "#334155"
-                    : "linear-gradient(180deg, #111827 0%, #0f172a 100%)",
+                  height: 48,
+                  borderRadius: 14,
+                  border: "1px solid #111827",
+                  background: loading ? "#374151" : "#111827",
                   color: "#fff",
                   fontWeight: 900,
-                  fontSize: 15,
                   cursor: loading ? "wait" : "pointer",
-                  boxShadow: "0 16px 34px rgba(15,23,42,.16)",
                 }}
               >
                 {loading
@@ -570,9 +426,9 @@ export default function LoginClient() {
                   style={{
                     ...messageStyle,
                     padding: 14,
-                    borderRadius: 16,
+                    borderRadius: 14,
                     fontSize: 14,
-                    lineHeight: 1.7,
+                    lineHeight: 1.6,
                   }}
                 >
                   {msg}
@@ -582,33 +438,17 @@ export default function LoginClient() {
 
             <div
               style={{
-                display: "grid",
-                gap: 12,
+                background: "#f9fafb",
                 border: "1px solid #e5e7eb",
-                background: "#f8fafc",
-                borderRadius: 18,
-                padding: 16,
+                borderRadius: 16,
+                padding: 14,
+                color: "#6b7280",
+                fontSize: 13,
+                lineHeight: 1.6,
               }}
             >
-              <div
-                style={{
-                  fontWeight: 800,
-                  color: "#0f172a",
-                  fontSize: 14,
-                }}
-              >
-                Navegação orientada
-              </div>
-              <div
-                style={{
-                  color: "#64748b",
-                  fontSize: 13,
-                  lineHeight: 1.7,
-                }}
-              >
-                Se você abriu um link direto de avaliação, faça login para voltar
-                automaticamente ao fluxo correto.
-              </div>
+              Se você abriu um link direto de avaliação, faça login para voltar
+              automaticamente ao fluxo correto.
             </div>
           </div>
         </section>
