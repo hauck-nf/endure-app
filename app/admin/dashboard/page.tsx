@@ -2,15 +2,17 @@ import Link from "next/link";
 import { redirect } from "next/navigation";
 import { createClient } from "@/src/lib/supabaseServer";
 
-const cardStyle: React.CSSProperties = {
-  background: "#ffffff",
-  border: "1px solid #e5e7eb",
-  borderRadius: 22,
-  padding: 22,
-  boxShadow: "0 18px 48px rgba(15,23,42,.06)",
-};
+function cardStyle(): React.CSSProperties {
+  return {
+    background: "#ffffff",
+    border: "1px solid #e5e7eb",
+    borderRadius: 22,
+    padding: 20,
+    boxShadow: "0 18px 48px rgba(15,23,42,.06)",
+  };
+}
 
-function getStatusBadgeStyle(status: string): React.CSSProperties {
+function badgeStyle(status: string | null | undefined): React.CSSProperties {
   if (status === "pending") {
     return {
       background: "#fff7ed",
@@ -42,12 +44,20 @@ function getStatusBadgeStyle(status: string): React.CSSProperties {
   };
 }
 
-function formatStatus(status: string | null | undefined) {
-  if (!status) return "Sem status";
+function statusLabel(status: string | null | undefined) {
   if (status === "pending") return "Pendente";
   if (status === "in_progress") return "Em andamento";
   if (status === "submitted") return "Submetida";
-  return status.replace("_", " ");
+  return status || "Sem status";
+}
+
+function fmtDate(value?: string | null) {
+  if (!value) return "—";
+  try {
+    return new Date(value).toLocaleString("pt-BR");
+  } catch {
+    return value;
+  }
 }
 
 export default async function AdminDashboardPage() {
@@ -68,11 +78,11 @@ export default async function AdminDashboardPage() {
   if (profile?.role !== "admin") redirect("/login");
 
   const [
-    { count: pending },
-    { count: inProgress },
-    { count: submitted },
-    { count: athletes },
-    { data: recentRequests },
+    { count: pendingCount },
+    { count: inProgressCount },
+    { count: submittedCount },
+    { count: athleteCount },
+    { data: recentRequests, error: recentErr },
   ] = await Promise.all([
     supabase
       .from("assessment_requests")
@@ -104,33 +114,44 @@ export default async function AdminDashboardPage() {
   const kpis = [
     {
       label: "Pendentes",
-      value: pending ?? 0,
+      value: pendingCount ?? 0,
       helper: "Solicitações ainda não iniciadas",
     },
     {
       label: "Em andamento",
-      value: inProgress ?? 0,
+      value: inProgressCount ?? 0,
       helper: "Avaliações abertas e não concluídas",
     },
     {
       label: "Submetidas",
-      value: submitted ?? 0,
+      value: submittedCount ?? 0,
       helper: "Avaliações já enviadas",
     },
     {
       label: "Atletas",
-      value: athletes ?? 0,
+      value: athleteCount ?? 0,
       helper: "Perfis de atleta cadastrados",
     },
   ];
 
   return (
-    <div style={{ display: "grid", gap: 18 }}>
+    <div
+      style={{
+        maxWidth: 1180,
+        margin: "0 auto",
+        padding: "20px 16px 32px",
+        display: "grid",
+        gap: 16,
+      }}
+    >
       <section
         style={{
-          ...cardStyle,
           background:
             "linear-gradient(180deg, rgba(255,255,255,1) 0%, rgba(248,250,252,1) 100%)",
+          border: "1px solid #e5e7eb",
+          borderRadius: 24,
+          padding: 22,
+          boxShadow: "0 18px 48px rgba(15,23,42,.06)",
         }}
       >
         <div
@@ -154,13 +175,13 @@ export default async function AdminDashboardPage() {
         <h1
           style={{
             margin: "14px 0 10px",
-            fontSize: 34,
+            fontSize: 32,
             lineHeight: 1.1,
-            letterSpacing: -0.8,
+            letterSpacing: -0.7,
             color: "#0f172a",
           }}
         >
-          Dashboard do ENDURE
+          Acompanhamento de atletas
         </h1>
 
         <p
@@ -168,33 +189,26 @@ export default async function AdminDashboardPage() {
             margin: 0,
             color: "#64748b",
             lineHeight: 1.75,
-            maxWidth: 760,
             fontSize: 15,
+            maxWidth: 760,
           }}
         >
-          Acompanhe o volume de avaliações, visualize pendências recentes e
-          acesse rapidamente os fluxos principais do sistema em um só lugar.
+          Acompanhe o volume de avaliações, visualize pendências recentes e acesse
+          rapidamente os principais fluxos do sistema.
         </p>
       </section>
 
       <section
         style={{
           display: "grid",
-          gridTemplateColumns: "repeat(4, minmax(0, 1fr))",
-          gap: 16,
+          gap: 14,
+          gridTemplateColumns: "repeat(auto-fit, minmax(180px, 1fr))",
         }}
       >
         {kpis.map((item) => (
-          <div
-            key={item.label}
-            style={{
-              ...cardStyle,
-              padding: 20,
-              background:
-                "linear-gradient(180deg, rgba(255,255,255,1) 0%, rgba(250,250,252,1) 100%)",
-            }}
-          >
+          <div key={item.label} style={cardStyle()}>
             <div style={{ color: "#64748b", fontSize: 14 }}>{item.label}</div>
+
             <div
               style={{
                 fontSize: 36,
@@ -206,6 +220,7 @@ export default async function AdminDashboardPage() {
             >
               {item.value}
             </div>
+
             <div
               style={{
                 marginTop: 10,
@@ -223,20 +238,19 @@ export default async function AdminDashboardPage() {
       <section
         style={{
           display: "grid",
-          gridTemplateColumns: "1.1fr 0.9fr",
           gap: 16,
-          alignItems: "start",
+          gridTemplateColumns: "minmax(0, 1.15fr) minmax(0, 0.85fr)",
         }}
       >
-        <div style={cardStyle}>
+        <div style={cardStyle()}>
           <div
             style={{
               display: "flex",
               justifyContent: "space-between",
               gap: 12,
               alignItems: "center",
-              marginBottom: 16,
               flexWrap: "wrap",
+              marginBottom: 16,
             }}
           >
             <div>
@@ -249,6 +263,7 @@ export default async function AdminDashboardPage() {
               >
                 Pendências recentes
               </div>
+
               <div
                 style={{
                   color: "#64748b",
@@ -263,20 +278,38 @@ export default async function AdminDashboardPage() {
             <Link
               href="/admin/requests"
               style={{
-                textDecoration: "none",
-                color: "#0f172a",
-                fontWeight: 800,
-                border: "1px solid #e5e7eb",
-                borderRadius: 14,
+                display: "inline-flex",
+                alignItems: "center",
+                justifyContent: "center",
+                minHeight: 42,
                 padding: "10px 14px",
+                borderRadius: 14,
+                border: "1px solid #e5e7eb",
                 background: "#fff",
+                color: "#0f172a",
+                textDecoration: "none",
+                fontWeight: 800,
+                fontSize: 14,
               }}
             >
               Ver tudo
             </Link>
           </div>
 
-          {!recentRequests || recentRequests.length === 0 ? (
+          {recentErr ? (
+            <div
+              style={{
+                border: "1px solid #fecaca",
+                background: "#fff1f2",
+                color: "#9f1239",
+                borderRadius: 18,
+                padding: 16,
+                lineHeight: 1.7,
+              }}
+            >
+              Erro ao carregar pendências: {recentErr.message}
+            </div>
+          ) : !recentRequests || recentRequests.length === 0 ? (
             <div
               style={{
                 border: "1px dashed #d1d5db",
@@ -323,7 +356,7 @@ export default async function AdminDashboardPage() {
 
                     <span
                       style={{
-                        ...getStatusBadgeStyle(item.status),
+                        ...badgeStyle(item.status),
                         borderRadius: 999,
                         padding: "6px 10px",
                         fontSize: 12,
@@ -331,15 +364,12 @@ export default async function AdminDashboardPage() {
                         whiteSpace: "nowrap",
                       }}
                     >
-                      {formatStatus(item.status)}
+                      {statusLabel(item.status)}
                     </span>
                   </div>
 
                   <div style={{ fontSize: 13, color: "#64748b" }}>
-                    Criada em{" "}
-                    {item.created_at
-                      ? new Date(item.created_at).toLocaleString("pt-BR")
-                      : "—"}
+                    Criada em {fmtDate(item.created_at)}
                   </div>
                 </div>
               ))}
@@ -348,7 +378,7 @@ export default async function AdminDashboardPage() {
         </div>
 
         <div style={{ display: "grid", gap: 16 }}>
-          <div style={cardStyle}>
+          <div style={cardStyle()}>
             <div
               style={{
                 fontWeight: 900,
@@ -358,6 +388,7 @@ export default async function AdminDashboardPage() {
             >
               Ações rápidas
             </div>
+
             <div
               style={{
                 color: "#64748b",
@@ -410,7 +441,7 @@ export default async function AdminDashboardPage() {
             </div>
           </div>
 
-          <div style={cardStyle}>
+          <div style={cardStyle()}>
             <div
               style={{
                 fontWeight: 900,
@@ -421,20 +452,33 @@ export default async function AdminDashboardPage() {
               Como ler o painel
             </div>
 
-            <ul
+            <div
               style={{
+                display: "grid",
+                gap: 10,
+                marginTop: 14,
                 color: "#64748b",
-                lineHeight: 1.8,
-                paddingLeft: 18,
-                marginTop: 12,
-                marginBottom: 0,
+                fontSize: 14,
+                lineHeight: 1.75,
               }}
             >
-              <li>Pendentes: solicitações ainda não iniciadas.</li>
-              <li>Em andamento: avaliações abertas e não concluídas.</li>
-              <li>Submetidas: avaliações já enviadas pelo atleta.</li>
-              <li>Atletas: usuários com perfil de atleta cadastrados.</li>
-            </ul>
+              <div>
+                <strong style={{ color: "#0f172a" }}>Pendentes:</strong> solicitações ainda
+                não iniciadas.
+              </div>
+              <div>
+                <strong style={{ color: "#0f172a" }}>Em andamento:</strong> avaliações abertas
+                e não concluídas.
+              </div>
+              <div>
+                <strong style={{ color: "#0f172a" }}>Submetidas:</strong> avaliações já
+                enviadas pelo atleta.
+              </div>
+              <div>
+                <strong style={{ color: "#0f172a" }}>Atletas:</strong> usuários com perfil de
+                atleta cadastrados.
+              </div>
+            </div>
           </div>
         </div>
       </section>
