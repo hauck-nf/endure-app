@@ -17,6 +17,7 @@ type Item = {
 
 function typeKind(t: string | null | undefined) {
   const s = (t || "").toLowerCase();
+
   if (
     s.includes("multiple response") ||
     s.includes("pick more than one") ||
@@ -24,8 +25,9 @@ function typeKind(t: string | null | undefined) {
     s.includes("múltiplas") ||
     s.includes("caixa de seleção") ||
     s.includes("select all")
-  )
+  ) {
     return "multi";
+  }
 
   if (
     s.includes("multiple choice") ||
@@ -36,16 +38,18 @@ function typeKind(t: string | null | undefined) {
     s.includes("scale") ||
     s.includes("likert") ||
     s.includes("escala")
-  )
+  ) {
     return "single";
+  }
 
   if (
     s.includes("short text") ||
     s.includes("texto curto") ||
     s.includes("text") ||
     s.includes("numeric")
-  )
+  ) {
     return "text";
+  }
 
   return "auto";
 }
@@ -69,16 +73,13 @@ export default function QuestionnairePage() {
   const [err, setErr] = useState<string | null>(null);
   const [msg, setMsg] = useState<string | null>(null);
 
-  // respostas: itemcode -> string | string[]
   const [answers, setAnswers] = useState<Record<string, any>>({});
   const [assessmentId, setAssessmentId] = useState<string | null>(null);
 
-  // query params
   const [requestId, setRequestId] = useState<string>("");
   const [section, setSection] = useState<string>("");
   const [scale, setScale] = useState<string>("");
 
-  // 1) Ler query params (request_id, section, scale)
   useEffect(() => {
     const sp = new URLSearchParams(window.location.search);
     setRequestId(sp.get("request_id") ?? "");
@@ -86,7 +87,6 @@ export default function QuestionnairePage() {
     setScale(sp.get("scale") ?? "");
   }, []);
 
-  // 2) Criar/Reaproveitar assessment (se requestId existir, vincular ao request)
   useEffect(() => {
     if (!section || !scale) return;
 
@@ -95,7 +95,6 @@ export default function QuestionnairePage() {
         setErr(null);
         const athleteId = await getMyAthleteId();
 
-        // se veio de pendência, marca como in_progress (precisa policy de update para atleta)
         if (requestId) {
           await supabase
             .from("assessment_requests")
@@ -103,7 +102,6 @@ export default function QuestionnairePage() {
             .eq("request_id", requestId);
         }
 
-        // procura assessment in_progress (filtra por request_id quando houver)
         const q = supabase
           .from("assessments")
           .select("assessment_id, raw_responses")
@@ -125,18 +123,17 @@ export default function QuestionnairePage() {
           return;
         }
 
-        // cria um novo assessment
         const { data: created, error } = await supabase
           .from("assessments")
-         .insert({
-  athlete_id: athleteId,
-  request_id: requestId || null,
-  instrument_version: version,
-  reference_window: "últimos 7 dias",
-  status: "in_progress",
-  raw_responses: {},
-  raw_meta: { section, scale },
-})
+          .insert({
+            athlete_id: athleteId,
+            request_id: requestId || null,
+            instrument_version: version,
+            reference_window: "últimos 7 dias",
+            status: "in_progress",
+            raw_responses: {},
+            raw_meta: { section, scale },
+          })
           .select("assessment_id")
           .single();
 
@@ -148,7 +145,6 @@ export default function QuestionnairePage() {
     })();
   }, [section, scale, version, requestId]);
 
-  // 3) Carregar itens do dicionário
   useEffect(() => {
     if (!section || !scale) return;
 
@@ -158,12 +154,17 @@ export default function QuestionnairePage() {
 
       const { data, error } = await supabase
         .from("instrument_items")
-        .select("itemcode, quest_section, type, scale, factor, item_text_port, instruction, opt_json")
+        .select(
+          "itemcode, quest_section, type, scale, factor, item_text_port, instruction, opt_json"
+        )
         .eq("instrument_version", version)
         .eq("quest_section", section)
         .eq("scale", scale);
 
-      if (error) return setErr(error.message);
+      if (error) {
+        setErr(error.message);
+        return;
+      }
 
       setItems(((data as Item[]) ?? []).slice());
     })();
@@ -192,12 +193,35 @@ export default function QuestionnairePage() {
     );
   }, [byFactor]);
 
+  const answerableItems = useMemo(() => {
+    return items.filter((it) => optionsFrom(it.opt_json).length > 0);
+  }, [items]);
+
+  const answeredCount = useMemo(() => {
+    let count = 0;
+    for (const it of answerableItems) {
+      const kind0 = typeKind(it.type);
+      const opts = optionsFrom(it.opt_json);
+      const kind = kind0 === "auto" ? (opts.length ? "single" : "text") : kind0;
+      const val = answers[it.itemcode];
+
+      if (kind === "multi") {
+        if (Array.isArray(val) && val.length > 0) count++;
+      } else if (val) {
+        count++;
+      }
+    }
+    return count;
+  }, [answerableItems, answers]);
+
   function setAnswer(itemcode: string, value: any) {
     setAnswers((prev) => ({ ...prev, [itemcode]: value }));
   }
 
   function toggleMulti(itemcode: string, opt: string) {
-    const cur: string[] = Array.isArray(answers[itemcode]) ? answers[itemcode] : [];
+    const cur: string[] = Array.isArray(answers[itemcode])
+      ? answers[itemcode]
+      : [];
     const has = cur.includes(opt);
     const next = has ? cur.filter((x) => x !== opt) : [...cur, opt];
     setAnswer(itemcode, next);
@@ -210,12 +234,12 @@ export default function QuestionnairePage() {
 
       const { error } = await supabase
         .from("assessments")
-        .update({ raw_responses: answers, raw_meta: { section, scale } })        
+        .update({ raw_responses: answers, raw_meta: { section, scale } })
         .eq("assessment_id", assessmentId);
 
       if (error) throw error;
 
-      setMsg("Rascunho salvo no banco.");
+      setMsg("Rascunho salvo.");
       setTimeout(() => setMsg(null), 2000);
     } catch (e: any) {
       setErr(e.message ?? "Erro ao salvar rascunho.");
@@ -236,33 +260,31 @@ export default function QuestionnairePage() {
     });
 
     if (missing.length) {
-      setErr(`Faltam respostas em ${missing.length} itens (com alternativas).`);
+      setErr(`Faltam respostas em ${missing.length} itens.`);
       return;
     }
 
     try {
       if (!assessmentId) throw new Error("Avaliação ainda não foi criada.");
 
-      // 1) Finaliza assessment
       const { error } = await supabase
         .from("assessments")
         .update({
-  raw_responses: answers,
-  raw_meta: { section, scale },
-  status: "submitted",
-  submitted_at: new Date().toISOString(),
-})
+          raw_responses: answers,
+          raw_meta: { section, scale },
+          status: "submitted",
+          submitted_at: new Date().toISOString(),
+        })
         .eq("assessment_id", assessmentId);
 
       if (error) throw error;
 
-await fetch("/api/score", {
-  method: "POST",
-  headers: { "Content-Type": "application/json" },
-  body: JSON.stringify({ assessment_id: assessmentId }),
-});
+      await fetch("/api/score", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ assessment_id: assessmentId }),
+      });
 
-      // 2) Se veio de pendência, marca request como submitted
       if (requestId) {
         const { error: e2 } = await supabase
           .from("assessment_requests")
@@ -272,7 +294,7 @@ await fetch("/api/score", {
         if (e2) throw e2;
       }
 
-      setMsg("Avaliação enviada e salva. Ela aparecerá no Histórico.");
+      setMsg("Avaliação enviada com sucesso. Ela aparecerá no histórico.");
       setErr(null);
     } catch (e: any) {
       setErr(e.message ?? "Erro ao finalizar.");
@@ -280,133 +302,390 @@ await fetch("/api/score", {
   }
 
   return (
-    <div style={{ maxWidth: 950, margin: "40px auto", fontFamily: "system-ui" }}>
-      <a href={requestId ? `/athlete/request/${requestId}` : "/athlete"}>← Voltar</a>
-
-      <h2 style={{ marginTop: 12 }}>{section}</h2>
-      <h3 style={{ marginTop: 0, color: "#374151" }}>{scale}</h3>
-
-      {instruction && (
-        <div
+    <div
+      style={{
+        maxWidth: 920,
+        margin: "0 auto",
+        padding: "20px 16px 32px",
+        display: "grid",
+        gap: 16,
+      }}
+    >
+      <section
+        style={{
+          background:
+            "linear-gradient(180deg, rgba(255,255,255,1) 0%, rgba(248,250,252,1) 100%)",
+          border: "1px solid #e5e7eb",
+          borderRadius: 24,
+          padding: 22,
+          boxShadow: "0 18px 48px rgba(15,23,42,.06)",
+        }}
+      >
+        <a
+          href={requestId ? `/athlete/request/${requestId}` : "/athlete/dashboard"}
           style={{
-            padding: 12,
-            border: "1px solid #e5e7eb",
-            borderRadius: 12,
-            background: "#fafafa",
+            display: "inline-flex",
+            alignItems: "center",
+            gap: 8,
+            textDecoration: "none",
+            color: "#475569",
+            fontWeight: 700,
+            fontSize: 14,
           }}
         >
-          {instruction}
-        </div>
-      )}
+          ← Voltar
+        </a>
 
-      <div style={{ marginTop: 14, display: "flex", gap: 10 }}>
-        <button onClick={saveDraft} style={{ padding: "10px 12px" }}>
-          Salvar rascunho
-        </button>
-        <button onClick={submit} style={{ padding: "10px 12px" }}>
-          Finalizar
-        </button>
-      </div>
-
-      {err && (
         <div
           style={{
-            marginTop: 12,
-            padding: 12,
-            border: "1px solid #ef4444",
-            borderRadius: 12,
-            color: "#b91c1c",
+            marginTop: 14,
+            display: "inline-flex",
+            alignItems: "center",
+            gap: 8,
+            border: "1px solid #dbeafe",
+            background: "#eff6ff",
+            color: "#1d4ed8",
+            borderRadius: 999,
+            padding: "8px 12px",
+            fontSize: 12,
+            fontWeight: 800,
+            letterSpacing: 0.3,
           }}
         >
-          {err}
+          Questionário
         </div>
-      )}
-      {msg && (
+
+        <h1
+          style={{
+            margin: "14px 0 8px",
+            fontSize: 28,
+            lineHeight: 1.1,
+            letterSpacing: -0.6,
+            color: "#0f172a",
+          }}
+        >
+          {section || "Avaliação"}
+        </h1>
+
         <div
           style={{
-            marginTop: 12,
-            padding: 12,
-            border: "1px solid #10b981",
-            borderRadius: 12,
-            color: "#065f46",
+            color: "#475569",
+            fontSize: 16,
+            fontWeight: 700,
+            lineHeight: 1.6,
           }}
         >
-          {msg}
+          {scale}
         </div>
-      )}
 
-      <div style={{ marginTop: 18 }}>
+        {instruction ? (
+          <div
+            style={{
+              marginTop: 14,
+              padding: 14,
+              border: "1px solid #e5e7eb",
+              borderRadius: 16,
+              background: "#f8fafc",
+              color: "#475569",
+              lineHeight: 1.75,
+              fontSize: 14,
+            }}
+          >
+            {instruction}
+          </div>
+        ) : null}
+
+        <div
+          style={{
+            marginTop: 16,
+            display: "grid",
+            gap: 8,
+          }}
+        >
+          <div
+            style={{
+              display: "flex",
+              justifyContent: "space-between",
+              gap: 12,
+              alignItems: "center",
+              flexWrap: "wrap",
+            }}
+          >
+            <div style={{ color: "#475569", fontSize: 14, fontWeight: 700 }}>
+              Progresso
+            </div>
+            <div style={{ color: "#64748b", fontSize: 13 }}>
+              {answeredCount} de {answerableItems.length} respondidos
+            </div>
+          </div>
+
+          <div
+            style={{
+              height: 10,
+              background: "#e5e7eb",
+              borderRadius: 999,
+              overflow: "hidden",
+            }}
+          >
+            <div
+              style={{
+                width:
+                  answerableItems.length > 0
+                    ? `${(answeredCount / answerableItems.length) * 100}%`
+                    : "0%",
+                height: "100%",
+                background:
+                  "linear-gradient(90deg, #2563eb 0%, #1d4ed8 100%)",
+                borderRadius: 999,
+              }}
+            />
+          </div>
+        </div>
+
+        <div
+          style={{
+            marginTop: 18,
+            display: "flex",
+            gap: 10,
+            flexWrap: "wrap",
+          }}
+        >
+          <button
+            onClick={saveDraft}
+            style={{
+              minHeight: 46,
+              padding: "12px 16px",
+              borderRadius: 14,
+              border: "1px solid #cbd5e1",
+              background: "#fff",
+              color: "#0f172a",
+              fontWeight: 800,
+              fontSize: 14,
+              cursor: "pointer",
+              fontFamily: "inherit",
+            }}
+          >
+            Salvar rascunho
+          </button>
+
+          <button
+            onClick={submit}
+            style={{
+              minHeight: 46,
+              padding: "12px 16px",
+              borderRadius: 14,
+              border: "1px solid #0f172a",
+              background: "#0f172a",
+              color: "#fff",
+              fontWeight: 800,
+              fontSize: 14,
+              cursor: "pointer",
+              fontFamily: "inherit",
+            }}
+          >
+            Finalizar avaliação
+          </button>
+        </div>
+
+        {err ? (
+          <div
+            style={{
+              marginTop: 14,
+              padding: 14,
+              border: "1px solid #fecaca",
+              background: "#fff1f2",
+              borderRadius: 16,
+              color: "#9f1239",
+              lineHeight: 1.7,
+            }}
+          >
+            {err}
+          </div>
+        ) : null}
+
+        {msg ? (
+          <div
+            style={{
+              marginTop: 14,
+              padding: 14,
+              border: "1px solid #bbf7d0",
+              background: "#f0fdf4",
+              borderRadius: 16,
+              color: "#166534",
+              lineHeight: 1.7,
+            }}
+          >
+            {msg}
+          </div>
+        ) : null}
+      </section>
+
+      <section style={{ display: "grid", gap: 14 }}>
         {factorKeys.map((f) => (
-          <div key={f} style={{ marginTop: 16 }}>
-            {f !== "—" && <h4 style={{ marginBottom: 8 }}>{f}</h4>}
+          <div
+            key={f}
+            style={{
+              background: "#ffffff",
+              border: "1px solid #e5e7eb",
+              borderRadius: 22,
+              padding: 18,
+              boxShadow: "0 18px 48px rgba(15,23,42,.05)",
+              display: "grid",
+              gap: 14,
+            }}
+          >
+            {f !== "—" ? (
+              <div
+                style={{
+                  fontWeight: 900,
+                  fontSize: 18,
+                  color: "#0f172a",
+                }}
+              >
+                {f}
+              </div>
+            ) : null}
 
-            {byFactor[f].map((it) => {
-              const kind0 = typeKind(it.type);
-              const opts = optionsFrom(it.opt_json);
-              const kind = kind0 === "auto" ? (opts.length ? "single" : "text") : kind0;
+            <div style={{ display: "grid", gap: 16 }}>
+              {byFactor[f].map((it, idx) => {
+                const kind0 = typeKind(it.type);
+                const opts = optionsFrom(it.opt_json);
+                const kind = kind0 === "auto" ? (opts.length ? "single" : "text") : kind0;
 
-              return (
-                <div
-                  key={it.itemcode}
-                  style={{ padding: "12px 0", borderTop: "1px solid #f3f4f6" }}
-                >
-                  <div style={{ marginBottom: 8 }}>{it.item_text_port}</div>
-
-                  {kind === "text" && opts.length === 0 && (
-                    <input
-                      value={answers[it.itemcode] ?? ""}
-                      onChange={(e) => setAnswer(it.itemcode, e.target.value)}
-                      style={{ width: "100%", padding: 10 }}
-                      placeholder="Resposta"
-                    />
-                  )}
-
-                  {opts.length > 0 && kind === "single" && (
-                    <div style={{ display: "grid", gap: 6 }}>
-                      {opts.map((o) => (
-                        <label
-                          key={o}
-                          style={{ display: "flex", gap: 10, alignItems: "flex-start" }}
-                        >
-                          <input
-                            type="radio"
-                            name={it.itemcode}
-                            checked={answers[it.itemcode] === o}
-                            onChange={() => setAnswer(it.itemcode, o)}
-                          />
-                          <span>{o}</span>
-                        </label>
-                      ))}
+                return (
+                  <div
+                    key={it.itemcode}
+                    style={{
+                      paddingTop: idx === 0 ? 0 : 14,
+                      borderTop: idx === 0 ? "none" : "1px solid #f1f5f9",
+                      display: "grid",
+                      gap: 12,
+                    }}
+                  >
+                    <div
+                      style={{
+                        color: "#0f172a",
+                        fontSize: 16,
+                        lineHeight: 1.7,
+                        fontWeight: 500,
+                      }}
+                    >
+                      {it.item_text_port}
                     </div>
-                  )}
 
-                  {opts.length > 0 && kind === "multi" && (
-                    <div style={{ display: "grid", gap: 6 }}>
-                      {opts.map((o) => {
-                        const cur: string[] = Array.isArray(answers[it.itemcode]) ? answers[it.itemcode] : [];
-                        const checked = cur.includes(o);
-                        return (
-                          <label
-                            key={o}
-                            style={{ display: "flex", gap: 10, alignItems: "flex-start" }}
-                          >
-                            <input
-                              type="checkbox"
-                              checked={checked}
-                              onChange={() => toggleMulti(it.itemcode, o)}
-                            />
-                            <span>{o}</span>
-                          </label>
-                        );
-                      })}
-                    </div>
-                  )}
-                </div>
-              );
-            })}
+                    {kind === "text" && opts.length === 0 ? (
+                      <input
+                        value={answers[it.itemcode] ?? ""}
+                        onChange={(e) => setAnswer(it.itemcode, e.target.value)}
+                        style={{
+                          width: "100%",
+                          minHeight: 48,
+                          padding: "12px 14px",
+                          borderRadius: 14,
+                          border: "1px solid #cbd5e1",
+                          background: "#fff",
+                          color: "#0f172a",
+                          fontSize: 15,
+                          outline: "none",
+                          fontFamily: "inherit",
+                        }}
+                        placeholder="Digite sua resposta"
+                      />
+                    ) : null}
+
+                    {opts.length > 0 && kind === "single" ? (
+                      <div style={{ display: "grid", gap: 10 }}>
+                        {opts.map((o) => {
+                          const checked = answers[it.itemcode] === o;
+                          return (
+                            <label
+                              key={o}
+                              style={{
+                                display: "flex",
+                                gap: 12,
+                                alignItems: "flex-start",
+                                padding: "12px 14px",
+                                borderRadius: 16,
+                                border: checked
+                                  ? "1px solid #93c5fd"
+                                  : "1px solid #e5e7eb",
+                                background: checked ? "#eff6ff" : "#fff",
+                                cursor: "pointer",
+                              }}
+                            >
+                              <input
+                                type="radio"
+                                name={it.itemcode}
+                                checked={checked}
+                                onChange={() => setAnswer(it.itemcode, o)}
+                                style={{ marginTop: 2 }}
+                              />
+                              <span
+                                style={{
+                                  color: "#0f172a",
+                                  lineHeight: 1.7,
+                                  fontSize: 15,
+                                }}
+                              >
+                                {o}
+                              </span>
+                            </label>
+                          );
+                        })}
+                      </div>
+                    ) : null}
+
+                    {opts.length > 0 && kind === "multi" ? (
+                      <div style={{ display: "grid", gap: 10 }}>
+                        {opts.map((o) => {
+                          const cur: string[] = Array.isArray(answers[it.itemcode])
+                            ? answers[it.itemcode]
+                            : [];
+                          const checked = cur.includes(o);
+
+                          return (
+                            <label
+                              key={o}
+                              style={{
+                                display: "flex",
+                                gap: 12,
+                                alignItems: "flex-start",
+                                padding: "12px 14px",
+                                borderRadius: 16,
+                                border: checked
+                                  ? "1px solid #93c5fd"
+                                  : "1px solid #e5e7eb",
+                                background: checked ? "#eff6ff" : "#fff",
+                                cursor: "pointer",
+                              }}
+                            >
+                              <input
+                                type="checkbox"
+                                checked={checked}
+                                onChange={() => toggleMulti(it.itemcode, o)}
+                                style={{ marginTop: 2 }}
+                              />
+                              <span
+                                style={{
+                                  color: "#0f172a",
+                                  lineHeight: 1.7,
+                                  fontSize: 15,
+                                }}
+                              >
+                                {o}
+                              </span>
+                            </label>
+                          );
+                        })}
+                      </div>
+                    ) : null}
+                  </div>
+                );
+              })}
+            </div>
           </div>
         ))}
-      </div>
+      </section>
     </div>
   );
 }
