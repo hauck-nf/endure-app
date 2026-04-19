@@ -156,368 +156,462 @@ export default function LoginClient() {
   }
 
   return (
-    <div
-      style={{
-        minHeight: "100vh",
-        background:
-          "linear-gradient(180deg, #f8fafc 0%, #eef2ff 50%, #f8fafc 100%)",
-        padding: "20px 16px 32px",
-        display: "grid",
-        placeItems: "center",
-      }}
-    >
-      <div
-        style={{
-          width: "100%",
-          maxWidth: 560,
-          display: "grid",
-          gap: 18,
-        }}
-      >
-        <section
-          style={{
-            background:
-              "linear-gradient(180deg, rgba(255,255,255,1) 0%, rgba(248,250,252,1) 100%)",
-            border: "1px solid #e5e7eb",
-            borderRadius: 24,
-            padding: 22,
-            boxShadow: "0 18px 48px rgba(15,23,42,.06)",
-          }}
-        >
-          <div
-            style={{
-              display: "inline-flex",
-              alignItems: "center",
-              gap: 8,
-              border: "1px solid #dbeafe",
-              background: "#eff6ff",
-              color: "#1d4ed8",
-              borderRadius: 999,
-              padding: "8px 12px",
-              fontSize: 12,
-              fontWeight: 800,
-              letterSpacing: 0.3,
-            }}
-          >
-            Plataforma de avaliação socioemocional em atletas
-          </div>
-
-          <div
-            style={{
-              display: "flex",
-              alignItems: "center",
-              gap: 12,
-              marginTop: 18,
-            }}
-          >
-            <div
-              style={{
-                width: 48,
-                height: 48,
-                borderRadius: 16,
-                border: "1px solid #e5e7eb",
-                background:
-                  "linear-gradient(180deg, rgba(255,255,255,.96) 0%, rgba(241,245,249,.96) 100%)",
-                boxShadow: "0 12px 30px rgba(15,23,42,.08)",
-                display: "grid",
-                placeItems: "center",
-              }}
-            >
-              <img
-                src="/endure_logo.png"
-                alt="ENDURE"
-                style={{ width: 26, height: 26, objectFit: "contain" }}
-              />
+    <>
+      <div className="login-shell">
+        <div className="login-wrap">
+          <section className="brand-panel">
+            <div className="badge">
+              Plataforma de avaliação socioemocional em atletas
             </div>
 
-            <div>
-              <div
-                style={{
-                  fontWeight: 900,
-                  letterSpacing: 0.8,
-                  fontSize: 22,
-                  color: "#0f172a",
-                }}
-              >
-                ENDURE
+            <div className="brand-header">
+              <div className="logo-box">
+                <img
+                  src="/endure_logo.png"
+                  alt="ENDURE"
+                  className="logo-image"
+                />
               </div>
-              <div style={{ color: "#64748b", fontSize: 14 }}>
-                Avaliação socioemocional em atletas
+
+              <div>
+                <div className="brand-name">ENDURE</div>
+                <div className="brand-subtitle">
+                  Avaliação socioemocional em atletas
+                </div>
               </div>
             </div>
-          </div>
 
-          <h1
-            style={{
-              margin: "18px 0 12px",
-              fontSize: "clamp(1.9rem, 7vw, 2.8rem)",
-              lineHeight: 1.06,
-              letterSpacing: -1,
-              color: "#0f172a",
-            }}
-          >
-            Acesse a plataforma com clareza e praticidade.
-          </h1>
+            <h1 className="hero-title">
+              Avaliação socioemocional com rigor científico e aplicação prática.
+            </h1>
 
-          <p
-            style={{
-              margin: 0,
-              color: "#475569",
-              fontSize: 15,
-              lineHeight: 1.8,
-            }}
-          >
-            A ENDURE organiza avaliações, histórico e resultados em uma
-            experiência pensada para atletas e equipe técnica.
-          </p>
-        </section>
+            <p className="hero-text">
+              A ENDURE reúne uma bateria de avaliação construída para investigar
+              dimensões psicológicas empiricamente relacionadas ao desempenho em
+              atletas, transformando avaliação em inteligência aplicada para
+              monitoramento, pesquisa e desenvolvimento humano no contexto
+              esportivo.
+            </p>
 
-        <section
-          style={{
-            background: "#ffffff",
-            border: "1px solid #e5e7eb",
-            borderRadius: 24,
-            padding: 22,
-            boxShadow: "0 18px 48px rgba(15,23,42,.06)",
-          }}
-        >
-          <div
-            style={{
-              display: "inline-flex",
-              alignItems: "center",
-              gap: 8,
-              padding: "7px 11px",
-              borderRadius: 999,
-              fontSize: 12,
-              fontWeight: 800,
-              color: "#334155",
-              background: "#f8fafc",
-              border: "1px solid #e2e8f0",
-            }}
-          >
-            Acesso seguro
-          </div>
+            <div className="benefit-list">
+              <div className="benefit-card">
+                <div className="benefit-label">Rigor psicométrico</div>
+                <div className="benefit-title">
+                  Construída com base em princípios técnicos sólidos
+                </div>
+                <p className="benefit-text">
+                  A avaliação foi desenvolvida para oferecer qualidade de
+                  medida, clareza interpretativa e utilidade no contexto
+                  esportivo.
+                </p>
+              </div>
 
-          <div
-            style={{
-              fontSize: 26,
-              fontWeight: 900,
-              marginTop: 14,
-              color: "#0f172a",
-            }}
-          >
-            {mode === "login" ? "Entrar" : "Redefinir senha"}
-          </div>
+              <div className="benefit-card">
+                <div className="benefit-label">Aplicação prática</div>
+                <div className="benefit-title">
+                  Um ambiente organizado para monitoramento e acompanhamento
+                </div>
+                <p className="benefit-text">
+                  Histórico, pendências, respostas e relatórios ficam reunidos
+                  em um fluxo simples, informativo e mais intuitivo para o uso
+                  diário.
+                </p>
+              </div>
 
-          <div
-            style={{
-              color: "#64748b",
-              marginTop: 8,
-              lineHeight: 1.7,
-              fontSize: 15,
-            }}
-          >
-            {mode === "login"
-              ? "Use seu email e senha para acessar sua área."
-              : "Informe seu email para receber o link de redefinição de senha."}
-          </div>
+              <div className="benefit-card">
+                <div className="benefit-label">Leitura estruturada</div>
+                <div className="benefit-title">
+                  Informação útil para atletas, equipe técnica e pesquisa
+                </div>
+                <p className="benefit-text">
+                  A ENDURE foi pensada para transformar respostas em leitura
+                  técnica aplicável, sem perder clareza na experiência do
+                  usuário.
+                </p>
+              </div>
+            </div>
+          </section>
 
-          <div
-            style={{
-              display: "flex",
-              gap: 8,
-              background: "#f1f5f9",
-              padding: 6,
-              borderRadius: 18,
-              border: "1px solid #e2e8f0",
-              marginTop: 18,
-            }}
-          >
-            <button
-              onClick={() => {
-                setMode("login");
-                setMsg("");
-              }}
-              type="button"
-              style={{
-                flex: 1,
-                height: 44,
-                borderRadius: 14,
-                border: "1px solid transparent",
-                background:
-                  mode === "login"
-                    ? "linear-gradient(180deg, #111827 0%, #0f172a 100%)"
-                    : "transparent",
-                color: mode === "login" ? "#fff" : "#0f172a",
-                fontWeight: 800,
-                cursor: "pointer",
-              }}
-            >
-              Entrar
-            </button>
+          <section className="form-panel">
+            <div className="secure-badge">Acesso seguro</div>
 
-            <button
-              onClick={() => {
-                setMode("reset");
-                setMsg("");
-              }}
-              type="button"
-              style={{
-                flex: 1,
-                height: 44,
-                borderRadius: 14,
-                border: "1px solid transparent",
-                background:
-                  mode === "reset"
-                    ? "linear-gradient(180deg, #111827 0%, #0f172a 100%)"
-                    : "transparent",
-                color: mode === "reset" ? "#fff" : "#0f172a",
-                fontWeight: 800,
-                cursor: "pointer",
-              }}
-            >
-              Redefinir
-            </button>
-          </div>
+            <div className="form-title">
+              {mode === "login" ? "Entrar" : "Redefinir senha"}
+            </div>
 
-          <form
-            onSubmit={mode === "login" ? onLogin : onReset}
-            style={{
-              display: "grid",
-              gap: 14,
-              marginTop: 18,
-            }}
-          >
-            <label style={{ display: "grid", gap: 7 }}>
-              <span
-                style={{
-                  fontSize: 13,
-                  color: "#475569",
-                  fontWeight: 800,
+            <div className="form-subtitle">
+              {mode === "login"
+                ? "Use seu email e senha para acessar sua área."
+                : "Informe seu email para receber o link de redefinição de senha."}
+            </div>
+
+            <div className="mode-switch">
+              <button
+                onClick={() => {
+                  setMode("login");
+                  setMsg("");
                 }}
+                type="button"
+                className={mode === "login" ? "mode-btn active" : "mode-btn"}
               >
-                Email
-              </span>
-              <input
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
-                autoComplete="email"
-                placeholder="voce@exemplo.com"
-                style={{
-                  height: 50,
-                  padding: "0 16px",
-                  borderRadius: 16,
-                  border: "1px solid #cbd5e1",
-                  background: "#ffffff",
-                  outline: "none",
-                  fontSize: 15,
-                  color: "#0f172a",
-                }}
-              />
-            </label>
+                Entrar
+              </button>
 
-            {mode === "login" && (
-              <label style={{ display: "grid", gap: 7 }}>
-                <span
-                  style={{
-                    fontSize: 13,
-                    color: "#475569",
-                    fontWeight: 800,
-                  }}
-                >
-                  Senha
-                </span>
+              <button
+                onClick={() => {
+                  setMode("reset");
+                  setMsg("");
+                }}
+                type="button"
+                className={mode === "reset" ? "mode-btn active" : "mode-btn"}
+              >
+                Redefinir
+              </button>
+            </div>
+
+            <form
+              onSubmit={mode === "login" ? onLogin : onReset}
+              className="form-grid"
+            >
+              <label className="field">
+                <span className="field-label">Email</span>
                 <input
-                  type="password"
-                  value={password}
-                  onChange={(e) => setPassword(e.target.value)}
-                  autoComplete="current-password"
-                  placeholder="Digite sua senha"
-                  style={{
-                    height: 50,
-                    padding: "0 16px",
-                    borderRadius: 16,
-                    border: "1px solid #cbd5e1",
-                    background: "#ffffff",
-                    outline: "none",
-                    fontSize: 15,
-                    color: "#0f172a",
-                  }}
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
+                  autoComplete="email"
+                  placeholder="voce@exemplo.com"
+                  className="field-input"
                 />
               </label>
-            )}
 
-            <button
-              disabled={loading}
-              type="submit"
-              style={{
-                height: 50,
-                borderRadius: 16,
-                border: "1px solid #0f172a",
-                background: loading
-                  ? "#334155"
-                  : "linear-gradient(180deg, #111827 0%, #0f172a 100%)",
-                color: "#fff",
-                fontWeight: 900,
-                fontSize: 15,
-                cursor: loading ? "wait" : "pointer",
-              }}
-            >
-              {loading
-                ? "Processando..."
-                : mode === "login"
-                ? "Entrar"
-                : "Enviar link"}
-            </button>
+              {mode === "login" && (
+                <label className="field">
+                  <span className="field-label">Senha</span>
+                  <input
+                    type="password"
+                    value={password}
+                    onChange={(e) => setPassword(e.target.value)}
+                    autoComplete="current-password"
+                    placeholder="Digite sua senha"
+                    className="field-input"
+                  />
+                </label>
+              )}
 
-            {msg ? (
-              <div
-                style={{
-                  ...getMessageStyle(msgTone),
-                  padding: 14,
-                  borderRadius: 16,
-                  fontSize: 14,
-                  lineHeight: 1.7,
-                }}
-              >
-                {msg}
+              <button disabled={loading} type="submit" className="submit-btn">
+                {loading
+                  ? "Processando..."
+                  : mode === "login"
+                  ? "Entrar"
+                  : "Enviar link"}
+              </button>
+
+              {msg ? (
+                <div
+                  className="message-box"
+                  style={getMessageStyle(msgTone)}
+                >
+                  {msg}
+                </div>
+              ) : null}
+            </form>
+
+            <div className="helper-box">
+              <div className="helper-title">Navegação orientada</div>
+              <div className="helper-text">
+                Se você abriu um link direto de avaliação, faça login para
+                voltar automaticamente ao fluxo correto.
               </div>
-            ) : null}
-          </form>
-
-          <div
-            style={{
-              display: "grid",
-              gap: 12,
-              border: "1px solid #e5e7eb",
-              background: "#f8fafc",
-              borderRadius: 18,
-              padding: 16,
-              marginTop: 18,
-            }}
-          >
-            <div
-              style={{
-                fontWeight: 800,
-                color: "#0f172a",
-                fontSize: 14,
-              }}
-            >
-              Navegação orientada
             </div>
-            <div
-              style={{
-                color: "#64748b",
-                fontSize: 13,
-                lineHeight: 1.7,
-              }}
-            >
-              Se você abriu um link direto de avaliação, faça login para voltar
-              automaticamente ao fluxo correto.
-            </div>
-          </div>
-        </section>
+          </section>
+        </div>
       </div>
-    </div>
+
+      <style jsx>{`
+        .login-shell {
+          min-height: 100vh;
+          background:
+            radial-gradient(circle at top left, rgba(59,130,246,.08), transparent 28%),
+            radial-gradient(circle at bottom right, rgba(15,23,42,.06), transparent 28%),
+            linear-gradient(180deg, #f8fafc 0%, #eef2ff 50%, #f8fafc 100%);
+          padding: 20px 16px 32px;
+          display: grid;
+          place-items: center;
+        }
+
+        .login-wrap {
+          width: 100%;
+          max-width: 1180px;
+          display: grid;
+          gap: 20px;
+        }
+
+        .brand-panel,
+        .form-panel {
+          background: #ffffff;
+          border: 1px solid #e5e7eb;
+          border-radius: 24px;
+          padding: 22px;
+          box-shadow: 0 18px 48px rgba(15, 23, 42, 0.06);
+        }
+
+        .brand-panel {
+          background: linear-gradient(
+            180deg,
+            rgba(255,255,255,1) 0%,
+            rgba(248,250,252,1) 100%
+          );
+        }
+
+        .badge,
+        .secure-badge {
+          display: inline-flex;
+          align-items: center;
+          gap: 8px;
+          border-radius: 999px;
+          font-size: 12px;
+          font-weight: 800;
+          letter-spacing: 0.3px;
+        }
+
+        .badge {
+          border: 1px solid #dbeafe;
+          background: #eff6ff;
+          color: #1d4ed8;
+          padding: 8px 12px;
+        }
+
+        .secure-badge {
+          border: 1px solid #e2e8f0;
+          background: #f8fafc;
+          color: #334155;
+          padding: 7px 11px;
+        }
+
+        .brand-header {
+          display: flex;
+          align-items: center;
+          gap: 12px;
+          margin-top: 18px;
+        }
+
+        .logo-box {
+          width: 48px;
+          height: 48px;
+          border-radius: 16px;
+          border: 1px solid #e5e7eb;
+          background: linear-gradient(
+            180deg,
+            rgba(255,255,255,.96) 0%,
+            rgba(241,245,249,.96) 100%
+          );
+          box-shadow: 0 12px 30px rgba(15, 23, 42, 0.08);
+          display: grid;
+          place-items: center;
+          flex: 0 0 auto;
+        }
+
+        .logo-image {
+          width: 26px;
+          height: 26px;
+          object-fit: contain;
+        }
+
+        .brand-name {
+          font-weight: 900;
+          letter-spacing: 0.8px;
+          font-size: 22px;
+          color: #0f172a;
+        }
+
+        .brand-subtitle {
+          color: #64748b;
+          font-size: 14px;
+        }
+
+        .hero-title {
+          margin: 18px 0 12px;
+          font-size: clamp(1.95rem, 6vw, 3.8rem);
+          line-height: 1.05;
+          letter-spacing: -1.2px;
+          color: #0f172a;
+          max-width: 820px;
+        }
+
+        .hero-text {
+          margin: 0;
+          color: #475569;
+          font-size: 15px;
+          line-height: 1.85;
+          max-width: 760px;
+        }
+
+        .benefit-list {
+          display: grid;
+          gap: 12px;
+          margin-top: 18px;
+        }
+
+        .benefit-card {
+          border: 1px solid #e5e7eb;
+          border-radius: 18px;
+          padding: 16px;
+          background: #ffffff;
+        }
+
+        .benefit-label {
+          font-size: 13px;
+          color: #64748b;
+        }
+
+        .benefit-title {
+          margin-top: 8px;
+          font-weight: 900;
+          font-size: 20px;
+          color: #0f172a;
+          line-height: 1.25;
+        }
+
+        .benefit-text {
+          margin: 10px 0 0;
+          color: #64748b;
+          line-height: 1.75;
+          font-size: 14px;
+        }
+
+        .form-title {
+          font-size: 26px;
+          font-weight: 900;
+          margin-top: 14px;
+          color: #0f172a;
+        }
+
+        .form-subtitle {
+          color: #64748b;
+          margin-top: 8px;
+          line-height: 1.7;
+          font-size: 15px;
+        }
+
+        .mode-switch {
+          display: flex;
+          gap: 8px;
+          background: #f1f5f9;
+          padding: 6px;
+          border-radius: 18px;
+          border: 1px solid #e2e8f0;
+          margin-top: 18px;
+        }
+
+        .mode-btn {
+          flex: 1;
+          height: 44px;
+          border-radius: 14px;
+          border: 1px solid transparent;
+          background: transparent;
+          color: #0f172a;
+          font-weight: 800;
+          cursor: pointer;
+        }
+
+        .mode-btn.active {
+          background: linear-gradient(180deg, #111827 0%, #0f172a 100%);
+          color: #ffffff;
+        }
+
+        .form-grid {
+          display: grid;
+          gap: 14px;
+          margin-top: 18px;
+        }
+
+        .field {
+          display: grid;
+          gap: 7px;
+        }
+
+        .field-label {
+          font-size: 13px;
+          color: #475569;
+          font-weight: 800;
+        }
+
+        .field-input {
+          height: 50px;
+          padding: 0 16px;
+          border-radius: 16px;
+          border: 1px solid #cbd5e1;
+          background: #ffffff;
+          outline: none;
+          font-size: 15px;
+          color: #0f172a;
+        }
+
+        .submit-btn {
+          height: 50px;
+          border-radius: 16px;
+          border: 1px solid #0f172a;
+          background: linear-gradient(180deg, #111827 0%, #0f172a 100%);
+          color: #ffffff;
+          font-weight: 900;
+          font-size: 15px;
+          cursor: pointer;
+        }
+
+        .submit-btn:disabled {
+          background: #334155;
+          cursor: wait;
+        }
+
+        .message-box {
+          padding: 14px;
+          border-radius: 16px;
+          font-size: 14px;
+          line-height: 1.7;
+        }
+
+        .helper-box {
+          display: grid;
+          gap: 12px;
+          border: 1px solid #e5e7eb;
+          background: #f8fafc;
+          border-radius: 18px;
+          padding: 16px;
+          margin-top: 18px;
+        }
+
+        .helper-title {
+          font-weight: 800;
+          color: #0f172a;
+          font-size: 14px;
+        }
+
+        .helper-text {
+          color: #64748b;
+          font-size: 13px;
+          line-height: 1.7;
+        }
+
+        @media (min-width: 960px) {
+          .login-shell {
+            padding: 28px 24px 40px;
+          }
+
+          .login-wrap {
+            grid-template-columns: 1.05fr 0.95fr;
+            align-items: stretch;
+          }
+
+          .brand-panel,
+          .form-panel {
+            padding: 28px;
+          }
+
+          .form-panel {
+            align-self: center;
+          }
+        }
+      `}</style>
+    </>
   );
 }
