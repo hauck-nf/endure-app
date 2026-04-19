@@ -1,12 +1,20 @@
 import Link from "next/link";
 
+const cardStyle: React.CSSProperties = {
+  background: "#ffffff",
+  border: "1px solid #e5e7eb",
+  borderRadius: 24,
+  padding: 20,
+  boxShadow: "0 18px 48px rgba(15,23,42,.06)",
+};
+
 export default function Home() {
   return (
     <main
       style={{
         minHeight: "100vh",
         background:
-          "linear-gradient(180deg, #f8fafc 0%, #eef2ff 45%, #f8fafc 100%)",
+          "radial-gradient(circle at top left, rgba(59,130,246,.08), transparent 28%), radial-gradient(circle at bottom right, rgba(15,23,42,.06), transparent 28%), linear-gradient(180deg, #f8fafc 0%, #eef2ff 48%, #f8fafc 100%)",
         color: "#0f172a",
       }}
     >
@@ -14,7 +22,7 @@ export default function Home() {
         style={{
           maxWidth: 1180,
           margin: "0 auto",
-          padding: "56px 20px 80px",
+          padding: "28px 18px 72px",
         }}
       >
         <header
@@ -27,13 +35,36 @@ export default function Home() {
           }}
         >
           <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
-            <img
-              src="/endure_logo.png"
-              alt="ENDURE"
-              style={{ width: 36, height: 36, objectFit: "contain" }}
-            />
+            <div
+              style={{
+                width: 46,
+                height: 46,
+                borderRadius: 16,
+                border: "1px solid #e5e7eb",
+                background:
+                  "linear-gradient(180deg, rgba(255,255,255,.96) 0%, rgba(241,245,249,.96) 100%)",
+                boxShadow: "0 12px 30px rgba(15,23,42,.08)",
+                display: "grid",
+                placeItems: "center",
+              }}
+            >
+              <img
+                src="/endure_logo.png"
+                alt="ENDURE"
+                style={{ width: 26, height: 26, objectFit: "contain" }}
+              />
+            </div>
+
             <div>
-              <div style={{ fontWeight: 900, letterSpacing: 0.8 }}>ENDURE</div>
+              <div
+                style={{
+                  fontWeight: 900,
+                  letterSpacing: 0.8,
+                  color: "#0f172a",
+                }}
+              >
+                ENDURE
+              </div>
               <div style={{ fontSize: 13, color: "#64748b" }}>
                 Avaliação socioemocional em atletas
               </div>
@@ -53,6 +84,7 @@ export default function Home() {
               alignItems: "center",
               textDecoration: "none",
               fontWeight: 800,
+              whiteSpace: "nowrap",
             }}
           >
             Entrar
@@ -62,13 +94,18 @@ export default function Home() {
         <section
           style={{
             display: "grid",
-            gridTemplateColumns: "1.1fr 0.9fr",
-            gap: 24,
-            marginTop: 48,
-            alignItems: "center",
+            gap: 22,
+            marginTop: 30,
           }}
         >
-          <div>
+          <div
+            style={{
+              ...cardStyle,
+              padding: 22,
+              background:
+                "linear-gradient(180deg, rgba(255,255,255,1) 0%, rgba(248,250,252,1) 100%)",
+            }}
+          >
             <div
               style={{
                 display: "inline-flex",
@@ -79,8 +116,9 @@ export default function Home() {
                 color: "#1d4ed8",
                 borderRadius: 999,
                 padding: "8px 12px",
-                fontSize: 13,
-                fontWeight: 700,
+                fontSize: 12,
+                fontWeight: 800,
+                letterSpacing: 0.3,
               }}
             >
               Plataforma para atletas e equipe técnica
@@ -88,10 +126,12 @@ export default function Home() {
 
             <h1
               style={{
-                margin: "18px 0 14px",
-                fontSize: "clamp(2.2rem, 5vw, 4rem)",
-                lineHeight: 1.05,
+                margin: "16px 0 12px",
+                fontSize: "clamp(2.1rem, 7vw, 4.4rem)",
+                lineHeight: 1.03,
                 letterSpacing: -1.4,
+                color: "#0f172a",
+                maxWidth: 880,
               }}
             >
               Avaliação socioemocional com rigor científico e aplicação prática.
@@ -99,24 +139,24 @@ export default function Home() {
 
             <p
               style={{
-                fontSize: 18,
-                lineHeight: 1.7,
-                color: "#475569",
-                maxWidth: 760,
                 margin: 0,
+                color: "#475569",
+                fontSize: 17,
+                lineHeight: 1.8,
+                maxWidth: 760,
               }}
             >
-              A ENDURE organiza avaliações, histórico e relatórios em um ambiente
-              pensado para monitoramento, pesquisa e desenvolvimento humano no
-              contexto esportivo.
+              A ENDURE é uma bateria de avaliação construída para identificar potencialidades 
+              socioemocionais a serem desenvolvidas para 
+              otimizar o desempenho em atletas de endurance. 
             </p>
 
             <div
               style={{
                 display: "flex",
-                gap: 12,
                 flexWrap: "wrap",
-                marginTop: 24,
+                gap: 12,
+                marginTop: 22,
               }}
             >
               <Link
@@ -159,137 +199,147 @@ export default function Home() {
 
           <div
             style={{
-              background: "#ffffff",
-              border: "1px solid #e5e7eb",
-              borderRadius: 24,
-              padding: 22,
-              boxShadow: "0 20px 50px rgba(15,23,42,.08)",
               display: "grid",
-              gap: 14,
+              gap: 16,
             }}
           >
-            <div
-              style={{
-                fontWeight: 900,
-                fontSize: 20,
-                color: "#0f172a",
-              }}
-            >
-              Visão da plataforma
+            <div style={cardStyle}>
+              <div style={{ fontSize: 13, color: "#64748b" }}>Rigor psicométrico</div>
+              <div
+                style={{
+                  marginTop: 8,
+                  fontWeight: 900,
+                  fontSize: 22,
+                  color: "#0f172a",
+                }}
+              >
+                Construída com base em princípios psicométricos sólidos, mas, fácil de usar e entender.
+              </div>
+              <p
+                style={{
+                  margin: "10px 0 0",
+                  color: "#64748b",
+                  lineHeight: 1.7,
+                }}
+              >
+                Métricas e indicadores para aprimoramento de atletas de endurance.
+              </p>
             </div>
 
-            <div
-              style={{
-                border: "1px solid #e5e7eb",
-                borderRadius: 18,
-                padding: 16,
-                background: "#f8fafc",
-              }}
-            >
-              <div style={{ fontSize: 13, color: "#64748b" }}>Histórico</div>
-              <div style={{ marginTop: 6, fontWeight: 800, fontSize: 22 }}>
-                Acompanhamento longitudinal
+            <div style={cardStyle}>
+              <div style={{ fontSize: 13, color: "#64748b" }}>Aplicação prática</div>
+              <div
+                style={{
+                  marginTop: 8,
+                  fontWeight: 900,
+                  fontSize: 22,
+                  color: "#0f172a",
+                }}
+              >
+                Ambiente intuitivo para autoavaliação e automonitoramento,
+                para o atleta
               </div>
+              <p
+                style={{
+                  margin: "10px 0 0",
+                  color: "#64748b",
+                  lineHeight: 1.7,
+                }}
+              >
+                Relatórios de avaliação fáceis de entender, reunidos em
+                um fluxo simples, informativo e intuitivo para o uso diário.
+              </p>
             </div>
 
-            <div
-              style={{
-                border: "1px solid #e5e7eb",
-                borderRadius: 18,
-                padding: 16,
-                background: "#f8fafc",
-              }}
-            >
-              <div style={{ fontSize: 13, color: "#64748b" }}>Fluxo</div>
-              <div style={{ marginTop: 6, fontWeight: 800, fontSize: 22 }}>
-                Pendências, respostas e organização
+            <div style={cardStyle}>
+              <div style={{ fontSize: 13, color: "#64748b" }}>Leitura estruturada</div>
+              <div
+                style={{
+                  marginTop: 8,
+                  fontWeight: 900,
+                  fontSize: 22,
+                  color: "#0f172a",
+                }}
+              >
+                Informação estratégica para atletas, equipe técnica e pesquisa
               </div>
-            </div>
-
-            <div
-              style={{
-                border: "1px solid #e5e7eb",
-                borderRadius: 18,
-                padding: 16,
-                background: "#f8fafc",
-              }}
-            >
-              <div style={{ fontSize: 13, color: "#64748b" }}>Relatórios</div>
-              <div style={{ marginTop: 6, fontWeight: 800, fontSize: 22 }}>
-                Leitura estruturada dos resultados
-              </div>
+              <p
+                style={{
+                  margin: "10px 0 0",
+                  color: "#64748b",
+                  lineHeight: 1.7,
+                }}
+              >
+                É a ponte entre a 
+              pesquisa científica e as competições.
+              </p>
             </div>
           </div>
         </section>
 
-        <section id="beneficios" style={{ marginTop: 54 }}>
-          <div
-            style={{
-              fontSize: 13,
-              fontWeight: 800,
-              color: "#2563eb",
-              textTransform: "uppercase",
-              letterSpacing: 1,
-            }}
-          >
-            Benefícios
+        <section id="beneficios" style={{ marginTop: 34, display: "grid", gap: 16 }}>
+          <div>
+            <div
+              style={{
+                fontSize: 12,
+                fontWeight: 800,
+                color: "#2563eb",
+                textTransform: "uppercase",
+                letterSpacing: 1,
+              }}
+            >
+              Benefícios
+            </div>
+            <h2
+              style={{
+                margin: "10px 0 8px",
+                fontSize: "clamp(1.8rem, 5vw, 2.4rem)",
+                color: "#0f172a",
+              }}
+            >
+              Autoavaliativa, você mesmo responde aos instrumentos e obtém relatórios
+            </h2>
+            <p
+              style={{
+                margin: 0,
+                color: "#64748b",
+                lineHeight: 1.8,
+                maxWidth: 760,
+              }}
+            >
+              Fácil e intuitva de usar, tanto no desktop quanto no smartphone.
+            </p>
           </div>
-
-          <h2 style={{ fontSize: 32, margin: "10px 0 8px" }}>
-            Uma plataforma feita para clareza e utilidade
-          </h2>
-
-          <p
-            style={{
-              color: "#64748b",
-              lineHeight: 1.7,
-              maxWidth: 760,
-              margin: 0,
-            }}
-          >
-            A ENDURE integra avaliação, histórico e acesso organizado a
-            resultados em uma experiência mais clara para atletas e equipe
-            técnica.
-          </p>
 
           <div
             style={{
               display: "grid",
-              gridTemplateColumns: "repeat(3, minmax(0, 1fr))",
-              gap: 18,
-              marginTop: 22,
+              gap: 16,
             }}
           >
             {[
               {
-                title: "Rigor psicométrico",
-                text: "Construção baseada em princípios técnicos sólidos e foco em qualidade de medida.",
+                title: "Acompanhamento longitudinal",
+                text: "Visualize evolução ao longo do tempo em um ambiente organizado.",
               },
               {
-                title: "Aplicação prática",
-                text: "Útil para pesquisa, monitoramento e apoio à tomada de decisão.",
+                title: "Relatórios estruturados",
+                text: "Transforme dados em leitura técnica mais rápida e útil.",
               },
               {
-                title: "Leitura estruturada",
-                text: "Resultados organizados para interpretação mais rápida e consistente.",
+                title: "Fluxo intuitivo",
+                text: "Pendências, respostas e histórico em uma navegação simples.",
               },
             ].map((item) => (
-              <div
-                key={item.title}
-                style={{
-                  background: "#fff",
-                  border: "1px solid #e5e7eb",
-                  borderRadius: 20,
-                  padding: 20,
-                  boxShadow: "0 14px 40px rgba(15,23,42,.05)",
-                }}
-              >
-                <div style={{ fontWeight: 900, fontSize: 18 }}>{item.title}</div>
+              <div key={item.title} style={cardStyle}>
+                <div style={{ fontWeight: 900, fontSize: 18, color: "#0f172a" }}>
+                  {item.title}
+                </div>
                 <p
                   style={{
+                    margin: "10px 0 0",
                     color: "#64748b",
                     lineHeight: 1.7,
-                    margin: "10px 0 0",
                   }}
                 >
                   {item.text}
