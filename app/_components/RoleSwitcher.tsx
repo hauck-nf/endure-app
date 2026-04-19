@@ -1,4 +1,4 @@
-﻿"use client";
+"use client";
 
 import { useEffect, useMemo, useState } from "react";
 import { usePathname } from "next/navigation";
@@ -13,7 +13,7 @@ function roleFromPath(pathname: string | null): Role {
 
 function targetPathForRole(role: Role): string {
   if (role === "admin") return "/admin/dashboard";
-  return "/athlete/pending";
+  return "/athlete/dashboard";
 }
 
 export default function RoleSwitcher() {
@@ -23,12 +23,16 @@ export default function RoleSwitcher() {
 
   useEffect(() => {
     setValue(roleByRoute);
-    try { localStorage.setItem("endure_role_view", roleByRoute); } catch {}
+    try {
+      localStorage.setItem("endure_role_view", roleByRoute);
+    } catch {}
   }, [roleByRoute]);
 
   function onChange(next: Role) {
     setValue(next);
-    try { localStorage.setItem("endure_role_view", next); } catch {}
+    try {
+      localStorage.setItem("endure_role_view", next);
+    } catch {}
     window.location.assign(targetPathForRole(next));
   }
 
