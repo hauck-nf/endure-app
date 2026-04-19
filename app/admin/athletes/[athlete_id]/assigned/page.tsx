@@ -301,7 +301,7 @@ export default function AssignedEvaluationsPageClient() {
       </div>
 
       <div style={{ marginTop: 8 }}>
-        <a href={`/admin/athletes/${athleteId}`} style={{ color: "#111827" }}>← Voltar</a>
+        <a href="/admin/athletes" style={{ color: "#111827" }}>← Voltar</a>
       </div>
     </div>
   );

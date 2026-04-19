@@ -1,4 +1,4 @@
-﻿"use client";
+"use client";
 
 import { useEffect, useMemo, useState } from "react";
 import { useParams, useRouter } from "next/navigation";
@@ -136,7 +136,7 @@ export default function AdminAthleteDashboardView() {
         <h1 style={{ fontSize: 20, fontWeight: 700 }}>Erro</h1>
         <div style={{ color: "#6b7280", marginTop: 6 }}>{err}</div>
         <div style={{ marginTop: 12 }}>
-          <a href={`/admin/athletes/${athleteId}`}>← Voltar</a>
+          <a href="/admin/athletes">← Voltar</a>
         </div>
       </div>
     );
@@ -144,7 +144,7 @@ export default function AdminAthleteDashboardView() {
 
   return (
     <div style={{ maxWidth: 950, margin: "20px auto", fontFamily: "system-ui", display: "grid", gap: 12 }}>
-      <a href={`/admin/athletes/${athleteId}`}>← Voltar</a>
+      <a href="/admin/athletes">← Voltar</a>
 
       <div>
         <h1 style={{ fontSize: 22, fontWeight: 700, margin: 0 }}>Dashboard do atleta (Admin View)</h1>

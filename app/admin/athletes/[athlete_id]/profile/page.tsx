@@ -1,4 +1,4 @@
-﻿"use client";
+"use client";
 
 import { useEffect, useMemo, useState } from "react";
 import { useParams, useRouter } from "next/navigation";
@@ -232,7 +232,7 @@ export default function AthleteProfilePageClient() {
       </div>
 
       <div style={{ marginTop: 8 }}>
-        <a href={`/admin/athletes/${athleteId}`}>← Voltar</a>
+        <a href="/admin/athletes">← Voltar</a>
       </div>
     </div>
   );
