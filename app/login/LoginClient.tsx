@@ -1,4 +1,4 @@
-﻿"use client";
+"use client";
 
 import { useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
@@ -57,12 +57,25 @@ export default function LoginClient() {
       refresh_token: sessJson.refresh_token,
     });
 
-    if (nextUrl && nextUrl.startsWith("/")) {
-      setLoading(false);
-      router.push(nextUrl);
-      router.refresh();
-      return;
-    }
+    const safeNext =
+  nextUrl &&
+  nextUrl.startsWith("/") &&
+  !nextUrl.startsWith("/athlete/pending") &&
+  !nextUrl.startsWith("/athlete/dashboard");
+
+if (
+  safeNext &&
+  (
+    safeNext.startsWith("/athlete/request/") ||
+    safeNext.startsWith("/athlete/questionnaire") ||
+    safeNext.startsWith("/admin/")
+  )
+) {
+  setLoading(false);
+  router.push(safeNext);
+  router.refresh();
+  return;
+}
 
     const { data: sess } = await supabaseBrowser.auth.getSession();
     const userId = sess.session?.user?.id;
