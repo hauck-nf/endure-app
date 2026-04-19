@@ -2,12 +2,12 @@ import Link from "next/link";
 import { requireAdmin } from "@/src/lib/requireAdmin";
 import CreateAthleteForm from "./CreateAthleteForm";
 
-function sectionStyle(): React.CSSProperties {
+function cardStyle(): React.CSSProperties {
   return {
     background: "#ffffff",
     border: "1px solid #e5e7eb",
     borderRadius: 24,
-    padding: 22,
+    padding: 20,
     boxShadow: "0 18px 48px rgba(15,23,42,.06)",
   };
 }
@@ -19,7 +19,7 @@ function actionLinkStyle(primary = false): React.CSSProperties {
     justifyContent: "center",
     width: "100%",
     minHeight: 36,
-    padding: "0 8px",
+    padding: "0 10px",
     borderRadius: 12,
     border: primary ? "1px solid #0f172a" : "1px solid #d1d5db",
     background: primary ? "#0f172a" : "#ffffff",
@@ -153,7 +153,7 @@ export default async function AdminAthletesPage() {
           gridTemplateColumns: "minmax(0, 1fr)",
         }}
       >
-        <div style={sectionStyle()}>
+        <div style={cardStyle()}>
           <h2
             style={{
               margin: 0,
@@ -166,7 +166,7 @@ export default async function AdminAthletesPage() {
             Lista de atletas
           </h2>
 
-          <p
+          <div
             style={{
               marginTop: 8,
               marginBottom: 16,
@@ -176,7 +176,7 @@ export default async function AdminAthletesPage() {
             }}
           >
             Selecione a área que deseja acessar para cada atleta.
-          </p>
+          </div>
 
           {athleteRows.length === 0 ? (
             <div
@@ -275,7 +275,7 @@ export default async function AdminAthletesPage() {
           )}
         </div>
 
-        <div style={sectionStyle()}>
+        <div style={cardStyle()}>
           <h2
             style={{
               margin: 0,
@@ -288,7 +288,7 @@ export default async function AdminAthletesPage() {
             Cadastrar atleta
           </h2>
 
-          <p
+          <div
             style={{
               marginTop: 8,
               marginBottom: 16,
@@ -299,7 +299,7 @@ export default async function AdminAthletesPage() {
           >
             Crie um novo cadastro para disponibilizar avaliações e relatórios na
             plataforma.
-          </p>
+          </div>
 
           <div style={{ minWidth: 0, overflow: "hidden" }}>
             <CreateAthleteForm />

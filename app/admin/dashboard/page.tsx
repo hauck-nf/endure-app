@@ -6,7 +6,7 @@ function cardStyle(): React.CSSProperties {
   return {
     background: "#ffffff",
     border: "1px solid #e5e7eb",
-    borderRadius: 22,
+    borderRadius: 24,
     padding: 20,
     boxShadow: "0 18px 48px rgba(15,23,42,.06)",
   };
@@ -305,7 +305,7 @@ export default async function AdminDashboardPage() {
                 fontSize: 14,
               }}
             >
-              Ver tudo
+              Designar avaliação
             </Link>
           </div>
 
@@ -382,7 +382,13 @@ export default async function AdminDashboardPage() {
                     </span>
                   </div>
 
-                  <div style={{ fontSize: 13, color: "#64748b", lineHeight: 1.6 }}>
+                  <div
+                    style={{
+                      fontSize: 13,
+                      color: "#64748b",
+                      lineHeight: 1.6,
+                    }}
+                  >
                     Criada em {fmtDate(item.created_at)}
                   </div>
                 </div>
@@ -446,7 +452,13 @@ export default async function AdminDashboardPage() {
                   <span style={{ fontWeight: 600, lineHeight: 1.4 }}>
                     {item.label}
                   </span>
-                  <span style={{ color: "#64748b", fontSize: 13, lineHeight: 1.6 }}>
+                  <span
+                    style={{
+                      color: "#64748b",
+                      fontSize: 13,
+                      lineHeight: 1.6,
+                    }}
+                  >
                     {item.helper}
                   </span>
                 </Link>
@@ -478,19 +490,27 @@ export default async function AdminDashboardPage() {
               }}
             >
               <div>
-                <span style={{ color: "#0f172a", fontWeight: 600 }}>Pendentes:</span>{" "}
+                <span style={{ color: "#0f172a", fontWeight: 600 }}>
+                  Pendentes:
+                </span>{" "}
                 solicitações ainda não iniciadas.
               </div>
               <div>
-                <span style={{ color: "#0f172a", fontWeight: 600 }}>Em andamento:</span>{" "}
+                <span style={{ color: "#0f172a", fontWeight: 600 }}>
+                  Em andamento:
+                </span>{" "}
                 avaliações abertas e não concluídas.
               </div>
               <div>
-                <span style={{ color: "#0f172a", fontWeight: 600 }}>Submetidas:</span>{" "}
+                <span style={{ color: "#0f172a", fontWeight: 600 }}>
+                  Submetidas:
+                </span>{" "}
                 avaliações já enviadas pelo atleta.
               </div>
               <div>
-                <span style={{ color: "#0f172a", fontWeight: 600 }}>Atletas:</span>{" "}
+                <span style={{ color: "#0f172a", fontWeight: 600 }}>
+                  Atletas:
+                </span>{" "}
                 usuários com perfil de atleta cadastrados.
               </div>
             </div>
