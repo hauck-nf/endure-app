@@ -7,30 +7,6 @@ import { supabaseBrowser } from "@/src/lib/supabaseBrowser";
 type Mode = "login" | "reset";
 type MsgTone = "default" | "error" | "success";
 
-const shellStyle: React.CSSProperties = {
-  minHeight: "100vh",
-  background:
-    "radial-gradient(circle at top left, rgba(59,130,246,.08), transparent 28%), radial-gradient(circle at bottom right, rgba(15,23,42,.06), transparent 28%), linear-gradient(180deg, #f8fafc 0%, #eef2ff 48%, #f8fafc 100%)",
-  padding: "20px 16px 32px",
-  display: "grid",
-  placeItems: "center",
-};
-
-const wrapperStyle: React.CSSProperties = {
-  width: "100%",
-  maxWidth: 1120,
-  display: "grid",
-  gap: 18,
-};
-
-const panelStyle: React.CSSProperties = {
-  background: "#ffffff",
-  border: "1px solid #e5e7eb",
-  borderRadius: 24,
-  padding: 22,
-  boxShadow: "0 18px 48px rgba(15,23,42,.06)",
-};
-
 function getMessageStyle(msgTone: MsgTone): React.CSSProperties {
   if (msgTone === "error") {
     return {
@@ -180,13 +156,32 @@ export default function LoginClient() {
   }
 
   return (
-    <div style={shellStyle}>
-      <div style={wrapperStyle}>
+    <div
+      style={{
+        minHeight: "100vh",
+        background:
+          "linear-gradient(180deg, #f8fafc 0%, #eef2ff 50%, #f8fafc 100%)",
+        padding: "20px 16px 32px",
+        display: "grid",
+        placeItems: "center",
+      }}
+    >
+      <div
+        style={{
+          width: "100%",
+          maxWidth: 560,
+          display: "grid",
+          gap: 18,
+        }}
+      >
         <section
           style={{
-            ...panelStyle,
             background:
               "linear-gradient(180deg, rgba(255,255,255,1) 0%, rgba(248,250,252,1) 100%)",
+            border: "1px solid #e5e7eb",
+            borderRadius: 24,
+            padding: 22,
+            boxShadow: "0 18px 48px rgba(15,23,42,.06)",
           }}
         >
           <div
@@ -255,85 +250,37 @@ export default function LoginClient() {
           <h1
             style={{
               margin: "18px 0 12px",
-              fontSize: "clamp(2rem, 7vw, 3.2rem)",
-              lineHeight: 1.05,
-              letterSpacing: -1.2,
+              fontSize: "clamp(1.9rem, 7vw, 2.8rem)",
+              lineHeight: 1.06,
+              letterSpacing: -1,
               color: "#0f172a",
-              maxWidth: 760,
             }}
           >
-            Acesse a plataforma com clareza, segurança e praticidade.
+            Acesse a plataforma com clareza e praticidade.
           </h1>
 
           <p
             style={{
               margin: 0,
               color: "#475569",
-              fontSize: 16,
+              fontSize: 15,
               lineHeight: 1.8,
-              maxWidth: 760,
             }}
           >
             A ENDURE organiza avaliações, histórico e resultados em uma
-            experiência pensada para atletas e equipe técnica, com foco em
-            usabilidade, leitura estruturada e aplicação prática.
+            experiência pensada para atletas e equipe técnica.
           </p>
-
-          <div
-            style={{
-              display: "grid",
-              gap: 12,
-              marginTop: 18,
-            }}
-          >
-            {[
-              {
-                title: "Rigor psicométrico",
-                text: "Construída com base em princípios técnicos sólidos.",
-              },
-              {
-                title: "Fluxo intuitivo",
-                text: "Pendências, histórico e resultados organizados em um só ambiente.",
-              },
-              {
-                title: "Aplicação prática",
-                text: "Uma plataforma útil para monitoramento, pesquisa e desenvolvimento.",
-              },
-            ].map((item) => (
-              <div
-                key={item.title}
-                style={{
-                  border: "1px solid #e5e7eb",
-                  borderRadius: 18,
-                  padding: 16,
-                  background: "#ffffff",
-                }}
-              >
-                <div
-                  style={{
-                    fontWeight: 800,
-                    color: "#0f172a",
-                    fontSize: 15,
-                  }}
-                >
-                  {item.title}
-                </div>
-                <div
-                  style={{
-                    marginTop: 6,
-                    color: "#64748b",
-                    fontSize: 14,
-                    lineHeight: 1.7,
-                  }}
-                >
-                  {item.text}
-                </div>
-              </div>
-            ))}
-          </div>
         </section>
 
-        <section style={panelStyle}>
+        <section
+          style={{
+            background: "#ffffff",
+            border: "1px solid #e5e7eb",
+            borderRadius: 24,
+            padding: 22,
+            boxShadow: "0 18px 48px rgba(15,23,42,.06)",
+          }}
+        >
           <div
             style={{
               display: "inline-flex",
@@ -353,13 +300,13 @@ export default function LoginClient() {
 
           <div
             style={{
-              fontSize: 28,
+              fontSize: 26,
               fontWeight: 900,
               marginTop: 14,
               color: "#0f172a",
             }}
           >
-            {mode === "login" ? "Entrar na plataforma" : "Redefinir senha"}
+            {mode === "login" ? "Entrar" : "Redefinir senha"}
           </div>
 
           <div
@@ -394,7 +341,7 @@ export default function LoginClient() {
               type="button"
               style={{
                 flex: 1,
-                height: 46,
+                height: 44,
                 borderRadius: 14,
                 border: "1px solid transparent",
                 background:
@@ -417,7 +364,7 @@ export default function LoginClient() {
               type="button"
               style={{
                 flex: 1,
-                height: 46,
+                height: 44,
                 borderRadius: 14,
                 border: "1px solid transparent",
                 background:
@@ -429,7 +376,7 @@ export default function LoginClient() {
                 cursor: "pointer",
               }}
             >
-              Redefinir senha
+              Redefinir
             </button>
           </div>
 
@@ -457,7 +404,7 @@ export default function LoginClient() {
                 autoComplete="email"
                 placeholder="voce@exemplo.com"
                 style={{
-                  height: 52,
+                  height: 50,
                   padding: "0 16px",
                   borderRadius: 16,
                   border: "1px solid #cbd5e1",
@@ -487,7 +434,7 @@ export default function LoginClient() {
                   autoComplete="current-password"
                   placeholder="Digite sua senha"
                   style={{
-                    height: 52,
+                    height: 50,
                     padding: "0 16px",
                     borderRadius: 16,
                     border: "1px solid #cbd5e1",
@@ -504,7 +451,7 @@ export default function LoginClient() {
               disabled={loading}
               type="submit"
               style={{
-                height: 52,
+                height: 50,
                 borderRadius: 16,
                 border: "1px solid #0f172a",
                 background: loading
