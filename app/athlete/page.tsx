@@ -1,26 +1,28 @@
-﻿"use client";
+"use client";
 
-import { useEffect, useState } from "react";
+import { useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { supabaseBrowser } from "@/src/lib/supabaseBrowser";
 
 export default function AthleteHomePage() {
   const router = useRouter();
-  const [msg, setMsg] = useState("Carregando…");
 
   useEffect(() => {
     (async () => {
-      // mobile-safe
       const { data: sess } = await supabaseBrowser.auth.getSession();
+
       if (!sess.session) {
-        router.replace("/login?next=/athlete");
+        router.replace("/login?next=/athlete/dashboard");
         return;
       }
 
-      // não precisa checar role aqui para evitar roundtrips
-      router.replace("/athlete/pending");
+      router.replace("/athlete/dashboard");
     })();
   }, [router]);
 
-  return <div style={{ padding: 16, color: "#6b7280" }}>{msg}</div>;
+  return (
+    <div style={{ padding: 16, color: "#6b7280" }}>
+      Carregando dashboard...
+    </div>
+  );
 }
