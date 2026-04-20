@@ -19,7 +19,19 @@ type AthleteMini = {
 };
 
 function isUuid(x: string) {
-  return /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(x);
+  return /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(
+    x
+  );
+}
+
+function cardStyle(): React.CSSProperties {
+  return {
+    background: "#ffffff",
+    border: "1px solid #e5e7eb",
+    borderRadius: 24,
+    padding: 20,
+    boxShadow: "0 18px 48px rgba(15,23,42,.06)",
+  };
 }
 
 export default function AdminAthleteDashboardView() {
@@ -43,14 +55,12 @@ export default function AdminAthleteDashboardView() {
           return;
         }
 
-        // auth
         const { data: auth } = await supabaseBrowser.auth.getUser();
         if (!auth.user) {
           router.push("/login");
           return;
         }
 
-        // role admin
         const { data: profile, error: pErr } = await supabaseBrowser
           .from("profiles")
           .select("role")
@@ -62,7 +72,6 @@ export default function AdminAthleteDashboardView() {
           return;
         }
 
-        // athlete header
         const { data: a, error: aErr } = await supabaseBrowser
           .from("athletes")
           .select("full_name, email, team, sport_primary")
@@ -72,10 +81,11 @@ export default function AdminAthleteDashboardView() {
         if (aErr) throw aErr;
         setAthlete(a as any);
 
-        // assessments submitted + scores (depende do relacionamento assessments -> assessment_scores)
         const { data, error } = await supabaseBrowser
           .from("assessments")
-          .select("assessment_id, submitted_at, assessment_scores(readiness_score, scores_json)")
+          .select(
+            "assessment_id, submitted_at, assessment_scores(readiness_score, scores_json)"
+          )
           .eq("athlete_id", athleteId)
           .eq("status", "submitted")
           .order("submitted_at", { ascending: true });
@@ -95,13 +105,15 @@ export default function AdminAthleteDashboardView() {
         const firstScale = first ? Object.keys(first)[0] : "";
         setScale(firstScale || "");
       } catch (e: any) {
-        setErr(e?.message ?? "Erro ao carregar dashboard (admin view).");
+        setErr(e?.message ?? "Erro ao carregar dashboard do atleta.");
       }
     })();
   }, [athleteId, router]);
 
   const latestReadiness = useMemo(() => {
-    const last = [...rows].reverse().find((r) => typeof r.readiness_score === "number");
+    const last = [...rows].reverse().find(
+      (r) => typeof r.readiness_score === "number"
+    );
     return last?.readiness_score ?? null;
   }, [rows]);
 
@@ -122,7 +134,7 @@ export default function AdminAthleteDashboardView() {
         const sc = r.scores_json.scales[scale];
         const dt = r.submitted_at ? new Date(r.submitted_at) : null;
         return {
-          dateLabel: dt ? dt.toLocaleDateString() : "",
+          dateLabel: dt ? dt.toLocaleDateString("pt-BR") : "",
           ts: dt ? dt.getTime() : 0,
           percentile: typeof sc.percentile === "number" ? sc.percentile : null,
         };
@@ -132,41 +144,205 @@ export default function AdminAthleteDashboardView() {
 
   if (err) {
     return (
-      <div style={{ padding: 16 }}>
-        <h1 style={{ fontSize: 20, fontWeight: 700 }}>Erro</h1>
-        <div style={{ color: "#6b7280", marginTop: 6 }}>{err}</div>
-        <div style={{ marginTop: 12 }}>
-          <a href="/admin/athletes">← Voltar</a>
+      <div
+        style={{
+          maxWidth: 980,
+          margin: "0 auto",
+          padding: "20px 16px 32px",
+          display: "grid",
+          gap: 16,
+        }}
+      >
+        <a
+          href="/admin/athletes"
+          style={{
+            color: "#475569",
+            textDecoration: "none",
+            fontWeight: 600,
+            fontSize: 14,
+          }}
+        >
+          ← Voltar
+        </a>
+
+        <div
+          style={{
+            border: "1px solid #fecaca",
+            background: "#fff1f2",
+            color: "#9f1239",
+            borderRadius: 18,
+            padding: 16,
+            lineHeight: 1.7,
+          }}
+        >
+          <div style={{ fontWeight: 700, marginBottom: 6 }}>Erro</div>
+          <div style={{ fontSize: 14 }}>{err}</div>
         </div>
       </div>
     );
   }
 
   return (
-    <div style={{ maxWidth: 950, margin: "20px auto", fontFamily: "system-ui", display: "grid", gap: 12 }}>
-      <a href="/admin/athletes">← Voltar</a>
+    <div
+      style={{
+        maxWidth: 980,
+        margin: "0 auto",
+        padding: "20px 16px 32px",
+        display: "grid",
+        gap: 16,
+      }}
+    >
+      <section
+        style={{
+          background:
+            "linear-gradient(180deg, rgba(255,255,255,1) 0%, rgba(248,250,252,1) 100%)",
+          border: "1px solid #e5e7eb",
+          borderRadius: 24,
+          padding: 22,
+          boxShadow: "0 18px 48px rgba(15,23,42,.06)",
+        }}
+      >
+        <a
+          href="/admin/athletes"
+          style={{
+            color: "#475569",
+            textDecoration: "none",
+            fontWeight: 600,
+            fontSize: 14,
+          }}
+        >
+          ← Voltar
+        </a>
 
-      <div>
-        <h1 style={{ fontSize: 22, fontWeight: 700, margin: 0 }}>Dashboard do atleta (Admin View)</h1>
-        <div style={{ color: "#6b7280", marginTop: 6 }}>
-          {athlete?.full_name ?? "—"} • {athlete?.email ?? "—"} • {athlete?.team ?? "—"} • {athlete?.sport_primary ?? "—"}
+        <div
+          style={{
+            marginTop: 14,
+            display: "inline-flex",
+            alignItems: "center",
+            gap: 8,
+            border: "1px solid #dbeafe",
+            background: "#eff6ff",
+            color: "#1d4ed8",
+            borderRadius: 999,
+            padding: "8px 12px",
+            fontSize: 12,
+            fontWeight: 700,
+            letterSpacing: 0.2,
+          }}
+        >
+          Dashboard do atleta
         </div>
-      </div>
 
-      <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 }}>
-        <div style={{ border: "1px solid #e5e7eb", borderRadius: 12, padding: 14, background: "#fff" }}>
-          <div style={{ color: "#6b7280" }}>Prontidão (última)</div>
-          <div style={{ fontSize: 34, fontWeight: 700, marginTop: 6 }}>
+        <h1
+          style={{
+            margin: "14px 0 10px",
+            fontSize: 32,
+            lineHeight: 1.1,
+            letterSpacing: -0.6,
+            color: "#0f172a",
+            fontWeight: 700,
+          }}
+        >
+          {athlete?.full_name ?? "Atleta"}
+        </h1>
+
+        <div
+          style={{
+            display: "grid",
+            gap: 4,
+            color: "#64748b",
+            fontSize: 14,
+            lineHeight: 1.7,
+          }}
+        >
+          <div>{athlete?.email ?? "Sem email cadastrado"}</div>
+          <div>
+            {[athlete?.team, athlete?.sport_primary].filter(Boolean).join(" • ") || "—"}
+          </div>
+        </div>
+      </section>
+
+      <section
+        data-athlete-admin-dashboard-top="true"
+        style={{
+          display: "grid",
+          gap: 16,
+          gridTemplateColumns: "minmax(0, 1fr)",
+        }}
+      >
+        <div style={cardStyle()}>
+          <div
+            style={{
+              color: "#64748b",
+              fontSize: 14,
+              fontWeight: 500,
+            }}
+          >
+            Prontidão mais recente
+          </div>
+
+          <div
+            style={{
+              fontSize: 34,
+              fontWeight: 700,
+              marginTop: 10,
+              color: "#0f172a",
+              lineHeight: 1,
+            }}
+          >
             {latestReadiness === null ? "—" : latestReadiness.toFixed(2)}
+          </div>
+
+          <div
+            style={{
+              marginTop: 10,
+              color: "#64748b",
+              fontSize: 13,
+              lineHeight: 1.6,
+            }}
+          >
+            Valor calculado a partir da avaliação mais recente submetida.
           </div>
         </div>
 
-        <div style={{ border: "1px solid #e5e7eb", borderRadius: 12, padding: 14, background: "#fff" }}>
-          <div style={{ color: "#6b7280" }}>Escala</div>
+        <div style={cardStyle()}>
+          <h2
+            style={{
+              margin: 0,
+              fontWeight: 700,
+              fontSize: 24,
+              color: "#0f172a",
+              lineHeight: 1.15,
+            }}
+          >
+            Escala
+          </h2>
+
+          <div
+            style={{
+              color: "#64748b",
+              fontSize: 14,
+              marginTop: 6,
+              lineHeight: 1.7,
+            }}
+          >
+            Selecione a escala para visualizar a evolução percentual ao longo do tempo.
+          </div>
+
           <select
             value={scale}
             onChange={(e) => setScale(e.target.value)}
-            style={{ width: "100%", padding: 10, marginTop: 8, borderRadius: 10, border: "1px solid #e5e7eb" }}
+            style={{
+              width: "100%",
+              padding: "12px 14px",
+              marginTop: 14,
+              borderRadius: 14,
+              border: "1px solid #d1d5db",
+              background: "#fff",
+              color: "#0f172a",
+              fontSize: 14,
+              fontFamily: "inherit",
+            }}
           >
             {availableScales.map((s) => (
               <option key={s} value={s}>
@@ -175,15 +351,51 @@ export default function AdminAthleteDashboardView() {
             ))}
           </select>
         </div>
-      </div>
+      </section>
 
-      <div style={{ border: "1px solid #e5e7eb", borderRadius: 12, overflow: "hidden", background: "#fff" }}>
-        <div style={{ padding: 12, background: "#fafafa", borderBottom: "1px solid #e5e7eb" }}>
-          <b>{scale || "—"}</b>
+      <section style={cardStyle()}>
+        <div
+          style={{
+            display: "grid",
+            gap: 4,
+            marginBottom: 16,
+          }}
+        >
+          <h2
+            style={{
+              margin: 0,
+              fontWeight: 700,
+              fontSize: 24,
+              color: "#0f172a",
+              lineHeight: 1.15,
+            }}
+          >
+            Evolução por escala
+          </h2>
+
+          <div
+            style={{
+              color: "#64748b",
+              fontSize: 14,
+              lineHeight: 1.7,
+            }}
+          >
+            {scale ? `Série temporal da escala ${scale}.` : "Selecione uma escala."}
+          </div>
         </div>
 
         {series.length === 0 ? (
-          <div style={{ padding: 14, color: "#6b7280" }}>Sem dados para essa escala.</div>
+          <div
+            style={{
+              border: "1px dashed #d1d5db",
+              borderRadius: 18,
+              padding: 20,
+              color: "#64748b",
+              background: "#fcfcfd",
+            }}
+          >
+            Sem dados para essa escala.
+          </div>
         ) : (
           <PercentileChart
             points={series
@@ -191,12 +403,25 @@ export default function AdminAthleteDashboardView() {
               .map((p) => ({ label: p.dateLabel, y: Number(p.percentile) }))}
           />
         )}
-      </div>
+      </section>
+
+      <style>{`
+        @media (min-width: 860px) {
+          section[data-athlete-admin-dashboard-top="true"] {
+            grid-template-columns: minmax(220px, 0.8fr) minmax(0, 1.2fr);
+            align-items: stretch;
+          }
+        }
+      `}</style>
     </div>
   );
 }
 
-function PercentileChart({ points }: { points: { label: string; y: number }[] }) {
+function PercentileChart({
+  points,
+}: {
+  points: { label: string; y: number }[];
+}) {
   const W = 900;
   const H = 280;
   const padL = 70;
@@ -210,55 +435,124 @@ function PercentileChart({ points }: { points: { label: string; y: number }[] })
   const clamp = (v: number) => Math.max(0, Math.min(100, v));
 
   const xs = points.map((_, i) =>
-    points.length === 1 ? padL + innerW / 2 : padL + (innerW * i) / (points.length - 1)
+    points.length === 1
+      ? padL + innerW / 2
+      : padL + (innerW * i) / (points.length - 1)
   );
   const ys = points.map((p) => padT + innerH * (1 - clamp(p.y) / 100));
 
-  const path = xs.map((x, i) => `${i === 0 ? "M" : "L"} ${x.toFixed(2)} ${ys[i].toFixed(2)}`).join(" ");
+  const path = xs
+    .map((x, i) => `${i === 0 ? "M" : "L"} ${x.toFixed(2)} ${ys[i].toFixed(2)}`)
+    .join(" ");
 
   const grid = [0, 25, 50, 75, 100];
   const maxLabels = 6;
   const step = points.length <= maxLabels ? 1 : Math.ceil(points.length / maxLabels);
 
   return (
-    <div style={{ padding: 14 }}>
-      <svg width="100%" viewBox={`0 0 ${W} ${H}`} role="img" aria-label="Série temporal do percentil">
-        {grid.map((g) => {
-          const y = padT + innerH * (1 - g / 100);
-          return (
-            <g key={g}>
-              <line x1={padL} y1={y} x2={W - padR} y2={y} stroke="#e5e7eb" strokeWidth="1" />
-              <text x={padL - 8} y={y + 4} textAnchor="end" fontSize="12" fill="#6b7280">
-                {g}
-              </text>
+    <div
+      style={{
+        border: "1px solid #e5e7eb",
+        borderRadius: 18,
+        overflow: "hidden",
+        background: "#ffffff",
+      }}
+    >
+      <div
+        style={{
+          padding: "12px 14px",
+          background: "#f8fafc",
+          borderBottom: "1px solid #e5e7eb",
+          color: "#0f172a",
+          fontSize: 14,
+          fontWeight: 600,
+        }}
+      >
+        Percentil ao longo do tempo
+      </div>
+
+      <div style={{ padding: 14 }}>
+        <svg
+          width="100%"
+          viewBox={`0 0 ${W} ${H}`}
+          role="img"
+          aria-label="Série temporal do percentil"
+        >
+          {grid.map((g) => {
+            const y = padT + innerH * (1 - g / 100);
+            return (
+              <g key={g}>
+                <line
+                  x1={padL}
+                  y1={y}
+                  x2={W - padR}
+                  y2={y}
+                  stroke="#e5e7eb"
+                  strokeWidth="1"
+                />
+                <text
+                  x={padL - 8}
+                  y={y + 4}
+                  textAnchor="end"
+                  fontSize="12"
+                  fill="#64748b"
+                >
+                  {g}
+                </text>
+              </g>
+            );
+          })}
+
+          <line
+            x1={padL}
+            y1={padT}
+            x2={padL}
+            y2={H - padB}
+            stroke="#9ca3af"
+            strokeWidth="1"
+          />
+          <line
+            x1={padL}
+            y1={H - padB}
+            x2={W - padR}
+            y2={H - padB}
+            stroke="#9ca3af"
+            strokeWidth="1"
+          />
+
+          {points.length > 0 && (
+            <path
+              d={path}
+              fill="none"
+              stroke="#1d4ed8"
+              strokeWidth="3"
+              strokeLinecap="round"
+              strokeLinejoin="round"
+            />
+          )}
+
+          {points.map((p, i) => (
+            <g key={`${p.label}-${i}`}>
+              <circle cx={xs[i]} cy={ys[i]} r="4.5" fill="#1d4ed8" />
             </g>
-          );
-        })}
+          ))}
 
-        <line x1={padL} y1={padT} x2={padL} y2={H - padB} stroke="#9ca3af" strokeWidth="1" />
-        <line x1={padL} y1={H - padB} x2={W - padR} y2={H - padB} stroke="#9ca3af" strokeWidth="1" />
-
-        <path d={path} fill="none" stroke="#111827" strokeWidth="2" />
-        {xs.map((x, i) => (
-          <circle key={i} cx={x} cy={ys[i]} r="4" fill="#111827" />
-        ))}
-
-        {points.map((p, i) => {
-          if (i % step !== 0 && i !== points.length - 1) return null;
-          return (
-            <text key={i} x={xs[i]} y={H - 18} textAnchor="middle" fontSize="11" fill="#6b7280">
-              {p.label}
-            </text>
-          );
-        })}
-
-        <text x={padL - 2} y={12} fontSize="12" fill="#6b7280">
-          Percentil
-        </text>
-      </svg>
-
-      <div style={{ marginTop: 10, color: "#6b7280" }}>
-        Último percentil: <b>{points[points.length - 1].y.toFixed(1)}</b>
+          {points.map((p, i) => {
+            if (i % step !== 0 && i !== points.length - 1) return null;
+            return (
+              <text
+                key={`label-${p.label}-${i}`}
+                x={xs[i]}
+                y={H - padB + 18}
+                textAnchor="middle"
+                fontSize="12"
+                fill="#64748b"
+              >
+                {p.label}
+              </text>
+            );
+          })}
+        </svg>
       </div>
     </div>
   );
