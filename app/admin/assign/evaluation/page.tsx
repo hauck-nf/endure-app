@@ -23,6 +23,16 @@ function splitKey(k: string) {
   return { sec: k.slice(0, i), sc: k.slice(i + 2) };
 }
 
+function cardStyle(): React.CSSProperties {
+  return {
+    background: "#ffffff",
+    border: "1px solid #e5e7eb",
+    borderRadius: 24,
+    padding: 20,
+    boxShadow: "0 18px 48px rgba(15,23,42,.06)",
+  };
+}
+
 export default function AssignEvaluationPage() {
   const [athletes, setAthletes] = useState<Athlete[]>([]);
   const [dictRows, setDictRows] = useState<DictRow[]>([]);
@@ -38,6 +48,7 @@ export default function AssignEvaluationPage() {
   const [step, setStep] = useState<1 | 2>(1);
   const [msg, setMsg] = useState("");
   const [loading, setLoading] = useState(false);
+
   const [searchAthlete, setSearchAthlete] = useState("");
   const [searchScale, setSearchScale] = useState("");
 
@@ -162,67 +173,79 @@ export default function AssignEvaluationPage() {
   }
 
   async function send() {
-    setMsg("");
+    try {
+      setMsg("");
 
-    if (chosenAthletes.length === 0) {
-      setMsg("Selecione ao menos 1 atleta.");
-      return;
+      if (chosenAthletes.length === 0) {
+        setMsg("Selecione ao menos 1 atleta.");
+        return;
+      }
+
+      if (chosenScaleKeys.length === 0) {
+        setMsg("Selecione ao menos 1 escala.");
+        return;
+      }
+
+      setLoading(true);
+
+      const { data: authRes, error: authErr } = await supabaseBrowser.auth.getUser();
+      if (authErr) {
+        throw new Error(authErr.message);
+      }
+
+      const createdBy = authRes.user?.id;
+      if (!createdBy) {
+        throw new Error("Sessão do administrador não encontrada. Entre novamente no sistema.");
+      }
+
+      const scalesBySection: Record<string, string[]> = {};
+      for (const k of chosenScaleKeys) {
+        const { sec, sc } = splitKey(k);
+        scalesBySection[sec] ??= [];
+        scalesBySection[sec].push(sc);
+      }
+
+      Object.keys(scalesBySection).forEach((sec) => {
+        scalesBySection[sec] = Array.from(new Set(scalesBySection[sec])).sort();
+      });
+
+      const sections = Object.keys(scalesBySection).sort();
+
+      const selection_json = {
+        sections,
+        scales: scalesBySection,
+      };
+
+      const payload = chosenAthletes.map((a) => ({
+        athlete_id: a.athlete_id,
+        created_by_user_id: createdBy,
+        title: title.trim() || "ENDURE • Avaliação",
+        status: "pending",
+        instrument_version: instrumentVersion.trim() || "ENDURE_v1",
+        reference_window: referenceWindow.trim() || null,
+        due_at: dueAt ? new Date(dueAt).toISOString() : null,
+        selection_json,
+      }));
+
+      const { error } = await supabaseBrowser
+        .from("assessment_requests")
+        .insert(payload);
+
+      if (error) {
+        throw new Error(error.message);
+      }
+
+      setMsg(`OK! Avaliação enviada para ${chosenAthletes.length} atleta(s).`);
+      setSelectedAthletes({});
+      setSelectedScales({});
+      setSearchAthlete("");
+      setSearchScale("");
+      setStep(1);
+    } catch (e: any) {
+      setMsg(`Erro ao enviar: ${e?.message ?? "Falha desconhecida."}`);
+    } finally {
+      setLoading(false);
     }
-
-    if (chosenScaleKeys.length === 0) {
-      setMsg("Selecione ao menos 1 escala.");
-      return;
-    }
-
-    setLoading(true);
-
-    const { data: auth } = await supabaseBrowser.auth.getUser();
-    const createdBy = auth.user?.id ?? null;
-
-    const scalesBySection: Record<string, string[]> = {};
-    for (const k of chosenScaleKeys) {
-      const { sec, sc } = splitKey(k);
-      scalesBySection[sec] ??= [];
-      scalesBySection[sec].push(sc);
-    }
-
-    Object.keys(scalesBySection).forEach((sec) => {
-      scalesBySection[sec] = Array.from(new Set(scalesBySection[sec])).sort();
-    });
-
-    const sections = Object.keys(scalesBySection).sort();
-
-    const selection_json = {
-      sections,
-      scales: scalesBySection,
-    };
-
-    const payload = chosenAthletes.map((a) => ({
-      athlete_id: a.athlete_id,
-      created_by_user_id: createdBy,
-      title,
-      status: "pending",
-      instrument_version: instrumentVersion,
-      reference_window: referenceWindow || null,
-      due_at: dueAt ? new Date(dueAt).toISOString() : null,
-      selection_json,
-    }));
-
-    const { error } = await supabaseBrowser
-      .from("assessment_requests")
-      .insert(payload);
-
-    setLoading(false);
-
-    if (error) {
-      setMsg(`Erro ao enviar: ${error.message}`);
-      return;
-    }
-
-    setMsg(`OK! Avaliação enviada para ${chosenAthletes.length} atleta(s).`);
-    setSelectedAthletes({});
-    setSelectedScales({});
-    setStep(1);
   }
 
   return (
@@ -256,8 +279,8 @@ export default function AssignEvaluationPage() {
             borderRadius: 999,
             padding: "8px 12px",
             fontSize: 12,
-            fontWeight: 800,
-            letterSpacing: 0.3,
+            fontWeight: 700,
+            letterSpacing: 0.2,
           }}
         >
           Administração de avaliações
@@ -268,8 +291,9 @@ export default function AssignEvaluationPage() {
             margin: "14px 0 10px",
             fontSize: 32,
             lineHeight: 1.1,
-            letterSpacing: -0.7,
+            letterSpacing: -0.6,
             color: "#0f172a",
+            fontWeight: 700,
           }}
         >
           Designar avaliação
@@ -281,40 +305,45 @@ export default function AssignEvaluationPage() {
             color: "#64748b",
             lineHeight: 1.75,
             fontSize: 15,
-            maxWidth: 780,
+            maxWidth: 760,
           }}
         >
-          Selecione atletas, defina as escalas que comporão a avaliação e envie a
+          Selecione os atletas, defina as escalas que compõem a avaliação e envie a
           pendência em um único fluxo.
         </p>
       </section>
 
       <section
+        data-assign-grid="true"
         style={{
           display: "grid",
           gap: 16,
           gridTemplateColumns: "minmax(0, 1fr)",
         }}
       >
-        <div
-          style={{
-            background: "#ffffff",
-            border: "1px solid #e5e7eb",
-            borderRadius: 24,
-            padding: 22,
-            boxShadow: "0 18px 48px rgba(15,23,42,.06)",
-            display: "grid",
-            gap: 16,
-          }}
-        >
-          <div
+        <div style={cardStyle()}>
+          <h2
             style={{
-              fontWeight: 900,
-              fontSize: 22,
+              margin: 0,
+              fontSize: 24,
+              lineHeight: 1.15,
               color: "#0f172a",
+              fontWeight: 700,
             }}
           >
-            Configurações da solicitação
+            Configurações
+          </h2>
+
+          <div
+            style={{
+              marginTop: 8,
+              marginBottom: 16,
+              color: "#64748b",
+              fontSize: 14,
+              lineHeight: 1.75,
+            }}
+          >
+            Defina o título, a versão do instrumento e o prazo da solicitação.
           </div>
 
           <div
@@ -325,33 +354,41 @@ export default function AssignEvaluationPage() {
             }}
           >
             <label style={{ display: "grid", gap: 6 }}>
-              <div style={{ fontSize: 12, color: "#6b7280" }}>Título</div>
+              <div style={{ fontSize: 12, color: "#64748b", fontWeight: 600 }}>
+                Título
+              </div>
               <input
                 value={title}
                 onChange={(e) => setTitle(e.target.value)}
                 style={{
-                  padding: 12,
-                  borderRadius: 12,
-                  border: "1px solid #e5e7eb",
+                  padding: "12px 14px",
+                  borderRadius: 14,
+                  border: "1px solid #d1d5db",
+                  fontFamily: "inherit",
+                  fontSize: 14,
                 }}
               />
             </label>
 
             <label style={{ display: "grid", gap: 6 }}>
-              <div style={{ fontSize: 12, color: "#6b7280" }}>Versão do instrumento</div>
+              <div style={{ fontSize: 12, color: "#64748b", fontWeight: 600 }}>
+                Versão do instrumento
+              </div>
               <input
                 value={instrumentVersion}
                 onChange={(e) => setInstrumentVersion(e.target.value)}
                 style={{
-                  padding: 12,
-                  borderRadius: 12,
-                  border: "1px solid #e5e7eb",
+                  padding: "12px 14px",
+                  borderRadius: 14,
+                  border: "1px solid #d1d5db",
+                  fontFamily: "inherit",
+                  fontSize: 14,
                 }}
               />
             </label>
 
             <label style={{ display: "grid", gap: 6 }}>
-              <div style={{ fontSize: 12, color: "#6b7280" }}>
+              <div style={{ fontSize: 12, color: "#64748b", fontWeight: 600 }}>
                 Janela de referência
               </div>
               <input
@@ -359,64 +396,80 @@ export default function AssignEvaluationPage() {
                 onChange={(e) => setReferenceWindow(e.target.value)}
                 placeholder="Ex.: Últimos 7 dias"
                 style={{
-                  padding: 12,
-                  borderRadius: 12,
-                  border: "1px solid #e5e7eb",
+                  padding: "12px 14px",
+                  borderRadius: 14,
+                  border: "1px solid #d1d5db",
+                  fontFamily: "inherit",
+                  fontSize: 14,
                 }}
               />
             </label>
 
             <label style={{ display: "grid", gap: 6 }}>
-              <div style={{ fontSize: 12, color: "#6b7280" }}>Prazo (opcional)</div>
+              <div style={{ fontSize: 12, color: "#64748b", fontWeight: 600 }}>
+                Prazo
+              </div>
               <input
                 type="datetime-local"
                 value={dueAt}
                 onChange={(e) => setDueAt(e.target.value)}
                 style={{
-                  padding: 12,
-                  borderRadius: 12,
-                  border: "1px solid #e5e7eb",
+                  padding: "12px 14px",
+                  borderRadius: 14,
+                  border: "1px solid #d1d5db",
+                  fontFamily: "inherit",
+                  fontSize: 14,
                 }}
               />
             </label>
           </div>
         </div>
 
-        <div
-          style={{
-            background: "#ffffff",
-            border: "1px solid #e5e7eb",
-            borderRadius: 24,
-            padding: 22,
-            boxShadow: "0 18px 48px rgba(15,23,42,.06)",
-            display: "grid",
-            gap: 14,
-          }}
-        >
-          <div
+        <div style={cardStyle()}>
+          <h2
             style={{
-              fontWeight: 900,
-              fontSize: 22,
+              margin: 0,
+              fontSize: 24,
+              lineHeight: 1.15,
               color: "#0f172a",
+              fontWeight: 700,
             }}
           >
             Resumo
+          </h2>
+
+          <div
+            style={{
+              marginTop: 8,
+              marginBottom: 16,
+              color: "#64748b",
+              fontSize: 14,
+              lineHeight: 1.75,
+            }}
+          >
+            Acompanhe o progresso da seleção antes de enviar a avaliação.
           </div>
 
           <div
             style={{
               display: "grid",
-              gap: 8,
-              color: "#64748b",
+              gap: 10,
+              color: "#475569",
               fontSize: 14,
               lineHeight: 1.7,
             }}
           >
             <div>
-              Atletas selecionados: <b style={{ color: "#0f172a" }}>{chosenAthletes.length}</b>
+              Atletas selecionados:{" "}
+              <span style={{ color: "#0f172a", fontWeight: 600 }}>
+                {chosenAthletes.length}
+              </span>
             </div>
             <div>
-              Escalas selecionadas: <b style={{ color: "#0f172a" }}>{chosenScaleKeys.length}</b>
+              Escalas selecionadas:{" "}
+              <span style={{ color: "#0f172a", fontWeight: 600 }}>
+                {chosenScaleKeys.length}
+              </span>
             </div>
           </div>
 
@@ -425,19 +478,21 @@ export default function AssignEvaluationPage() {
               display: "flex",
               gap: 8,
               flexWrap: "wrap",
+              marginTop: 16,
             }}
           >
             <button
               type="button"
               onClick={() => setStep(1)}
               style={{
-                minHeight: 42,
-                padding: "10px 14px",
+                minHeight: 40,
+                padding: "0 14px",
                 borderRadius: 12,
-                border: "1px solid #e5e7eb",
+                border: step === 1 ? "1px solid #0f172a" : "1px solid #d1d5db",
                 background: step === 1 ? "#0f172a" : "#fff",
                 color: step === 1 ? "#fff" : "#0f172a",
-                fontWeight: 800,
+                fontWeight: 600,
+                fontSize: 14,
                 cursor: "pointer",
                 fontFamily: "inherit",
               }}
@@ -449,46 +504,26 @@ export default function AssignEvaluationPage() {
               type="button"
               onClick={() => setStep(2)}
               style={{
-                minHeight: 42,
-                padding: "10px 14px",
+                minHeight: 40,
+                padding: "0 14px",
                 borderRadius: 12,
-                border: "1px solid #e5e7eb",
+                border: step === 2 ? "1px solid #0f172a" : "1px solid #d1d5db",
                 background: step === 2 ? "#0f172a" : "#fff",
                 color: step === 2 ? "#fff" : "#0f172a",
-                fontWeight: 800,
+                fontWeight: 600,
+                fontSize: 14,
                 cursor: "pointer",
                 fontFamily: "inherit",
               }}
             >
               Escalas
             </button>
-
-            <div style={{ flex: 1 }} />
-
-            <button
-              type="button"
-              disabled={loading}
-              onClick={send}
-              style={{
-                minHeight: 46,
-                padding: "12px 16px",
-                borderRadius: 14,
-                border: "1px solid #0f172a",
-                background: "#0f172a",
-                color: "#fff",
-                fontWeight: 800,
-                fontSize: 14,
-                cursor: loading ? "not-allowed" : "pointer",
-                fontFamily: "inherit",
-              }}
-            >
-              {loading ? "Enviando..." : "Enviar avaliação"}
-            </button>
           </div>
 
           {msg ? (
             <div
               style={{
+                marginTop: 16,
                 border: "1px solid #e5e7eb",
                 background: "#f8fafc",
                 color: "#334155",
@@ -505,17 +540,7 @@ export default function AssignEvaluationPage() {
       </section>
 
       {step === 1 ? (
-        <section
-          style={{
-            background: "#ffffff",
-            border: "1px solid #e5e7eb",
-            borderRadius: 24,
-            padding: 22,
-            boxShadow: "0 18px 48px rgba(15,23,42,.06)",
-            display: "grid",
-            gap: 16,
-          }}
-        >
+        <section style={cardStyle()}>
           <div
             style={{
               display: "flex",
@@ -523,24 +548,28 @@ export default function AssignEvaluationPage() {
               gap: 12,
               alignItems: "center",
               flexWrap: "wrap",
+              marginBottom: 16,
             }}
           >
             <div>
-              <div
+              <h2
                 style={{
-                  fontWeight: 900,
-                  fontSize: 22,
+                  margin: 0,
+                  fontSize: 24,
+                  lineHeight: 1.15,
                   color: "#0f172a",
+                  fontWeight: 700,
                 }}
               >
                 Selecionar atletas
-              </div>
+              </h2>
 
               <div
                 style={{
+                  marginTop: 6,
                   color: "#64748b",
                   fontSize: 14,
-                  marginTop: 4,
+                  lineHeight: 1.7,
                 }}
               >
                 Escolha um ou mais atletas para receber a avaliação.
@@ -552,13 +581,14 @@ export default function AssignEvaluationPage() {
                 type="button"
                 onClick={selectAllVisibleAthletes}
                 style={{
-                  minHeight: 42,
-                  padding: "10px 14px",
+                  minHeight: 40,
+                  padding: "0 14px",
                   borderRadius: 12,
-                  border: "1px solid #e5e7eb",
+                  border: "1px solid #d1d5db",
                   background: "#fff",
                   color: "#0f172a",
-                  fontWeight: 700,
+                  fontWeight: 600,
+                  fontSize: 14,
                   cursor: "pointer",
                   fontFamily: "inherit",
                 }}
@@ -570,13 +600,14 @@ export default function AssignEvaluationPage() {
                 type="button"
                 onClick={clearAllVisibleAthletes}
                 style={{
-                  minHeight: 42,
-                  padding: "10px 14px",
+                  minHeight: 40,
+                  padding: "0 14px",
                   borderRadius: 12,
-                  border: "1px solid #e5e7eb",
+                  border: "1px solid #d1d5db",
                   background: "#fff",
                   color: "#0f172a",
-                  fontWeight: 700,
+                  fontWeight: 600,
+                  fontSize: 14,
                   cursor: "pointer",
                   fontFamily: "inherit",
                 }}
@@ -591,9 +622,13 @@ export default function AssignEvaluationPage() {
             onChange={(e) => setSearchAthlete(e.target.value)}
             placeholder="Buscar atleta por nome ou email"
             style={{
-              padding: 12,
-              borderRadius: 12,
-              border: "1px solid #e5e7eb",
+              width: "100%",
+              padding: "12px 14px",
+              borderRadius: 14,
+              border: "1px solid #d1d5db",
+              fontFamily: "inherit",
+              fontSize: 14,
+              marginBottom: 16,
             }}
           />
 
@@ -619,27 +654,52 @@ export default function AssignEvaluationPage() {
                   style={{ marginTop: 2 }}
                 />
                 <span style={{ lineHeight: 1.6 }}>
-                  <b style={{ color: "#0f172a" }}>{a.full_name ?? "—"}</b>
-                  <span style={{ color: "#6b7280", display: "block" }}>
+                  <span style={{ color: "#0f172a", fontWeight: 600 }}>
+                    {a.full_name ?? "—"}
+                  </span>
+                  <span
+                    style={{
+                      color: "#64748b",
+                      display: "block",
+                      fontSize: 14,
+                    }}
+                  >
                     {a.email ?? ""}
                   </span>
                 </span>
               </label>
             ))}
           </div>
+
+          <div
+            style={{
+              display: "flex",
+              justifyContent: "flex-end",
+              marginTop: 16,
+            }}
+          >
+            <button
+              type="button"
+              onClick={() => setStep(2)}
+              style={{
+                minHeight: 42,
+                padding: "0 16px",
+                borderRadius: 12,
+                border: "1px solid #0f172a",
+                background: "#0f172a",
+                color: "#fff",
+                fontWeight: 600,
+                fontSize: 14,
+                cursor: "pointer",
+                fontFamily: "inherit",
+              }}
+            >
+              Continuar para escalas
+            </button>
+          </div>
         </section>
       ) : (
-        <section
-          style={{
-            background: "#ffffff",
-            border: "1px solid #e5e7eb",
-            borderRadius: 24,
-            padding: 22,
-            boxShadow: "0 18px 48px rgba(15,23,42,.06)",
-            display: "grid",
-            gap: 16,
-          }}
-        >
+        <section style={cardStyle()}>
           <div
             style={{
               display: "flex",
@@ -647,27 +707,31 @@ export default function AssignEvaluationPage() {
               gap: 12,
               alignItems: "center",
               flexWrap: "wrap",
+              marginBottom: 16,
             }}
           >
             <div>
-              <div
+              <h2
                 style={{
-                  fontWeight: 900,
-                  fontSize: 22,
+                  margin: 0,
+                  fontSize: 24,
+                  lineHeight: 1.15,
                   color: "#0f172a",
+                  fontWeight: 700,
                 }}
               >
                 Selecionar escalas
-              </div>
+              </h2>
 
               <div
                 style={{
+                  marginTop: 6,
                   color: "#64748b",
                   fontSize: 14,
-                  marginTop: 4,
+                  lineHeight: 1.7,
                 }}
               >
-                Escolha as escalas que serão incluídas na pendência.
+                Escolha as escalas que serão incluídas na avaliação.
               </div>
             </div>
 
@@ -676,13 +740,14 @@ export default function AssignEvaluationPage() {
                 type="button"
                 onClick={selectAllVisibleScales}
                 style={{
-                  minHeight: 42,
-                  padding: "10px 14px",
+                  minHeight: 40,
+                  padding: "0 14px",
                   borderRadius: 12,
-                  border: "1px solid #e5e7eb",
+                  border: "1px solid #d1d5db",
                   background: "#fff",
                   color: "#0f172a",
-                  fontWeight: 700,
+                  fontWeight: 600,
+                  fontSize: 14,
                   cursor: "pointer",
                   fontFamily: "inherit",
                 }}
@@ -694,13 +759,14 @@ export default function AssignEvaluationPage() {
                 type="button"
                 onClick={clearAllVisibleScales}
                 style={{
-                  minHeight: 42,
-                  padding: "10px 14px",
+                  minHeight: 40,
+                  padding: "0 14px",
                   borderRadius: 12,
-                  border: "1px solid #e5e7eb",
+                  border: "1px solid #d1d5db",
                   background: "#fff",
                   color: "#0f172a",
-                  fontWeight: 700,
+                  fontWeight: 600,
+                  fontSize: 14,
                   cursor: "pointer",
                   fontFamily: "inherit",
                 }}
@@ -715,9 +781,13 @@ export default function AssignEvaluationPage() {
             onChange={(e) => setSearchScale(e.target.value)}
             placeholder="Buscar seção ou escala"
             style={{
-              padding: 12,
-              borderRadius: 12,
-              border: "1px solid #e5e7eb",
+              width: "100%",
+              padding: "12px 14px",
+              borderRadius: 14,
+              border: "1px solid #d1d5db",
+              fontFamily: "inherit",
+              fontSize: 14,
+              marginBottom: 16,
             }}
           />
 
@@ -736,9 +806,10 @@ export default function AssignEvaluationPage() {
               >
                 <div
                   style={{
-                    fontWeight: 900,
-                    fontSize: 18,
+                    fontWeight: 600,
+                    fontSize: 16,
                     color: "#0f172a",
+                    lineHeight: 1.35,
                   }}
                 >
                   {g.section}
@@ -768,7 +839,15 @@ export default function AssignEvaluationPage() {
                           onChange={() => toggleScale(k)}
                           style={{ marginTop: 2 }}
                         />
-                        <span style={{ color: "#0f172a", lineHeight: 1.6 }}>{sc}</span>
+                        <span
+                          style={{
+                            color: "#0f172a",
+                            fontSize: 14,
+                            lineHeight: 1.6,
+                          }}
+                        >
+                          {sc}
+                        </span>
                       </label>
                     );
                   })}
@@ -776,8 +855,67 @@ export default function AssignEvaluationPage() {
               </div>
             ))}
           </div>
+
+          <div
+            style={{
+              display: "flex",
+              justifyContent: "space-between",
+              gap: 12,
+              flexWrap: "wrap",
+              alignItems: "center",
+              marginTop: 16,
+            }}
+          >
+            <button
+              type="button"
+              onClick={() => setStep(1)}
+              style={{
+                minHeight: 42,
+                padding: "0 14px",
+                borderRadius: 12,
+                border: "1px solid #d1d5db",
+                background: "#fff",
+                color: "#0f172a",
+                fontWeight: 600,
+                fontSize: 14,
+                cursor: "pointer",
+                fontFamily: "inherit",
+              }}
+            >
+              Voltar para atletas
+            </button>
+
+            <button
+              type="button"
+              disabled={loading}
+              onClick={send}
+              style={{
+                minHeight: 42,
+                padding: "0 16px",
+                borderRadius: 12,
+                border: "1px solid #0f172a",
+                background: "#0f172a",
+                color: "#fff",
+                fontWeight: 600,
+                fontSize: 14,
+                cursor: loading ? "not-allowed" : "pointer",
+                fontFamily: "inherit",
+              }}
+            >
+              {loading ? "Enviando..." : "Enviar avaliação"}
+            </button>
+          </div>
         </section>
       )}
+
+      <style>{`
+        @media (min-width: 960px) {
+          section[data-assign-grid="true"] {
+            grid-template-columns: minmax(0, 1.1fr) minmax(320px, 0.9fr);
+            align-items: start;
+          }
+        }
+      `}</style>
     </div>
   );
 }

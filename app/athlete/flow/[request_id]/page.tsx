@@ -556,7 +556,7 @@ export default function FlowPage() {
             maxWidth: 760,
           }}
         >
-          Responda os blocos abaixo com calma. Você pode salvar o progresso e retomar
+          Responda aos blocos abaixo com calma. Você pode salvar o progresso e retomar
           depois.
         </p>
 
