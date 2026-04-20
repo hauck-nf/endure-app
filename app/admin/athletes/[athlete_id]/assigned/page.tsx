@@ -32,18 +32,65 @@ type ReportRow = {
 };
 
 function isUuid(x: string) {
-  return /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(x);
+  return /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(
+    x
+  );
+}
+
+function cardStyle(): React.CSSProperties {
+  return {
+    background: "#ffffff",
+    border: "1px solid #e5e7eb",
+    borderRadius: 24,
+    padding: 20,
+    boxShadow: "0 18px 48px rgba(15,23,42,.06)",
+  };
+}
+
+function statusMeta(status: string) {
+  const s = (status || "").toLowerCase();
+  const map: Record<
+    string,
+    { label: string; bg: string; border: string; color: string }
+  > = {
+    pending: {
+      label: "Pendente",
+      bg: "#fff7ed",
+      border: "#fed7aa",
+      color: "#9a3412",
+    },
+    in_progress: {
+      label: "Em andamento",
+      bg: "#eff6ff",
+      border: "#bfdbfe",
+      color: "#1d4ed8",
+    },
+    submitted: {
+      label: "Concluída",
+      bg: "#ecfdf5",
+      border: "#a7f3d0",
+      color: "#065f46",
+    },
+    cancelled: {
+      label: "Cancelada",
+      bg: "#f3f4f6",
+      border: "#e5e7eb",
+      color: "#374151",
+    },
+  };
+
+  return (
+    map[s] ?? {
+      label: status,
+      bg: "#f3f4f6",
+      border: "#e5e7eb",
+      color: "#374151",
+    }
+  );
 }
 
 function StatusBadge({ status }: { status: string }) {
-  const s = (status || "").toLowerCase();
-  const map: Record<string, { label: string; bg: string; border: string; color: string }> = {
-    pending: { label: "Pendente", bg: "#fff7ed", border: "#fed7aa", color: "#9a3412" },
-    in_progress: { label: "Em andamento", bg: "#eff6ff", border: "#bfdbfe", color: "#1d4ed8" },
-    submitted: { label: "Concluída", bg: "#ecfdf5", border: "#a7f3d0", color: "#065f46" },
-    cancelled: { label: "Cancelada", bg: "#f3f4f6", border: "#e5e7eb", color: "#374151" },
-  };
-  const v = map[s] ?? { label: status, bg: "#f3f4f6", border: "#e5e7eb", color: "#374151" };
+  const v = statusMeta(status);
 
   return (
     <span
@@ -51,9 +98,9 @@ function StatusBadge({ status }: { status: string }) {
         display: "inline-flex",
         alignItems: "center",
         justifyContent: "center",
-        height: 30,
+        minHeight: 30,
         padding: "0 10px",
-        borderRadius: 10,
+        borderRadius: 999,
         border: `1px solid ${v.border}`,
         background: v.bg,
         color: v.color,
@@ -67,22 +114,14 @@ function StatusBadge({ status }: { status: string }) {
   );
 }
 
-const tableCell: React.CSSProperties = {
-  padding: "12px 12px",
-  borderBottom: "1px solid #f3f4f6",
-  fontSize: 13,
-  color: "#111827",
-  verticalAlign: "top",
-};
-
-const headCell: React.CSSProperties = {
-  textAlign: "left",
-  fontSize: 12,
-  padding: "12px 12px",
-  borderBottom: "1px solid #e5e7eb",
-  color: "#6b7280",
-  fontWeight: 600,
-};
+function formatDate(value?: string | null) {
+  if (!value) return "—";
+  try {
+    return new Date(value).toLocaleString("pt-BR");
+  } catch {
+    return value;
+  }
+}
 
 export default function AssignedEvaluationsPageClient() {
   const params = useParams();
@@ -127,13 +166,15 @@ export default function AssignedEvaluationsPageClient() {
 
         const r = await supabaseBrowser
           .from("assessment_requests")
-          .select("request_id, title, status, instrument_version, reference_window, due_at, created_at, selection_json")
+          .select(
+            "request_id, title, status, instrument_version, reference_window, due_at, created_at, selection_json"
+          )
           .eq("athlete_id", athleteId)
           .order("created_at", { ascending: false })
           .limit(300);
 
         if (r.error) throw r.error;
-        const reqs = (r.data ?? []) as any as ReqRow[];
+        const reqs = (r.data ?? []) as ReqRow[];
         setRequests(reqs);
 
         const requestIds = reqs.map((x) => x.request_id);
@@ -151,7 +192,7 @@ export default function AssignedEvaluationsPageClient() {
           .limit(1500);
 
         if (a.error) throw a.error;
-        const asRows = (a.data ?? []) as any as AssessmentRow[];
+        const asRows = (a.data ?? []) as AssessmentRow[];
         setAssessments(asRows);
 
         const assessmentIds = Array.from(new Set(asRows.map((x) => x.assessment_id)));
@@ -167,7 +208,7 @@ export default function AssignedEvaluationsPageClient() {
           .limit(2000);
 
         if (rep.error) throw rep.error;
-        setReports((rep.data ?? []) as any as ReportRow[]);
+        setReports((rep.data ?? []) as ReportRow[]);
       } catch (e: any) {
         setErr(e?.message ?? "Erro ao carregar avaliações designadas.");
       } finally {
@@ -190,119 +231,352 @@ export default function AssignedEvaluationsPageClient() {
     return m;
   }, [reports]);
 
-  if (loading) return <div style={{ padding: 16, color: "#6b7280" }}>Carregando…</div>;
+  if (loading) {
+    return (
+      <div
+        style={{
+          maxWidth: 980,
+          margin: "0 auto",
+          padding: "20px 16px 32px",
+          color: "#64748b",
+        }}
+      >
+        Carregando…
+      </div>
+    );
+  }
 
   if (err) {
     return (
-      <div style={{ padding: 16 }}>
-        <h1 style={{ fontSize: 20, fontWeight: 700 }}>Erro</h1>
-        <div style={{ color: "#6b7280", marginTop: 6 }}>{err}</div>
-        <div style={{ marginTop: 12 }}>
-          <a href="/admin/athletes">← Voltar</a>
+      <div
+        style={{
+          maxWidth: 980,
+          margin: "0 auto",
+          padding: "20px 16px 32px",
+          display: "grid",
+          gap: 16,
+        }}
+      >
+        <a
+          href="/admin/athletes"
+          style={{
+            color: "#475569",
+            textDecoration: "none",
+            fontWeight: 600,
+            fontSize: 14,
+          }}
+        >
+          ← Voltar
+        </a>
+
+        <div
+          style={{
+            border: "1px solid #fecaca",
+            background: "#fff1f2",
+            color: "#9f1239",
+            borderRadius: 18,
+            padding: 16,
+            lineHeight: 1.7,
+          }}
+        >
+          <div style={{ fontWeight: 700, marginBottom: 6 }}>Erro</div>
+          <div style={{ fontSize: 14 }}>{err}</div>
         </div>
       </div>
     );
   }
 
   return (
-    <div style={{ display: "grid", gap: 12 }}>
-      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "baseline" }}>
-        <h1 style={{ fontSize: 20, fontWeight: 700, margin: 0 }}>Avaliações designadas</h1>
-        <div style={{ fontSize: 12, color: "#6b7280" }}>{requests.length} item(ns)</div>
-      </div>
+    <div
+      style={{
+        maxWidth: 980,
+        margin: "0 auto",
+        padding: "20px 16px 32px",
+        display: "grid",
+        gap: 16,
+      }}
+    >
+      <section
+        style={{
+          background:
+            "linear-gradient(180deg, rgba(255,255,255,1) 0%, rgba(248,250,252,1) 100%)",
+          border: "1px solid #e5e7eb",
+          borderRadius: 24,
+          padding: 22,
+          boxShadow: "0 18px 48px rgba(15,23,42,.06)",
+        }}
+      >
+        <a
+          href="/admin/athletes"
+          style={{
+            color: "#475569",
+            textDecoration: "none",
+            fontWeight: 600,
+            fontSize: 14,
+          }}
+        >
+          ← Voltar
+        </a>
 
-      <div style={{ border: "1px solid #e5e7eb", borderRadius: 12, overflow: "hidden", background: "#fff" }}>
-        <table style={{ width: "100%", borderCollapse: "collapse" }}>
-          <thead>
-            <tr>
-              <th style={{ ...headCell, width: 280 }}>Título</th>
-              <th style={headCell}>Assignment</th>
-              <th style={headCell}>Prazo</th>
-              <th style={headCell}>Status</th>
-              <th style={headCell}>Realização</th>
-              <th style={headCell}>Relatório</th>
-              <th style={{ ...headCell, width: 220 }}>Ações</th>
-              <th style={{ ...headCell, width: 120 }}></th>
-            </tr>
-          </thead>
+        <div
+          style={{
+            marginTop: 14,
+            display: "inline-flex",
+            alignItems: "center",
+            gap: 8,
+            border: "1px solid #dbeafe",
+            background: "#eff6ff",
+            color: "#1d4ed8",
+            borderRadius: 999,
+            padding: "8px 12px",
+            fontSize: 12,
+            fontWeight: 700,
+            letterSpacing: 0.2,
+          }}
+        >
+          Avaliações do atleta
+        </div>
 
-          <tbody>
-            {requests.map((r) => {
-              const a = assessmentByRequest.get(r.request_id) ?? null;
-              const rep = a ? reportByAssessment.get(a.assessment_id) ?? null : null;
-              const reportHref = a && rep ? `/admin/reports/${a.assessment_id}` : null;
+        <div
+          style={{
+            display: "flex",
+            justifyContent: "space-between",
+            gap: 12,
+            alignItems: "baseline",
+            flexWrap: "wrap",
+            marginTop: 14,
+          }}
+        >
+          <h1
+            style={{
+              margin: 0,
+              fontSize: 32,
+              lineHeight: 1.1,
+              letterSpacing: -0.6,
+              color: "#0f172a",
+              fontWeight: 700,
+            }}
+          >
+            Avaliações designadas
+          </h1>
 
-              return (
-                <tr key={r.request_id}>
-                  <td style={{ ...tableCell, fontWeight: 600 }}>{r.title ?? "—"}</td>
-                  <td style={tableCell}>{r.created_at}</td>
-                  <td style={tableCell}>{r.due_at ?? "—"}</td>
-                  <td style={tableCell}><StatusBadge status={r.status} /></td>
-                  <td style={tableCell}>{a?.submitted_at ?? "—"}</td>
+          <div
+            style={{
+              color: "#64748b",
+              fontSize: 14,
+              fontWeight: 500,
+            }}
+          >
+            {requests.length} item(ns)
+          </div>
+        </div>
 
-                  <td style={tableCell}>
-                    {reportHref ? (
-                      <a
-                        href={reportHref}
-                        target="_blank"
-                        style={{
-                          display: "inline-flex",
-                          alignItems: "center",
-                          height: 34,
-                          padding: "0 10px",
-                          borderRadius: 10,
-                          border: "1px solid #e5e7eb",
-                          background: "#fff",
-                          textDecoration: "none",
-                          color: "#111827",
-                          fontSize: 12,
-                          fontWeight: 600,
-                        }}
-                      >
-                        Abrir PDF
-                      </a>
-                    ) : (
-                      <span style={{ color: "#6b7280" }}>—</span>
-                    )}
-                  </td>
+        <p
+          style={{
+            margin: "10px 0 0",
+            color: "#64748b",
+            lineHeight: 1.75,
+            fontSize: 15,
+            maxWidth: 760,
+          }}
+        >
+          Consulte aqui as pendências atribuídas ao atleta, o status de realização e o
+          acesso aos relatórios disponíveis.
+        </p>
+      </section>
 
-                  <td style={tableCell}>
-                    <RequestActions
-                      athleteId={athleteId}
-                      request={{
-                        request_id: r.request_id,
-                        title: r.title,
-                        instrument_version: r.instrument_version,
-                        reference_window: r.reference_window,
-                        due_at: r.due_at,
-                        selection_json: r.selection_json,
+      {requests.length === 0 ? (
+        <section style={cardStyle()}>
+          <div
+            style={{
+              color: "#64748b",
+              fontSize: 14,
+              lineHeight: 1.7,
+            }}
+          >
+            Nenhuma avaliação designada.
+          </div>
+        </section>
+      ) : (
+        <section style={{ display: "grid", gap: 12 }}>
+          {requests.map((r) => {
+            const a = assessmentByRequest.get(r.request_id) ?? null;
+            const rep = a ? reportByAssessment.get(a.assessment_id) ?? null : null;
+            const reportHref = a && rep ? `/admin/reports/${a.assessment_id}` : null;
+
+            return (
+              <article
+                key={r.request_id}
+                style={{
+                  ...cardStyle(),
+                  padding: 18,
+                  display: "grid",
+                  gap: 14,
+                }}
+              >
+                <div
+                  style={{
+                    display: "flex",
+                    justifyContent: "space-between",
+                    gap: 12,
+                    alignItems: "flex-start",
+                    flexWrap: "wrap",
+                  }}
+                >
+                  <div
+                    style={{
+                      fontSize: 16,
+                      fontWeight: 600,
+                      color: "#0f172a",
+                      lineHeight: 1.45,
+                      maxWidth: 620,
+                    }}
+                  >
+                    {r.title ?? "—"}
+                  </div>
+
+                  <StatusBadge status={r.status} />
+                </div>
+
+                <div
+                  style={{
+                    display: "grid",
+                    gap: 8,
+                    gridTemplateColumns: "repeat(auto-fit, minmax(180px, 1fr))",
+                  }}
+                >
+                  <div>
+                    <div
+                      style={{
+                        fontSize: 12,
+                        color: "#64748b",
+                        fontWeight: 600,
+                        marginBottom: 4,
                       }}
-                    />
-                  </td>
-
-                  <td style={tableCell}>
-                    <div style={{ marginTop: 1 }}>
-                      <CancelButton requestId={r.request_id} disabled={r.status !== "pending"} />
+                    >
+                      Assignment
                     </div>
-                  </td>
-                </tr>
-              );
-            })}
+                    <div
+                      style={{
+                        fontSize: 14,
+                        color: "#334155",
+                        lineHeight: 1.6,
+                      }}
+                    >
+                      {formatDate(r.created_at)}
+                    </div>
+                  </div>
 
-            {requests.length === 0 ? (
-              <tr>
-                <td colSpan={8} style={{ padding: 12, color: "#6b7280" }}>
-                  Nenhuma avaliação designada.
-                </td>
-              </tr>
-            ) : null}
-          </tbody>
-        </table>
-      </div>
+                  <div>
+                    <div
+                      style={{
+                        fontSize: 12,
+                        color: "#64748b",
+                        fontWeight: 600,
+                        marginBottom: 4,
+                      }}
+                    >
+                      Prazo
+                    </div>
+                    <div
+                      style={{
+                        fontSize: 14,
+                        color: "#334155",
+                        lineHeight: 1.6,
+                      }}
+                    >
+                      {r.due_at ? formatDate(r.due_at) : "—"}
+                    </div>
+                  </div>
 
-      <div style={{ marginTop: 8 }}>
-        <a href="/admin/athletes" style={{ color: "#111827" }}>← Voltar</a>
-      </div>
+                  <div>
+                    <div
+                      style={{
+                        fontSize: 12,
+                        color: "#64748b",
+                        fontWeight: 600,
+                        marginBottom: 4,
+                      }}
+                    >
+                      Realização
+                    </div>
+                    <div
+                      style={{
+                        fontSize: 14,
+                        color: "#334155",
+                        lineHeight: 1.6,
+                      }}
+                    >
+                      {a?.submitted_at ? formatDate(a.submitted_at) : "—"}
+                    </div>
+                  </div>
+                </div>
+
+                <div
+                  style={{
+                    display: "flex",
+                    gap: 10,
+                    flexWrap: "wrap",
+                    alignItems: "center",
+                  }}
+                >
+                  {reportHref ? (
+                    <a
+                      href={reportHref}
+                      target="_blank"
+                      style={{
+                        display: "inline-flex",
+                        alignItems: "center",
+                        justifyContent: "center",
+                        minHeight: 36,
+                        padding: "0 12px",
+                        borderRadius: 12,
+                        border: "1px solid #d1d5db",
+                        background: "#fff",
+                        textDecoration: "none",
+                        color: "#0f172a",
+                        fontSize: 13,
+                        fontWeight: 600,
+                        whiteSpace: "nowrap",
+                      }}
+                    >
+                      Abrir relatório
+                    </a>
+                  ) : (
+                    <span
+                      style={{
+                        fontSize: 13,
+                        color: "#64748b",
+                      }}
+                    >
+                      Relatório: —
+                    </span>
+                  )}
+
+                  <RequestActions
+                    athleteId={athleteId}
+                    request={{
+                      request_id: r.request_id,
+                      title: r.title,
+                      instrument_version: r.instrument_version,
+                      reference_window: r.reference_window,
+                      due_at: r.due_at,
+                      selection_json: r.selection_json,
+                    }}
+                  />
+
+                  <div style={{ marginLeft: "auto" }}>
+                    <CancelButton
+                      requestId={r.request_id}
+                      disabled={r.status !== "pending"}
+                    />
+                  </div>
+                </div>
+              </article>
+            );
+          })}
+        </section>
+      )}
     </div>
   );
 }
