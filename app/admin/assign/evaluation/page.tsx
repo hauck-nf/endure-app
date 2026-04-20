@@ -438,17 +438,17 @@ export default function AssignEvaluationPage() {
             Resumo
           </h2>
 
-          <div
-            style={{
-              marginTop: 8,
-              marginBottom: 16,
-              color: "#64748b",
-              fontSize: 14,
-              lineHeight: 1.75,
-            }}
-          >
-            Acompanhe o progresso da seleção antes de enviar a avaliação.
-          </div>
+<div
+  style={{
+    marginTop: 8,
+    marginBottom: 16,
+    color: "#64748b",
+    fontSize: 14,
+    lineHeight: 1.75,
+  }}
+>
+  Acompanhe a quantidade de atletas e escalas selecionados antes do envio.
+</div>
 
           <div
             style={{
@@ -472,54 +472,7 @@ export default function AssignEvaluationPage() {
               </span>
             </div>
           </div>
-
-          <div
-            style={{
-              display: "flex",
-              gap: 8,
-              flexWrap: "wrap",
-              marginTop: 16,
-            }}
-          >
-            <button
-              type="button"
-              onClick={() => setStep(1)}
-              style={{
-                minHeight: 40,
-                padding: "0 14px",
-                borderRadius: 12,
-                border: step === 1 ? "1px solid #0f172a" : "1px solid #d1d5db",
-                background: step === 1 ? "#0f172a" : "#fff",
-                color: step === 1 ? "#fff" : "#0f172a",
-                fontWeight: 600,
-                fontSize: 14,
-                cursor: "pointer",
-                fontFamily: "inherit",
-              }}
-            >
-              Atletas
-            </button>
-
-            <button
-              type="button"
-              onClick={() => setStep(2)}
-              style={{
-                minHeight: 40,
-                padding: "0 14px",
-                borderRadius: 12,
-                border: step === 2 ? "1px solid #0f172a" : "1px solid #d1d5db",
-                background: step === 2 ? "#0f172a" : "#fff",
-                color: step === 2 ? "#fff" : "#0f172a",
-                fontWeight: 600,
-                fontSize: 14,
-                cursor: "pointer",
-                fontFamily: "inherit",
-              }}
-            >
-              Escalas
-            </button>
-          </div>
-
+          
           {msg ? (
             <div
               style={{
