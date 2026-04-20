@@ -28,13 +28,16 @@ export default async function AdminReportRedirectPage({
     .eq("user_id", auth.user.id)
     .single();
 
-  if (profile?.role !== "admin") redirect("/login");
+  if (profile?.role !== "admin") redirect("/login");  const url = process.env.NEXT_PUBLIC_SUPABASE_URL!;
+  const serviceKey = process.env.SUPABASE_SERVICE_ROLE_KEY!;
+  const bucket = process.env.SUPABASE_REPORTS_BUCKET || "reports";
+  const supabaseAdmin = createSupabaseAdmin(url, serviceKey);
+
 
   // 3) buscar pdf_path
   const assessmentId = params.assessment_id;
 
-  const { data: rep, error: repErr } = await supabase
-    .from("assessment_reports")
+  const { data: rep, error: repErr } = await supabaseAdmin.from("assessment_reports")
     .select("pdf_path")
     .eq("assessment_id", assessmentId)
     .single();
@@ -49,12 +52,6 @@ export default async function AdminReportRedirectPage({
       </div>
     );
   }
-
-  const url = process.env.NEXT_PUBLIC_SUPABASE_URL!;
-  const serviceKey = process.env.SUPABASE_SERVICE_ROLE_KEY!;
-  const bucket = process.env.SUPABASE_REPORTS_BUCKET || "reports";
-
-  const supabaseAdmin = createSupabaseAdmin(url, serviceKey);
 
   // pdf_path pode vir só como UUID, ou já como path
   let raw = String(rep.pdf_path).trim();
