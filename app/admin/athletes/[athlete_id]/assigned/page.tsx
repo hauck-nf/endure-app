@@ -1,4 +1,4 @@
-﻿"use client";
+"use client";
 
 import { useEffect, useMemo, useState } from "react";
 import { useParams, useRouter } from "next/navigation";
@@ -44,6 +44,27 @@ function cardStyle(): React.CSSProperties {
     borderRadius: 24,
     padding: 20,
     boxShadow: "0 18px 48px rgba(15,23,42,.06)",
+  };
+}
+
+function actionCellStyle(disabled = false): React.CSSProperties {
+  return {
+    display: "inline-flex",
+    alignItems: "center",
+    justifyContent: "center",
+    width: "100%",
+    minHeight: 38,
+    padding: "0 12px",
+    borderRadius: 12,
+    border: disabled ? "1px solid #e5e7eb" : "1px solid #d1d5db",
+    background: disabled ? "#f8fafc" : "#fff",
+    color: disabled ? "#94a3b8" : "#0f172a",
+    textDecoration: "none",
+    fontSize: 13,
+    fontWeight: 600,
+    whiteSpace: "nowrap",
+    fontFamily: "inherit",
+    cursor: disabled ? "not-allowed" : "pointer",
   };
 }
 
@@ -514,62 +535,51 @@ export default function AssignedEvaluationsPageClient() {
 
                 <div
                   style={{
-                    display: "flex",
+                    display: "grid",
                     gap: 10,
-                    flexWrap: "wrap",
-                    alignItems: "center",
                   }}
                 >
-                  {reportHref ? (
-                    <a
-                      href={reportHref}
-                      target="_blank"
-                      style={{
-                        display: "inline-flex",
-                        alignItems: "center",
-                        justifyContent: "center",
-                        minHeight: 36,
-                        padding: "0 12px",
-                        borderRadius: 12,
-                        border: "1px solid #d1d5db",
-                        background: "#fff",
-                        textDecoration: "none",
-                        color: "#0f172a",
-                        fontSize: 13,
-                        fontWeight: 600,
-                        whiteSpace: "nowrap",
-                      }}
-                    >
-                      Abrir relatório
-                    </a>
-                  ) : (
-                    <span
-                      style={{
-                        fontSize: 13,
-                        color: "#64748b",
-                      }}
-                    >
-                      Relatório: —
-                    </span>
-                  )}
-
-                  <RequestActions
-                    athleteId={athleteId}
-                    request={{
-                      request_id: r.request_id,
-                      title: r.title,
-                      instrument_version: r.instrument_version,
-                      reference_window: r.reference_window,
-                      due_at: r.due_at,
-                      selection_json: r.selection_json,
+                  <div
+                    className="assigned-actions-grid"
+                    style={{
+                      display: "grid",
+                      gridTemplateColumns: "repeat(2, minmax(0, 1fr))",
+                      gap: 8,
+                      alignItems: "start",
                     }}
-                  />
+                  >
+                    {reportHref ? (
+                      <a
+                        href={reportHref}
+                        target="_blank"
+                        style={actionCellStyle(false)}
+                      >
+                        Relatório
+                      </a>
+                    ) : (
+                      <button type="button" disabled style={actionCellStyle(true)}>
+                        Relatório
+                      </button>
+                    )}
 
-                  <div style={{ marginLeft: "auto" }}>
                     <CancelButton
                       requestId={r.request_id}
                       disabled={r.status !== "pending"}
                     />
+
+                    <div style={{ gridColumn: "1 / -1" }}>
+                      <RequestActions
+                        athleteId={athleteId}
+                        request={{
+                          request_id: r.request_id,
+                          title: r.title,
+                          instrument_version: r.instrument_version,
+                          reference_window: r.reference_window,
+                          due_at: r.due_at,
+                          selection_json: r.selection_json,
+                        }}
+                      />
+                    </div>
                   </div>
                 </div>
               </article>

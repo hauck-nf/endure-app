@@ -1,4 +1,4 @@
-﻿"use client";
+"use client";
 
 import { useState } from "react";
 import { supabaseBrowser } from "@/src/lib/supabaseBrowser";
@@ -21,49 +21,55 @@ function baseUrl() {
   return window.location.origin;
 }
 
-const btn: React.CSSProperties = {
-  width: "100%",
-  height: 34,
-  padding: "0 10px",
-  borderRadius: 10,
-  border: "1px solid #e5e7eb",
-  background: "#fff",
-  color: "#111827",
-  fontSize: 12,
-  fontWeight: 600,
-  cursor: "pointer",
-  display: "flex",
-  alignItems: "center",
-  justifyContent: "space-between",
-  gap: 10,
-};
-
-const tiny: React.CSSProperties = { fontSize: 11, color: "#6b7280", fontWeight: 600 };
+function actionButtonStyle(disabled = false): React.CSSProperties {
+  return {
+    display: "inline-flex",
+    alignItems: "center",
+    justifyContent: "center",
+    width: "100%",
+    minHeight: 38,
+    padding: "0 12px",
+    borderRadius: 12,
+    border: "1px solid #d1d5db",
+    background: "#fff",
+    color: disabled ? "#9ca3af" : "#0f172a",
+    fontSize: 13,
+    fontWeight: 600,
+    cursor: disabled ? "not-allowed" : "pointer",
+    whiteSpace: "nowrap",
+    fontFamily: "inherit",
+    opacity: disabled ? 0.7 : 1,
+  };
+}
 
 export default function RequestActions({ athleteId, request }: Props) {
   const [msg, setMsg] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
 
-  const localFlowLink = `${window.location.origin}/athlete/flow/${request.request_id}`;
   const publicFlowLink = `${baseUrl()}/athlete/flow/${request.request_id}`;
+  const localFlowLink = `${window.location.origin}/athlete/flow/${request.request_id}`;
 
   async function copy(text: string, okMsg: string) {
     setMsg(null);
     try {
       await navigator.clipboard.writeText(text);
       setMsg(okMsg);
-      setTimeout(() => setMsg(null), 1200);
+      setTimeout(() => setMsg(null), 1400);
     } catch {
-      setMsg("Não consegui copiar. Copie manualmente.");
+      setMsg("Não foi possível copiar.");
     }
   }
 
   async function resend() {
-    setMsg(null);
-    setBusy(true);
     try {
-      const { data: auth } = await supabaseBrowser.auth.getUser();
-      const createdBy = auth.user?.id ?? null;
+      setMsg(null);
+      setBusy(true);
+
+      const { data: authRes, error: authErr } = await supabaseBrowser.auth.getUser();
+      if (authErr) throw new Error(authErr.message);
+
+      const createdBy = authRes.user?.id;
+      if (!createdBy) throw new Error("Sessão do administrador não encontrada.");
 
       const payload = {
         athlete_id: athleteId,
@@ -76,11 +82,14 @@ export default function RequestActions({ athleteId, request }: Props) {
         selection_json: request.selection_json ?? null,
       };
 
-      const { error } = await supabaseBrowser.from("assessment_requests").insert(payload);
-      if (error) throw error;
+      const { error } = await supabaseBrowser
+        .from("assessment_requests")
+        .insert(payload);
 
-      setMsg("Reenviado.");
-      setTimeout(() => window.location.reload(), 350);
+      if (error) throw new Error(error.message);
+
+      setMsg("Avaliação reenviada.");
+      setTimeout(() => window.location.reload(), 450);
     } catch (e: any) {
       setMsg(e?.message ?? "Erro ao reenviar.");
     } finally {
@@ -89,33 +98,54 @@ export default function RequestActions({ athleteId, request }: Props) {
   }
 
   return (
-    <div style={{ display: "grid", gap: 8, minWidth: 190 }}>
-      <button type="button" onClick={() => copy(publicFlowLink, "Link público copiado.")} style={btn} title="Link para enviar ao atleta">
-        <span>Copiar link público</span>
-        <span style={tiny}>📱</span>
-      </button>
-
-      <button type="button" onClick={() => copy(localFlowLink, "Link local copiado.")} style={btn} title="Útil apenas no seu computador">
-        <span>Copiar link local</span>
-        <span style={tiny}>🖥️</span>
-      </button>
-
-      <button
-        type="button"
-        disabled={busy}
-        onClick={resend}
+    <div style={{ display: "grid", gap: 8 }}>
+      <div
+        className="assigned-secondary-actions-grid"
         style={{
-          ...btn,
-          opacity: busy ? 0.7 : 1,
-          cursor: busy ? "not-allowed" : "pointer",
+          display: "grid",
+          gridTemplateColumns: "repeat(2, minmax(0, 1fr))",
+          gap: 8,
         }}
-        title="Cria uma nova avaliação igual a esta"
       >
-        <span>{busy ? "Reenviando..." : "Reenviar"}</span>
-        <span style={tiny}>↻</span>
-      </button>
+        <button
+          type="button"
+          onClick={() => copy(publicFlowLink, "Link público copiado.")}
+          style={actionButtonStyle()}
+        >
+          Link público
+        </button>
 
-      {msg ? <div style={{ fontSize: 12, color: "#6b7280" }}>{msg}</div> : null}
+        <button
+          type="button"
+          onClick={() => copy(localFlowLink, "Link local copiado.")}
+          style={actionButtonStyle()}
+        >
+          Link local
+        </button>
+
+        <button
+          type="button"
+          onClick={resend}
+          disabled={busy}
+          style={actionButtonStyle(busy)}
+        >
+          {busy ? "Reenviando..." : "Reenviar"}
+        </button>
+
+        <div />
+      </div>
+
+      {msg ? (
+        <div
+          style={{
+            fontSize: 12,
+            color: "#64748b",
+            lineHeight: 1.5,
+          }}
+        >
+          {msg}
+        </div>
+      ) : null}
     </div>
   );
 }
