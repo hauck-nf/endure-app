@@ -21,49 +21,49 @@ export default function AthleteHistoryPage() {
   const [err, setErr] = useState<string | null>(null);
   const [busyId, setBusyId] = useState<string | null>(null);
 
-async function openReport(assessment_id: string) {
+async function openReport(assessmentId: string) {
   let reportWindow: Window | null = null;
-
   try {
     setErr(null);
-    setBusyId(assessment_id);
+    setBusyId(assessmentId);
 
-    reportWindow = window.open("about:blank", "_blank");
+    // abre um "placeholder" para evitar bloqueio de popup no mobile
+    reportWindow = window.open("about:blank", "_blank", "noopener,noreferrer");
 
-    const r = await fetch(
-      `/api/report-url?assessment_id=${encodeURIComponent(assessment_id)}`,
-      {
-        method: "GET",
-        headers: { Accept: "application/json" },
-      }
-    );
+    // 1) garante/gera o PDF (idempotente)
+    const r1 = await fetch("/api/report", {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify({ assessment_id: assessmentId }),
+    });
 
-    const j = await r.json().catch(() => ({} as any));
-    if (!r.ok) {
-      throw new Error(j?.error ?? "Falha ao obter URL do relatÃ³rio.");
+    const j1: any = await r1.json().catch(() => ({}));
+    if (!r1.ok || !j1?.ok) {
+      throw new Error(j1?.error ?? "Erro ao gerar relatório.");
     }
 
-    const url = (j?.signedUrl ?? j?.signed_url ?? j?.url ?? "") as string;
-    if (!url || typeof url !== "string") {
-      throw new Error("A API não retornou uma URL válida para o relatório.");
+    // 2) pega signed URL
+    const r2 = await fetch(`/api/report-url?assessment_id=${encodeURIComponent(assessmentId)}`);
+    const j2: any = await r2.json().catch(() => ({}));
+
+    const url = (j2?.signedUrl ?? j2?.signed_url ?? j2?.url ?? "") as string;
+    if (!r2.ok || !j2?.ok || !url) {
+      throw new Error(j2?.error ?? "A API não retornou uma URL válida para o relatório.");
     }
 
     if (reportWindow) {
       reportWindow.location.replace(url);
     } else {
-      window.open(url, "_blank");
+      window.open(url, "_blank", "noopener,noreferrer");
     }
   } catch (e: any) {
-    if (reportWindow && !reportWindow.closed) {
-      reportWindow.close();
-    }
-    setErr(e?.message ?? "Erro ao abrir relatÃ³rio.");
+    if (reportWindow && !reportWindow.closed) reportWindow.close();
+    setErr(e?.message ?? "Erro ao abrir relatório.");
   } finally {
     setBusyId(null);
   }
 }
-
-  useEffect(() => {
+useEffect(() => {
     (async () => {
       try {
         setErr(null);
@@ -79,7 +79,7 @@ async function openReport(assessment_id: string) {
         if (error) throw error;
         setRows((data as Row[]) ?? []);
       } catch (e: any) {
-        setErr(e.message ?? "Erro ao carregar histÃ³rico.");
+        setErr(e.message ?? "Erro ao carregar histÃƒÂ³rico.");
       }
     })();
   }, []);
@@ -121,7 +121,7 @@ async function openReport(assessment_id: string) {
             letterSpacing: 0.3,
           }}
         >
-          Ãrea do atleta
+          ÃƒÂrea do atleta
         </div>
 
         <h1
@@ -133,7 +133,7 @@ async function openReport(assessment_id: string) {
             color: "#0f172a",
           }}
         >
-          HistÃ³rico de avaliaÃ§Ãµes
+          HistÃƒÂ³rico de avaliaÃƒÂ§ÃƒÂµes
         </h1>
 
         <p
@@ -145,7 +145,7 @@ async function openReport(assessment_id: string) {
             maxWidth: 760,
           }}
         >
-          Consulte aqui as avaliaÃ§Ãµes jÃ¡ concluÃ­das e abra o relatÃ³rio sempre que
+          Consulte aqui as avaliaÃƒÂ§ÃƒÂµes jÃƒÂ¡ concluÃƒÂ­das e abra o relatÃƒÂ³rio sempre que
           quiser revisitar seus resultados.
         </p>
 
@@ -164,7 +164,7 @@ async function openReport(assessment_id: string) {
             fontWeight: 700,
           }}
         >
-          {viewRows.length} {viewRows.length === 1 ? "avaliaÃ§Ã£o" : "avaliaÃ§Ãµes"}
+          {viewRows.length} {viewRows.length === 1 ? "avaliaÃƒÂ§ÃƒÂ£o" : "avaliaÃƒÂ§ÃƒÂµes"}
         </div>
       </section>
 
@@ -200,7 +200,7 @@ async function openReport(assessment_id: string) {
               fontSize: 16,
             }}
           >
-            Nenhuma avaliaÃ§Ã£o submetida ainda.
+            Nenhuma avaliaÃƒÂ§ÃƒÂ£o submetida ainda.
           </div>
 
           <div
@@ -211,7 +211,7 @@ async function openReport(assessment_id: string) {
               lineHeight: 1.7,
             }}
           >
-            Quando vocÃª concluir avaliaÃ§Ãµes, elas aparecerÃ£o aqui para consulta.
+            Quando vocÃƒÂª concluir avaliaÃƒÂ§ÃƒÂµes, elas aparecerÃƒÂ£o aqui para consulta.
           </div>
         </section>
       ) : (
@@ -277,7 +277,7 @@ async function openReport(assessment_id: string) {
                     fontFamily: "inherit",
                   }}
                 >
-                  {busyId === r.assessment_id ? "Gerando..." : "Abrir relatÃ³rio"}
+                  {busyId === r.assessment_id ? "Gerando..." : "Abrir relatÃƒÂ³rio"}
                 </button>
               </div>
             </article>

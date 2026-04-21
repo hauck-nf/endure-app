@@ -1,4 +1,4 @@
-﻿import { PDFDocument, StandardFonts, rgb } from "pdf-lib";
+import { PDFDocument, StandardFonts, rgb } from "pdf-lib";
 
 type ScoreRow = {
   score_scale: string;
@@ -163,7 +163,26 @@ export async function buildEndurePdf(params: {
   const rowH = 13;
 
   for (const s of sorted) {
-    if (y < 90) break; // MVP: 1 página (depois a gente pagina)
+    if (y < 90) {
+        // paginação simples
+        page = doc.addPage([595.28, 841.89]);
+        y = 760;
+
+        // título da seção
+        page.drawText("Resultados por escala", { x: 50, y, size: 14, font: bold, color: rgb(0.05, 0.08, 0.15) });
+        y -= 24;
+
+        // cabeçalho da tabela
+        page.drawLine({ start: { x: 50, y: y + 10 }, end: { x: 545, y: y + 10 }, thickness: 1, color: rgb(0.9, 0.9, 0.9) });
+        page.drawText("Escala", { x: 50, y, size: 10, font: bold, color: rgb(0.2, 0.2, 0.2) });
+        page.drawText("Raw", { x: 250, y, size: 10, font: bold, color: rgb(0.2, 0.2, 0.2) });
+        page.drawText("T", { x: 300, y, size: 10, font: bold, color: rgb(0.2, 0.2, 0.2) });
+        page.drawText("%", { x: 340, y, size: 10, font: bold, color: rgb(0.2, 0.2, 0.2) });
+        page.drawText("Banda", { x: 385, y, size: 10, font: bold, color: rgb(0.2, 0.2, 0.2) });
+        page.drawText("Interpretação", { x: 450, y, size: 10, font: bold, color: rgb(0.2, 0.2, 0.2) });
+
+        y -= 16;
+      }
     page.drawText(String(s.score_scale ?? "—"), { x: colX.scale, y, size: 10.5, font, color: rgb(0.07, 0.09, 0.15) });
     page.drawText(String(s.raw_score ?? "—"), { x: colX.raw, y, size: 10.5, font, color: rgb(0.07, 0.09, 0.15) });
     page.drawText(fmtNum(s.t_score, 1), { x: colX.t, y, size: 10.5, font, color: rgb(0.07, 0.09, 0.15) });
