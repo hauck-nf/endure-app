@@ -1,4 +1,4 @@
-import { NextResponse } from "next/server";
+﻿import { NextResponse } from "next/server";
 import { createClient } from "@/src/lib/supabaseServer";
 import { createClient as createSupabaseAdmin } from "@supabase/supabase-js";
 import { buildEndurePdf } from "@/src/lib/reportPdf";
@@ -40,7 +40,7 @@ export async function POST(req: Request) {
       return NextResponse.json({ ok: false, error: "assessment not found" }, { status: 404 });
     }
 
-    // atleta só pode gerar relatório do próprio assessment
+    // atleta sÃ³ pode gerar relatÃ³rio do prÃ³prio assessment
     if (prof?.role !== "admin") {
       const { data: myAth } = await supabaseAdmin
         .from("athletes")
@@ -67,7 +67,7 @@ export async function POST(req: Request) {
     // scores_json (se faltar, chama /api/score para calcular)
     let { data: scoreRow } = await supabaseAdmin
       .from("assessment_scores")
-      .select("scores_json, readiness_score, scoring_version, computed_at")
+      .select("scores_json")
       .eq("assessment_id", assessment_id)
       .maybeSingle();
 
@@ -91,7 +91,7 @@ export async function POST(req: Request) {
 
       ({ data: scoreRow } = await supabaseAdmin
         .from("assessment_scores")
-        .select("scores_json, readiness_score, scoring_version, computed_at")
+        .select("scores_json")
         .eq("assessment_id", assessment_id)
         .maybeSingle());
     }
@@ -124,8 +124,6 @@ export async function POST(req: Request) {
         submitted_at: ass.submitted_at ?? null,
       },
       scores,
-      readiness: scoreRow?.readiness_score ?? null,
-      scoringVersion: scoreRow?.scoring_version ?? null,
     });
 
     const pdf_path = `${athlete.athlete_id}/${assessment_id}.pdf`;
@@ -153,3 +151,4 @@ export async function POST(req: Request) {
     return NextResponse.json({ ok: false, error: e?.message ?? String(e) }, { status: 500 });
   }
 }
+
