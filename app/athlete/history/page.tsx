@@ -1,176 +1,193 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
+import Link from "next/link";
+import { supabase } from "@/src/lib/supabaseClient";
+import { getMyAthleteId } from "@/src/lib/athlete";
 
 type Row = {
   assessment_id: string;
-  instrument_version?: string | null;
-  submitted_at?: string | null;
+  instrument_version: string | null;
+  created_at: string | null;
+  submitted_at: string | null;
 };
+
+function fmtDate(iso?: string | null) {
+  if (!iso) return "—";
+  try {
+    const d = new Date(iso);
+    return d.toLocaleDateString("pt-BR");
+  } catch {
+    return iso;
+  }
+}
 
 export default function AthleteHistoryPage() {
   const [rows, setRows] = useState<Row[]>([]);
+  const [loading, setLoading] = useState(true);
   const [err, setErr] = useState<string | null>(null);
-  const [busyId, setBusyId] = useState<string | null>(null);
-
-  const titleArea = "\u00c1rea do atleta";
-  const title = "Hist\u00f3rico de avalia\u00e7\u00f5es";
-  const subtitle =
-    "Consulte aqui as avalia\u00e7\u00f5es conclu\u00eddas e abra o relat\u00f3rio sempre que quiser revisitar seus resultados.";
 
   const countLabel = useMemo(() => {
     const n = rows.length;
-    return n === 1 ? "1 avalia\u00e7\u00e3o" : `${n} avalia\u00e7\u00f5es`;
+    return n === 1 ? "1 avaliação" : `${n} avaliações`;
   }, [rows.length]);
 
   useEffect(() => {
     let alive = true;
-    (async () => {
-      try {
-        setErr(null);
-        // mantém seu endpoint atual (se você já tinha outro, troque aqui)
-        const r = await fetch("/api/athlete/history");
-        const j = await r.json().catch(() => ({}));
-        if (!r.ok) throw new Error(j?.error ?? `HTTP ${r.status}`);
 
-        const list: Row[] = Array.isArray(j?.rows) ? j.rows : Array.isArray(j) ? j : [];
-        if (alive) setRows(list);
+    (async () => {
+      setLoading(true);
+      setErr(null);
+
+      try {
+        const athleteId = await getMyAthleteId();
+        if (!athleteId) {
+          throw new Error("Você ainda não tem cadastro de atleta.");
+        }
+
+        const { data, error } = await supabase
+          .from("assessments")
+          .select("assessment_id,instrument_version,created_at,submitted_at")
+          .eq("athlete_id", athleteId)
+          .not("submitted_at", "is", null) // ✅ não depende de status
+          .order("submitted_at", { ascending: false })
+          .limit(200);
+
+        if (error) throw error;
+
+        const safe = (data ?? []) as Row[];
+        if (alive) setRows(safe);
       } catch (e: any) {
-        if (alive) setErr(e?.message ?? String(e));
+        if (alive) {
+          setRows([]);
+          setErr(e?.message ?? String(e));
+        }
+      } finally {
+        if (alive) setLoading(false);
       }
     })();
+
     return () => {
       alive = false;
     };
   }, []);
 
-  async function openReport(assessmentId: string) {
-    try {
-      setErr(null);
-      setBusyId(assessmentId);
-
-      // 1) garante/gera o PDF (idempotente)
-      const r1 = await fetch("/api/report", {
-        method: "POST",
-        headers: { "content-type": "application/json" },
-        body: JSON.stringify({ assessment_id: assessmentId }),
-      });
-      const j1 = await r1.json().catch(() => ({}));
-      if (!r1.ok || !j1?.ok) {
-        throw new Error(j1?.error ?? "Falha ao gerar o PDF.");
-      }
-
-      // 2) pega a signedUrl
-      const r2 = await fetch(`/api/report-url?assessment_id=${encodeURIComponent(assessmentId)}`);
-      // se o endpoint resolver mudar para redirect no futuro, isso já funciona:
-      if (r2.redirected) {
-        window.location.assign(r2.url);
-        return;
-      }
-      const j2: any = await r2.json().catch(() => ({}));
-      const url = (j2?.signedUrl ?? j2?.signed_url ?? j2?.url ?? "") as string;
-      if (!url || typeof url !== "string") throw new Error("A API n\u00e3o retornou uma URL v\u00e1lida para o relat\u00f3rio.");
-
-      // 3) abre SEM popup (mesma aba) -> zero fricção e sem bloqueio
-      window.location.assign(url);
-    } catch (e: any) {
-      setErr(e?.message ?? String(e));
-    } finally {
-      setBusyId(null);
-    }
-  }
-
   return (
-    <div style={{ padding: 24 }}>
-      <div
-        style={{
-          display: "inline-flex",
-          padding: "6px 12px",
-          borderRadius: 999,
-          border: "1px solid #e5e7eb",
-          background: "#f8fafc",
-          fontSize: 12,
-          color: "#111827",
-        }}
-      >
-        {titleArea}
-      </div>
-
-      <h1 style={{ fontSize: 34, margin: "14px 0 6px", color: "#111827" }}>{title}</h1>
-      <p style={{ color: "#475569", marginTop: 0, maxWidth: 820 }}>{subtitle}</p>
-
-      <div style={{ margin: "14px 0 22px" }}>
-        <span
-          style={{
-            display: "inline-flex",
-            padding: "10px 14px",
-            borderRadius: 999,
-            border: "1px solid #e5e7eb",
-            background: "#fff",
-            color: "#111827",
-            fontWeight: 600,
-          }}
-        >
-          {countLabel}
-        </span>
-      </div>
-
-      {err ? (
+    <div style={{ maxWidth: 980 }}>
+      <div style={{ marginBottom: 18 }}>
         <div
           style={{
-            border: "1px solid #fecaca",
-            background: "#fef2f2",
-            color: "#991b1b",
-            borderRadius: 14,
+            display: "inline-flex",
+            alignItems: "center",
+            gap: 8,
+            padding: "6px 12px",
+            border: "1px solid #e5e7eb",
+            borderRadius: 999,
+            background: "#f8fafc",
+            color: "#111827",
+            fontWeight: 600,
+            fontSize: 13,
+          }}
+        >
+          Área do atleta
+        </div>
+
+        <h1 style={{ marginTop: 14, marginBottom: 6, fontSize: 40, lineHeight: 1.1 }}>
+          Histórico de avaliações
+        </h1>
+
+        <div style={{ color: "#475569", fontSize: 16 }}>
+          Consulte aqui as avaliações concluídas e abra o relatório sempre que quiser revisitar seus resultados.
+        </div>
+
+        <div style={{ marginTop: 14 }}>
+          <span
+            style={{
+              display: "inline-flex",
+              alignItems: "center",
+              padding: "8px 14px",
+              borderRadius: 999,
+              border: "1px solid #e5e7eb",
+              background: "#ffffff",
+              fontWeight: 700,
+              color: "#111827",
+            }}
+          >
+            {loading ? "Carregando…" : countLabel}
+          </span>
+        </div>
+      </div>
+
+      {err && (
+        <div
+          style={{
             padding: 14,
-            marginBottom: 18,
-            maxWidth: 900,
+            borderRadius: 14,
+            border: "1px solid #fecaca",
+            background: "#fff1f2",
+            color: "#9f1239",
+            marginBottom: 14,
+            fontWeight: 600,
           }}
         >
           {err}
         </div>
-      ) : null}
+      )}
 
-      <div style={{ display: "grid", gap: 14, maxWidth: 900 }}>
+      {(!loading && rows.length === 0 && !err) && (
+        <div
+          style={{
+            padding: 18,
+            borderRadius: 16,
+            border: "1px solid #e5e7eb",
+            background: "#ffffff",
+            color: "#475569",
+          }}
+        >
+          Nenhuma avaliação concluída ainda.
+        </div>
+      )}
+
+      <div style={{ display: "flex", flexDirection: "column", gap: 14 }}>
         {rows.map((r) => (
           <div
             key={r.assessment_id}
             style={{
+              borderRadius: 18,
               border: "1px solid #e5e7eb",
-              borderRadius: 16,
-              padding: 16,
-              background: "#fff",
-              display: "flex",
-              alignItems: "center",
-              justifyContent: "space-between",
-              gap: 12,
+              background: "#ffffff",
+              padding: 18,
             }}
           >
-            <div>
-              <div style={{ fontWeight: 800, color: "#111827" }}>{r.instrument_version ?? "ENDURE_v1"}</div>
-              <div style={{ fontSize: 13, color: "#475569", marginTop: 2 }}>
-                {r.submitted_at ? new Date(r.submitted_at).toLocaleDateString() : "—"}
+            <div style={{ display: "flex", justifyContent: "space-between", gap: 12, alignItems: "baseline" }}>
+              <div style={{ fontWeight: 900, fontSize: 18, color: "#0f172a" }}>
+                {r.instrument_version ?? "ENDURE"}
+              </div>
+              <div style={{ color: "#64748b", fontWeight: 600 }}>
+                {fmtDate(r.submitted_at ?? r.created_at)}
               </div>
             </div>
 
-            <button
-              onClick={() => openReport(r.assessment_id)}
-              disabled={busyId === r.assessment_id}
-              style={{
-                height: 44,
-                padding: "0 18px",
-                borderRadius: 16,
-                border: "1px solid #111827",
-                background: "#111827",
-                color: "#fff",
-                fontWeight: 700,
-                cursor: busyId === r.assessment_id ? "not-allowed" : "pointer",
-                opacity: busyId === r.assessment_id ? 0.7 : 1,
-                whiteSpace: "nowrap",
-              }}
-            >
-              {busyId === r.assessment_id ? "Abrindo..." : "Abrir relat\u00f3rio"}
-            </button>
+            <div style={{ marginTop: 14 }}>
+              {/* ✅ link normal: SEM popup, SEM about:blank, funciona no mobile */}
+              <Link
+                href={`/athlete/reports/${r.assessment_id}`}
+                style={{
+                  display: "inline-flex",
+                  alignItems: "center",
+                  justifyContent: "center",
+                  height: 44,
+                  padding: "0 18px",
+                  borderRadius: 16,
+                  background: "#111827",
+                  color: "#ffffff",
+                  fontWeight: 800,
+                  textDecoration: "none",
+                }}
+              >
+                Abrir relatório
+              </Link>
+            </div>
           </div>
         ))}
       </div>
