@@ -13,7 +13,7 @@ async function firstSignedUrl(supabaseAdmin: any, bucket: string, candidates: st
 export default async function AdminReportRedirectPage({
   params,
 }: {
-  params: { assessment_id: string };
+  params: Promise<{ assessment_id: string }>;
 }) {
   const supabase = await createClient();
 
@@ -37,9 +37,20 @@ export default async function AdminReportRedirectPage({
 
 
   // 3) buscar pdf_path
-  const assessmentId = params.assessment_id;
+  const { assessment_id: assessmentId } = await params;
 
-  const { data: rep, error: repErr } = await supabaseAdmin.from("assessment_reports")
+  
+  if (!assessmentId) {
+    return (
+      <div style={{ padding: 24 }}>
+        <h1>Relatório indisponível</h1>
+        <div style={{ color: "#6b7280" }}>
+          Não recebi <code>assessment_id</code> na rota.
+        </div>
+      </div>
+    );
+  }
+const { data: rep, error: repErr } = await supabaseAdmin.from("assessment_reports")
     .select("pdf_path")
     .eq("assessment_id", assessmentId)
     .single();
@@ -132,4 +143,5 @@ export default async function AdminReportRedirectPage({
     </div>
   );
 }
+
 
