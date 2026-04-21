@@ -27,19 +27,19 @@ type AssessmentRow = {
 };
 
 function fmtDateBR(iso: string | null | undefined) {
-  if (!iso) return "—";
+  if (!iso) return "â€”";
   const d = new Date(iso);
   if (Number.isNaN(d.getTime())) return String(iso);
   return d.toLocaleString("pt-BR", { timeZone: "America/Sao_Paulo" });
 }
 
 function fmtPct(p: number | null | undefined) {
-  if (p === null || p === undefined) return "—";
-  return `${Math.round(p)}º`;
+  if (p === null || p === undefined) return "â€”";
+  return `${Math.round(p)}Âº`;
 }
 
 function fmtNum(n: number | null | undefined, digits = 1) {
-  if (n === null || n === undefined) return "—";
+  if (n === null || n === undefined) return "â€”";
   return Number(n).toFixed(digits);
 }
 
@@ -68,7 +68,7 @@ export async function buildEndurePdf(params: {
   const { athlete, assessment, scores } = params;
 
   const pdf = await PDFDocument.create();
-  const page = pdf.addPage([595.28, 841.89]); // A4
+  let page = pdf.addPage([595.28, 841.89]); // A4
   const { width, height } = page.getSize();
 
   const font = await pdf.embedFont(StandardFonts.Helvetica);
@@ -78,18 +78,18 @@ export async function buildEndurePdf(params: {
   let y = height - 56;
 
   // Header
-  page.drawText("Relatório de avaliação socioemocional", {
+  page.drawText("RelatÃ³rio de avaliaÃ§Ã£o socioemocional", {
     x: M, y, size: 18, font: fontBold, color: rgb(0.07, 0.09, 0.15),
   });
   y -= 22;
 
-  page.drawText("ENDURE • Avaliação socioemocional em atletas", {
+  page.drawText("ENDURE â€¢ AvaliaÃ§Ã£o socioemocional em atletas", {
     x: M, y, size: 10.5, font, color: rgb(0.42, 0.45, 0.50),
   });
   y -= 22;
 
   // Identification
-  page.drawText("Dados de identificação do atleta", {
+  page.drawText("Dados de identificaÃ§Ã£o do atleta", {
     x: M, y, size: 12.5, font: fontBold, color: rgb(0.07, 0.09, 0.15),
   });
   y -= 14;
@@ -99,13 +99,13 @@ export async function buildEndurePdf(params: {
   const lineH = 14;
 
   const idRows: Array<[string, string]> = [
-    ["Nome", athlete.full_name ?? "—"],
-    ["Nascimento", athlete.birth_date ?? "—"],
-    ["Sexo", athlete.sex ?? "—"],
-    ["Gênero", athlete.gender ?? "—"],
-    ["Esporte", athlete.sport_primary ?? "—"],
-    ["Equipe", athlete.team ?? "—"],
-    ["Email", athlete.email ?? "—"],
+    ["Nome", athlete.full_name ?? "â€”"],
+    ["Nascimento", athlete.birth_date ?? "â€”"],
+    ["Sexo", athlete.sex ?? "â€”"],
+    ["GÃªnero", athlete.gender ?? "â€”"],
+    ["Esporte", athlete.sport_primary ?? "â€”"],
+    ["Equipe", athlete.team ?? "â€”"],
+    ["Email", athlete.email ?? "â€”"],
   ];
 
   for (const [k, v] of idRows) {
@@ -117,14 +117,14 @@ export async function buildEndurePdf(params: {
   y -= 10;
 
   // Assessment meta
-  page.drawText("Dados da avaliação", {
+  page.drawText("Dados da avaliaÃ§Ã£o", {
     x: M, y, size: 12.5, font: fontBold, color: rgb(0.07, 0.09, 0.15),
   });
   y -= 14;
 
   const aRows: Array<[string, string]> = [
-    ["Instrumento", assessment.instrument_version ?? "—"],
-    ["Janela", assessment.reference_window ?? "—"],
+    ["Instrumento", assessment.instrument_version ?? "â€”"],
+    ["Janela", assessment.reference_window ?? "â€”"],
     ["Criado em", fmtDateBR(assessment.created_at)],
     ["Submetido em", fmtDateBR(assessment.submitted_at)],
     ["Scoring", "ENDURE_score_v2_local_engine"],
@@ -139,7 +139,7 @@ export async function buildEndurePdf(params: {
   y -= 18;
 
   // Scores table header
-  page.drawText("Síntese por escala", {
+  page.drawText("SÃ­ntese por escala", {
     x: M, y, size: 12.5, font: fontBold, color: rgb(0.07, 0.09, 0.15),
   });
   y -= 14;
@@ -164,35 +164,35 @@ export async function buildEndurePdf(params: {
 
   for (const s of sorted) {
     if (y < 90) {
-        // paginação simples
-        page = doc.addPage([595.28, 841.89]);
+        // paginaÃ§Ã£o simples
+        page = pdf.addPage([595.28, 841.89]);
         y = 760;
 
-        // título da seção
-        page.drawText("Resultados por escala", { x: 50, y, size: 14, font: bold, color: rgb(0.05, 0.08, 0.15) });
+        // tÃ­tulo da seÃ§Ã£o
+        page.drawText("Resultados por escala", { x: 50, y, size: 14, font: font, color: rgb(0.05, 0.08, 0.15) });
         y -= 24;
 
-        // cabeçalho da tabela
+        // cabeÃ§alho da tabela
         page.drawLine({ start: { x: 50, y: y + 10 }, end: { x: 545, y: y + 10 }, thickness: 1, color: rgb(0.9, 0.9, 0.9) });
-        page.drawText("Escala", { x: 50, y, size: 10, font: bold, color: rgb(0.2, 0.2, 0.2) });
-        page.drawText("Raw", { x: 250, y, size: 10, font: bold, color: rgb(0.2, 0.2, 0.2) });
-        page.drawText("T", { x: 300, y, size: 10, font: bold, color: rgb(0.2, 0.2, 0.2) });
-        page.drawText("%", { x: 340, y, size: 10, font: bold, color: rgb(0.2, 0.2, 0.2) });
-        page.drawText("Banda", { x: 385, y, size: 10, font: bold, color: rgb(0.2, 0.2, 0.2) });
-        page.drawText("Interpretação", { x: 450, y, size: 10, font: bold, color: rgb(0.2, 0.2, 0.2) });
+        page.drawText("Escala", { x: 50, y, size: 10, font: font, color: rgb(0.2, 0.2, 0.2) });
+        page.drawText("Raw", { x: 250, y, size: 10, font: font, color: rgb(0.2, 0.2, 0.2) });
+        page.drawText("T", { x: 300, y, size: 10, font: font, color: rgb(0.2, 0.2, 0.2) });
+        page.drawText("%", { x: 340, y, size: 10, font: font, color: rgb(0.2, 0.2, 0.2) });
+        page.drawText("Banda", { x: 385, y, size: 10, font: font, color: rgb(0.2, 0.2, 0.2) });
+        page.drawText("InterpretaÃ§Ã£o", { x: 450, y, size: 10, font: font, color: rgb(0.2, 0.2, 0.2) });
 
         y -= 16;
       }
-    page.drawText(String(s.score_scale ?? "—"), { x: colX.scale, y, size: 10.5, font, color: rgb(0.07, 0.09, 0.15) });
-    page.drawText(String(s.raw_score ?? "—"), { x: colX.raw, y, size: 10.5, font, color: rgb(0.07, 0.09, 0.15) });
+    page.drawText(String(s.score_scale ?? "â€”"), { x: colX.scale, y, size: 10.5, font, color: rgb(0.07, 0.09, 0.15) });
+    page.drawText(String(s.raw_score ?? "â€”"), { x: colX.raw, y, size: 10.5, font, color: rgb(0.07, 0.09, 0.15) });
     page.drawText(fmtNum(s.t_score, 1), { x: colX.t, y, size: 10.5, font, color: rgb(0.07, 0.09, 0.15) });
     page.drawText(fmtPct(s.percentile), { x: colX.pct, y, size: 10.5, font, color: rgb(0.07, 0.09, 0.15) });
-    page.drawText(String(s.band_label ?? "—"), { x: colX.band, y, size: 10.5, font, color: rgb(0.07, 0.09, 0.15) });
+    page.drawText(String(s.band_label ?? "â€”"), { x: colX.band, y, size: 10.5, font, color: rgb(0.07, 0.09, 0.15) });
     y -= rowH;
   }
 
   // Footer
-  const footer = 'Endure • Avaliação socioemocional para atletas • Prof. Dr. Nelson Hauck Filho • Contato: hauck.nf@gmail.com';
+  const footer = 'Endure â€¢ AvaliaÃ§Ã£o socioemocional para atletas â€¢ Prof. Dr. Nelson Hauck Filho â€¢ Contato: hauck.nf@gmail.com';
   const footerLines = wrapText(footer, 92);
   let fy = 36;
   for (const line of footerLines) {
@@ -202,3 +202,4 @@ export async function buildEndurePdf(params: {
 
   return await pdf.save();
 }
+
