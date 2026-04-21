@@ -1,4 +1,4 @@
-﻿"use client";
+"use client";
 
 import { useEffect, useMemo, useState } from "react";
 import { supabase } from "../../../src/lib/supabaseClient";
@@ -43,9 +43,9 @@ async function openReport(assessment_id: string) {
       throw new Error(j?.error ?? "Falha ao obter URL do relatÃ³rio.");
     }
 
-    const url = j?.url;
+    const url = (j?.signedUrl ?? j?.signed_url ?? j?.url ?? "") as string;
     if (!url || typeof url !== "string") {
-      throw new Error("A API nÃ£o retornou uma URL vÃ¡lida para o relatÃ³rio.");
+      throw new Error("A API não retornou uma URL válida para o relatório.");
     }
 
     if (reportWindow) {

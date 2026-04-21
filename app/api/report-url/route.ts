@@ -1,31 +1,66 @@
-﻿import { NextResponse } from "next/server";
-import { createClient } from "@supabase/supabase-js";
+import { NextResponse } from "next/server";
+import { createClient } from "@/src/lib/supabaseServer";
+import { createClient as createSupabaseAdmin } from "@supabase/supabase-js";
 
 export const dynamic = "force-dynamic";
 
-const SUPABASE_URL = process.env.NEXT_PUBLIC_SUPABASE_URL!;
-const SERVICE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY!;
-const BUCKET = process.env.SUPABASE_REPORTS_BUCKET || "reports";
-
-const supabaseAdmin = createClient(SUPABASE_URL, SERVICE_KEY, {
-  auth: { persistSession: false, autoRefreshToken: false },
-});
-
-function isUuid(v: string) {
-  return /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(v);
+function isUuid(s: string) {
+  return /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(s);
 }
 
 export async function GET(req: Request) {
   try {
-    const url = new URL(req.url);
-    const assessment_id = url.searchParams.get("assessment_id") ?? "";
+    const supabase = await createClient();
 
-    if (!assessment_id) {
-      return NextResponse.json({ ok: false, error: "assessment_id ausente" }, { status: 400 });
+    const { data: auth } = await supabase.auth.getUser();
+    if (!auth.user) {
+      return NextResponse.json({ ok: false, error: "unauthenticated" }, { status: 401 });
     }
-    if (!isUuid(assessment_id)) {
-      return NextResponse.json({ ok: false, error: `assessment_id inválido: ${assessment_id}` }, { status: 400 });
+
+    const urlObj = new URL(req.url);
+    const assessment_id = (urlObj.searchParams.get("assessment_id") ?? "").trim();
+    if (!assessment_id || !isUuid(assessment_id)) {
+      return NextResponse.json({ ok: false, error: "invalid assessment_id" }, { status: 400 });
     }
+
+    // role
+    const { data: profile } = await supabase
+      .from("profiles")
+      .select("role")
+      .eq("user_id", auth.user.id)
+      .maybeSingle();
+
+    const role = profile?.role ?? "unknown";
+
+    // se não for admin: garantir que o assessment pertence ao atleta logado
+    if (role !== "admin") {
+      const { data: ath } = await supabase
+        .from("athletes")
+        .select("athlete_id")
+        .eq("user_id", auth.user.id)
+        .maybeSingle();
+
+      if (!ath?.athlete_id) {
+        return NextResponse.json({ ok: false, error: "no athlete profile" }, { status: 403 });
+      }
+
+      const { data: own } = await supabase
+        .from("assessments")
+        .select("assessment_id")
+        .eq("assessment_id", assessment_id)
+        .eq("athlete_id", ath.athlete_id)
+        .maybeSingle();
+
+      if (!own?.assessment_id) {
+        return NextResponse.json({ ok: false, error: "forbidden" }, { status: 403 });
+      }
+    }
+
+    // pegar pdf_path
+    const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!;
+    const serviceKey = process.env.SUPABASE_SERVICE_ROLE_KEY!;
+    const bucket = process.env.SUPABASE_REPORTS_BUCKET || "reports";
+    const supabaseAdmin = createSupabaseAdmin(supabaseUrl, serviceKey);
 
     const { data: rep, error: repErr } = await supabaseAdmin
       .from("assessment_reports")
@@ -36,21 +71,28 @@ export async function GET(req: Request) {
     if (repErr) {
       return NextResponse.json({ ok: false, error: `Erro ao consultar assessment_reports: ${repErr.message}` }, { status: 500 });
     }
-    if (!rep?.pdf_path) {
-      return NextResponse.json({ ok: false, error: "Relatório ainda não gerado" }, { status: 404 });
-    }
 
-    const pdfPath = String(rep.pdf_path).trim();
+    const pdf_path = (rep?.pdf_path ? String(rep.pdf_path).trim() : "");
+    if (!pdf_path) {
+      return NextResponse.json({ ok: false, error: "no pdf_path for assessment_id" }, { status: 404 });
+    }
 
     const { data: signed, error: signErr } = await supabaseAdmin.storage
-      .from(BUCKET)
-      .createSignedUrl(pdfPath, 60 * 30);
+      .from(bucket)
+      .createSignedUrl(pdf_path, 60 * 30);
 
     if (signErr || !signed?.signedUrl) {
-      return NextResponse.json({ ok: false, error: "Falha ao assinar URL do PDF" }, { status: 500 });
+      return NextResponse.json({ ok: false, error: "failed to sign url" }, { status: 500 });
     }
 
-    return NextResponse.json({ ok: true, signed_url: signed.signedUrl, pdf_path: pdfPath });
+    // retornos redundantes por compatibilidade
+    return NextResponse.json({
+      ok: true,
+      pdf_path,
+      signedUrl: signed.signedUrl,
+      signed_url: signed.signedUrl,
+      url: signed.signedUrl,
+    });
   } catch (e: any) {
     return NextResponse.json({ ok: false, error: e?.message ?? String(e) }, { status: 500 });
   }
