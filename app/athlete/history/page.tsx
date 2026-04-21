@@ -13,7 +13,7 @@ type Row = {
 };
 
 function fmtDate(iso?: string | null) {
-  if (!iso) return "—";
+  if (!iso) return "â€”";
   try {
     const d = new Date(iso);
     return d.toLocaleDateString("pt-BR");
@@ -29,7 +29,7 @@ export default function AthleteHistoryPage() {
 
   const countLabel = useMemo(() => {
     const n = rows.length;
-    return n === 1 ? "1 avaliação" : `${n} avaliações`;
+    return n === 1 ? "1 avaliaÃ§Ã£o" : `${n} avaliaÃ§Ãµes`;
   }, [rows.length]);
 
   useEffect(() => {
@@ -42,14 +42,14 @@ export default function AthleteHistoryPage() {
       try {
         const athleteId = await getMyAthleteId();
         if (!athleteId) {
-          throw new Error("Você ainda não tem cadastro de atleta.");
+          throw new Error("VocÃª ainda nÃ£o tem cadastro de atleta.");
         }
 
         const { data, error } = await supabase
           .from("assessments")
           .select("assessment_id,instrument_version,created_at,submitted_at")
           .eq("athlete_id", athleteId)
-          .not("submitted_at", "is", null) // ✅ não depende de status
+          .not("submitted_at", "is", null) // âœ… nÃ£o depende de status
           .order("submitted_at", { ascending: false })
           .limit(200);
 
@@ -89,15 +89,15 @@ export default function AthleteHistoryPage() {
             fontSize: 13,
           }}
         >
-          Área do atleta
+          Ãrea do atleta
         </div>
 
         <h1 style={{ marginTop: 14, marginBottom: 6, fontSize: 40, lineHeight: 1.1 }}>
-          Histórico de avaliações
+          HistÃ³rico de avaliaÃ§Ãµes
         </h1>
 
         <div style={{ color: "#475569", fontSize: 16 }}>
-          Consulte aqui as avaliações concluídas e abra o relatório sempre que quiser revisitar seus resultados.
+          Consulte aqui as avaliaÃ§Ãµes concluÃ­das e abra o relatÃ³rio sempre que quiser revisitar seus resultados.
         </div>
 
         <div style={{ marginTop: 14 }}>
@@ -113,7 +113,7 @@ export default function AthleteHistoryPage() {
               color: "#111827",
             }}
           >
-            {loading ? "Carregando…" : countLabel}
+            {loading ? "Carregandoâ€¦" : countLabel}
           </span>
         </div>
       </div>
@@ -144,7 +144,7 @@ export default function AthleteHistoryPage() {
             color: "#475569",
           }}
         >
-          Nenhuma avaliação concluída ainda.
+          Nenhuma avaliaÃ§Ã£o concluÃ­da ainda.
         </div>
       )}
 
@@ -169,7 +169,7 @@ export default function AthleteHistoryPage() {
             </div>
 
             <div style={{ marginTop: 14 }}>
-              {/* ✅ link normal: SEM popup, SEM about:blank, funciona no mobile */}
+              {/* âœ… link normal: SEM popup, SEM about:blank, funciona no mobile */}
               <Link
                 href={`/athlete/reports/${r.assessment_id}`}
                 style={{
@@ -185,7 +185,7 @@ export default function AthleteHistoryPage() {
                   textDecoration: "none",
                 }}
               >
-                Abrir relatório
+                Abrir relatÃ³rio
               </Link>
             </div>
           </div>
