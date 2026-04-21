@@ -1,196 +1,206 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
-import Link from "next/link";
-import { supabase } from "@/src/lib/supabaseClient";
-import { getMyAthleteId } from "@/src/lib/athlete";
+import { supabase } from "../../../src/lib/supabaseClient";
+import { getMyAthleteId } from "../../../src/lib/athlete";
 
 type Row = {
   assessment_id: string;
-  instrument_version: string | null;
-  created_at: string | null;
   submitted_at: string | null;
+  created_at: string;
+  instrument_version: string;
+  status: string;
 };
 
-function fmtDate(iso?: string | null) {
-  if (!iso) return "â€”";
-  try {
-    const d = new Date(iso);
-    return d.toLocaleDateString("pt-BR");
-  } catch {
-    return iso;
-  }
-}
+type ViewRow = Row & { date: string };
 
 export default function AthleteHistoryPage() {
   const [rows, setRows] = useState<Row[]>([]);
-  const [loading, setLoading] = useState(true);
   const [err, setErr] = useState<string | null>(null);
+  const [busyId, setBusyId] = useState<string | null>(null);
 
-  const countLabel = useMemo(() => {
-    const n = rows.length;
-    return n === 1 ? "1 avaliaÃ§Ã£o" : `${n} avaliaÃ§Ãµes`;
-  }, [rows.length]);
+  async function openReport(assessmentId: string) {
+    let reportWindow: Window | null = null;
+
+    try {
+      setErr(null);
+      setBusyId(assessmentId);
+
+      // abre placeholder para evitar bloqueio de popup
+      reportWindow = window.open("about:blank", "_blank", "noopener,noreferrer");
+
+      // (1) garante/gera PDF (idempotente)
+      const r1 = await fetch("/api/report", {
+        method: "POST",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({ assessment_id: assessmentId }),
+      });
+      const j1: any = await r1.json().catch(() => ({}));
+      if (!r1.ok || !j1?.ok) throw new Error(j1?.error ?? "Erro ao gerar relatório.");
+
+      // (2) pega signed URL
+      const r2 = await fetch(`/api/report-url?assessment_id=${encodeURIComponent(assessmentId)}`);
+      const j2: any = await r2.json().catch(() => ({}));
+
+      const url = (j2?.signedUrl ?? j2?.signed_url ?? "") as string;
+      if (!r2.ok || !j2?.ok || !url) throw new Error(j2?.error ?? "Não foi possível obter a URL do relatório.");
+
+      // navega a aba já aberta (sem alert de popup)
+      if (reportWindow) reportWindow.location.replace(url);
+      else window.open(url, "_blank", "noopener,noreferrer");
+    } catch (e: any) {
+      if (reportWindow && !reportWindow.closed) reportWindow.close();
+      setErr(e?.message ?? "Erro ao abrir relatório.");
+    } finally {
+      setBusyId(null);
+    }
+  }
 
   useEffect(() => {
-    let alive = true;
-
     (async () => {
-      setLoading(true);
-      setErr(null);
-
       try {
+        setErr(null);
         const athleteId = await getMyAthleteId();
-        if (!athleteId) {
-          throw new Error("VocÃª ainda nÃ£o tem cadastro de atleta.");
-        }
 
         const { data, error } = await supabase
           .from("assessments")
-          .select("assessment_id,instrument_version,created_at,submitted_at")
+          .select("assessment_id, submitted_at, created_at, instrument_version, status")
           .eq("athlete_id", athleteId)
-          .not("submitted_at", "is", null) // âœ… nÃ£o depende de status
-          .order("submitted_at", { ascending: false })
-          .limit(200);
+          .eq("status", "submitted")
+          .order("submitted_at", { ascending: false });
 
         if (error) throw error;
-
-        const safe = (data ?? []) as Row[];
-        if (alive) setRows(safe);
+        setRows((data as Row[]) ?? []);
       } catch (e: any) {
-        if (alive) {
-          setRows([]);
-          setErr(e?.message ?? String(e));
-        }
-      } finally {
-        if (alive) setLoading(false);
+        setErr(e?.message ?? "Erro ao carregar histórico.");
       }
     })();
-
-    return () => {
-      alive = false;
-    };
   }, []);
 
+  const viewRows = useMemo<ViewRow[]>(() => {
+    return rows.map((r) => {
+      const dt = new Date(r.submitted_at ?? r.created_at);
+      return { ...r, date: dt.toLocaleDateString("pt-BR") };
+    });
+  }, [rows]);
+
   return (
-    <div style={{ maxWidth: 980 }}>
-      <div style={{ marginBottom: 18 }}>
+    <div style={{ display: "grid", gap: 16 }}>
+      <section
+        style={{
+          background: "linear-gradient(180deg, #ffffff 0%, #f8fafc 100%)",
+          border: "1px solid #e5e7eb",
+          borderRadius: 24,
+          padding: 22,
+          boxShadow: "0 18px 48px rgba(15,23,42,.06)",
+        }}
+      >
         <div
           style={{
             display: "inline-flex",
             alignItems: "center",
             gap: 8,
-            padding: "6px 12px",
-            border: "1px solid #e5e7eb",
+            border: "1px solid #dbeafe",
+            background: "#eff6ff",
+            color: "#1d4ed8",
             borderRadius: 999,
-            background: "#f8fafc",
-            color: "#111827",
-            fontWeight: 600,
-            fontSize: 13,
+            padding: "8px 12px",
+            fontSize: 12,
+            fontWeight: 800,
+            letterSpacing: 0.3,
           }}
         >
-          Ãrea do atleta
+          Área do atleta
         </div>
 
-        <h1 style={{ marginTop: 14, marginBottom: 6, fontSize: 40, lineHeight: 1.1 }}>
-          HistÃ³rico de avaliaÃ§Ãµes
+        <h1 style={{ margin: "14px 0 10px", fontSize: 30, lineHeight: 1.1, letterSpacing: -0.6, color: "#0f172a" }}>
+          Histórico de avaliações
         </h1>
 
-        <div style={{ color: "#475569", fontSize: 16 }}>
-          Consulte aqui as avaliaÃ§Ãµes concluÃ­das e abra o relatÃ³rio sempre que quiser revisitar seus resultados.
-        </div>
+        <p style={{ margin: 0, color: "#64748b", lineHeight: 1.75, fontSize: 15, maxWidth: 760 }}>
+          Consulte aqui as avaliações concluídas e abra o relatório sempre que quiser revisitar seus resultados.
+        </p>
 
-        <div style={{ marginTop: 14 }}>
-          <span
-            style={{
-              display: "inline-flex",
-              alignItems: "center",
-              padding: "8px 14px",
-              borderRadius: 999,
-              border: "1px solid #e5e7eb",
-              background: "#ffffff",
-              fontWeight: 700,
-              color: "#111827",
-            }}
-          >
-            {loading ? "Carregandoâ€¦" : countLabel}
-          </span>
-        </div>
-      </div>
-
-      {err && (
         <div
           style={{
-            padding: 14,
-            borderRadius: 14,
-            border: "1px solid #fecaca",
-            background: "#fff1f2",
-            color: "#9f1239",
-            marginBottom: 14,
-            fontWeight: 600,
+            marginTop: 16,
+            display: "inline-flex",
+            alignItems: "center",
+            gap: 8,
+            borderRadius: 999,
+            padding: "8px 12px",
+            background: "#f8fafc",
+            border: "1px solid #e5e7eb",
+            color: "#475569",
+            fontSize: 13,
+            fontWeight: 700,
           }}
         >
+          {viewRows.length} {viewRows.length === 1 ? "avaliação" : "avaliações"}
+        </div>
+      </section>
+
+      {err ? (
+        <div style={{ border: "1px solid #fecaca", background: "#fff1f2", color: "#9f1239", borderRadius: 18, padding: 16, lineHeight: 1.7 }}>
           {err}
         </div>
-      )}
+      ) : null}
 
-      {(!loading && rows.length === 0 && !err) && (
-        <div
+      {viewRows.length === 0 ? (
+        <section
           style={{
-            padding: 18,
-            borderRadius: 16,
-            border: "1px solid #e5e7eb",
-            background: "#ffffff",
-            color: "#475569",
+            border: "1px solid #bbf7d0",
+            background: "linear-gradient(180deg, #f0fdf4 0%, #f8fafc 100%)",
+            borderRadius: 24,
+            padding: 20,
+            boxShadow: "0 18px 48px rgba(15,23,42,.04)",
           }}
         >
-          Nenhuma avaliaÃ§Ã£o concluÃ­da ainda.
-        </div>
-      )}
-
-      <div style={{ display: "flex", flexDirection: "column", gap: 14 }}>
-        {rows.map((r) => (
-          <div
-            key={r.assessment_id}
-            style={{
-              borderRadius: 18,
-              border: "1px solid #e5e7eb",
-              background: "#ffffff",
-              padding: 18,
-            }}
-          >
-            <div style={{ display: "flex", justifyContent: "space-between", gap: 12, alignItems: "baseline" }}>
-              <div style={{ fontWeight: 900, fontSize: 18, color: "#0f172a" }}>
-                {r.instrument_version ?? "ENDURE"}
+          <div style={{ fontWeight: 800, color: "#166534", fontSize: 16 }}>Nenhuma avaliação submetida ainda.</div>
+          <div style={{ marginTop: 6, color: "#4b5563", fontSize: 14, lineHeight: 1.7 }}>
+            Quando você concluir avaliações, elas aparecerão aqui para consulta.
+          </div>
+        </section>
+      ) : (
+        <div style={{ display: "grid", gap: 14 }}>
+          {viewRows.map((r) => (
+            <article
+              key={r.assessment_id}
+              style={{
+                border: "1px solid #e5e7eb",
+                borderRadius: 22,
+                background: "#ffffff",
+                padding: 18,
+                boxShadow: "0 18px 48px rgba(15,23,42,.05)",
+                display: "grid",
+                gap: 14,
+              }}
+            >
+              <div style={{ display: "grid", gap: 6 }}>
+                <div style={{ fontSize: 18, fontWeight: 900, color: "#0f172a", lineHeight: 1.3 }}>{r.instrument_version}</div>
+                <div style={{ color: "#64748b", fontSize: 13 }}>{r.date}</div>
               </div>
-              <div style={{ color: "#64748b", fontWeight: 600 }}>
-                {fmtDate(r.submitted_at ?? r.created_at)}
-              </div>
-            </div>
 
-            <div style={{ marginTop: 14 }}>
-              {/* âœ… link normal: SEM popup, SEM about:blank, funciona no mobile */}
-              <Link
-                href={`/athlete/reports/${r.assessment_id}`}
+              <button
+                onClick={() => openReport(r.assessment_id)}
+                disabled={busyId === r.assessment_id}
                 style={{
-                  display: "inline-flex",
-                  alignItems: "center",
-                  justifyContent: "center",
                   height: 44,
-                  padding: "0 18px",
                   borderRadius: 16,
+                  border: "1px solid #e5e7eb",
                   background: "#111827",
                   color: "#ffffff",
                   fontWeight: 800,
-                  textDecoration: "none",
+                  letterSpacing: 0.2,
+                  cursor: busyId === r.assessment_id ? "not-allowed" : "pointer",
                 }}
               >
-                Abrir relatÃ³rio
-              </Link>
-            </div>
-          </div>
-        ))}
-      </div>
+                {busyId === r.assessment_id ? "Abrindo..." : "Abrir relatório"}
+              </button>
+            </article>
+          ))}
+        </div>
+      )}
     </div>
   );
 }
