@@ -36,7 +36,6 @@ export async function GET(req: Request) {
     if (repErr) {
       return NextResponse.json({ ok: false, error: `Erro ao consultar assessment_reports: ${repErr.message}` }, { status: 500 });
     }
-
     if (!rep?.pdf_path) {
       return NextResponse.json({ ok: false, error: "Relatório ainda não gerado" }, { status: 404 });
     }
@@ -45,7 +44,7 @@ export async function GET(req: Request) {
 
     const { data: signed, error: signErr } = await supabaseAdmin.storage
       .from(BUCKET)
-      .createSignedUrl(pdfPath, 60 * 30); // 30 min
+      .createSignedUrl(pdfPath, 60 * 30);
 
     if (signErr || !signed?.signedUrl) {
       return NextResponse.json({ ok: false, error: "Falha ao assinar URL do PDF" }, { status: 500 });
