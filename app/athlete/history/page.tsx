@@ -1,4 +1,4 @@
-"use client";
+﻿"use client";
 
 import { useEffect, useMemo, useState } from "react";
 import { supabase } from "../../../src/lib/supabaseClient";
@@ -40,12 +40,12 @@ async function openReport(assessment_id: string) {
 
     const j = await r.json().catch(() => ({} as any));
     if (!r.ok) {
-      throw new Error(j?.error ?? "Falha ao obter URL do relatório.");
+      throw new Error(j?.error ?? "Falha ao obter URL do relatÃ³rio.");
     }
 
     const url = j?.url;
     if (!url || typeof url !== "string") {
-      throw new Error("A API não retornou uma URL válida para o relatório.");
+      throw new Error("A API nÃ£o retornou uma URL vÃ¡lida para o relatÃ³rio.");
     }
 
     if (reportWindow) {
@@ -57,7 +57,7 @@ async function openReport(assessment_id: string) {
     if (reportWindow && !reportWindow.closed) {
       reportWindow.close();
     }
-    setErr(e?.message ?? "Erro ao abrir relatório.");
+    setErr(e?.message ?? "Erro ao abrir relatÃ³rio.");
   } finally {
     setBusyId(null);
   }
@@ -79,7 +79,7 @@ async function openReport(assessment_id: string) {
         if (error) throw error;
         setRows((data as Row[]) ?? []);
       } catch (e: any) {
-        setErr(e.message ?? "Erro ao carregar histórico.");
+        setErr(e.message ?? "Erro ao carregar histÃ³rico.");
       }
     })();
   }, []);
@@ -121,7 +121,7 @@ async function openReport(assessment_id: string) {
             letterSpacing: 0.3,
           }}
         >
-          Área do atleta
+          Ãrea do atleta
         </div>
 
         <h1
@@ -133,7 +133,7 @@ async function openReport(assessment_id: string) {
             color: "#0f172a",
           }}
         >
-          Histórico de avaliações
+          HistÃ³rico de avaliaÃ§Ãµes
         </h1>
 
         <p
@@ -145,7 +145,7 @@ async function openReport(assessment_id: string) {
             maxWidth: 760,
           }}
         >
-          Consulte aqui as avaliações já concluídas e abra o relatório sempre que
+          Consulte aqui as avaliaÃ§Ãµes jÃ¡ concluÃ­das e abra o relatÃ³rio sempre que
           quiser revisitar seus resultados.
         </p>
 
@@ -164,7 +164,7 @@ async function openReport(assessment_id: string) {
             fontWeight: 700,
           }}
         >
-          {viewRows.length} {viewRows.length === 1 ? "avaliação" : "avaliações"}
+          {viewRows.length} {viewRows.length === 1 ? "avaliaÃ§Ã£o" : "avaliaÃ§Ãµes"}
         </div>
       </section>
 
@@ -200,7 +200,7 @@ async function openReport(assessment_id: string) {
               fontSize: 16,
             }}
           >
-            Nenhuma avaliação submetida ainda.
+            Nenhuma avaliaÃ§Ã£o submetida ainda.
           </div>
 
           <div
@@ -211,7 +211,7 @@ async function openReport(assessment_id: string) {
               lineHeight: 1.7,
             }}
           >
-            Quando você concluir avaliações, elas aparecerão aqui para consulta.
+            Quando vocÃª concluir avaliaÃ§Ãµes, elas aparecerÃ£o aqui para consulta.
           </div>
         </section>
       ) : (
@@ -277,7 +277,7 @@ async function openReport(assessment_id: string) {
                     fontFamily: "inherit",
                   }}
                 >
-                  {busyId === r.assessment_id ? "Gerando..." : "Abrir relatório"}
+                  {busyId === r.assessment_id ? "Gerando..." : "Abrir relatÃ³rio"}
                 </button>
               </div>
             </article>
