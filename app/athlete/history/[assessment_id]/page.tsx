@@ -1,4 +1,4 @@
-"use client";
+﻿"use client";
 
 import { useEffect, useMemo, useState } from "react";
 import { useParams } from "next/navigation";
@@ -32,6 +32,7 @@ export default function AssessmentDetailPage() {
 
   const [a, setA] = useState<Assessment | null>(null);
   const [s, setS] = useState<Scores | null>(null);
+  const [reportPath, setReportPath] = useState<string | null>(null);
   const [err, setErr] = useState<string | null>(null);
 
   useEffect(() => {
@@ -61,6 +62,16 @@ export default function AssessmentDetailPage() {
 
         if (e2) throw e2;
         setS((sd as any) ?? null);
+
+        // report (pdf_path)
+        const { data: rep, error: e3 } = await supabase
+          .from("assessment_reports")
+          .select("pdf_path")
+          .eq("assessment_id", assessmentId)
+          .maybeSingle();
+
+        if (e3) throw e3;
+        setReportPath((rep as any)?.pdf_path ?? null);
       } catch (e: any) {
         setErr(e.message ?? "Erro ao carregar detalhes.");
       }
@@ -101,7 +112,30 @@ export default function AssessmentDetailPage() {
   return (
     <div style={{ maxWidth: 980 }}>
       <a href="/athlete/history">← Voltar</a>
-      <h2>Detalhes da avaliação</h2>
+            <h2>Detalhes da avaliação</h2>
+
+      {reportPath ? (
+        <a
+          href={`/athlete/reports/${assessmentId}`}
+          style={{
+            display: "inline-flex",
+            alignItems: "center",
+            justifyContent: "center",
+            height: 44,
+            padding: "0 14px",
+            borderRadius: 14,
+            border: "1px solid #e5e7eb",
+            background: "#111827",
+            color: "#fff",
+            fontWeight: 650,
+            textDecoration: "none",
+            marginTop: 10,
+            width: "fit-content",
+          }}
+        >
+          Abrir relatório (PDF)
+        </a>
+      ) : null}
 
       {err && (
         <div style={{ padding: 12, border: "1px solid #ef4444", borderRadius: 12, color: "#b91c1c" }}>
