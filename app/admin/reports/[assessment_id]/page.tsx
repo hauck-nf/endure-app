@@ -28,7 +28,9 @@ export default async function AdminReportRedirectPage({
     .eq("user_id", auth.user.id)
     .single();
 
-  if (profile?.role !== "admin") redirect("/login");  const url = process.env.NEXT_PUBLIC_SUPABASE_URL!;
+  if (profile?.role !== "admin") redirect("/login");
+
+  const url = process.env.NEXT_PUBLIC_SUPABASE_URL!;
   const serviceKey = process.env.SUPABASE_SERVICE_ROLE_KEY!;
   const bucket = process.env.SUPABASE_REPORTS_BUCKET || "reports";
   const supabaseAdmin = createSupabaseAdmin(url, serviceKey);
@@ -42,17 +44,33 @@ export default async function AdminReportRedirectPage({
     .eq("assessment_id", assessmentId)
     .single();
 
-  if (repErr || !rep?.pdf_path) {
+  if (repErr) {
     return (
       <div style={{ padding: 24 }}>
         <h1>Relatório indisponível</h1>
         <div style={{ color: "#6b7280" }}>
-          Não encontrei <code>pdf_path</code> para este assessment_id.
+          Erro ao consultar <code>assessment_reports</code>: <code>{repErr.message}</code>
+          <br />
+          bucket: <code>{bucket}</code>
+          <br />
+          service key: <code>{serviceKey ? serviceKey.slice(0, 8) + "…" : "(vazia)"}</code>
         </div>
       </div>
     );
   }
 
+  if (!rep?.pdf_path) {
+    return (
+      <div style={{ padding: 24 }}>
+        <h1>Relatório indisponível</h1>
+        <div style={{ color: "#6b7280" }}>
+          Não encontrei <code>pdf_path</code> para este assessment_id.
+          <br />
+          assessment_id: <code>{assessmentId}</code>
+        </div>
+      </div>
+    );
+  }
   // pdf_path pode vir só como UUID, ou já como path
   let raw = String(rep.pdf_path).trim();
 
@@ -114,3 +132,4 @@ export default async function AdminReportRedirectPage({
     </div>
   );
 }
+
