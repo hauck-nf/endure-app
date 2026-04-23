@@ -1,4 +1,4 @@
-﻿"use client";
+"use client";
 
 import { useEffect, useMemo, useState } from "react";
 import { supabase } from "../../../src/lib/supabaseClient";
@@ -19,7 +19,7 @@ export default function AthleteHistoryPage() {
   const [err, setErr] = useState<string | null>(null);
   const [busyId, setBusyId] = useState<string | null>(null);
 
-  async function openReport(assessmentId: string) {
+  async function openReportSmart(assessmentId: string) {
     let reportWindow: Window | null = null;
 
     try {
@@ -176,7 +176,7 @@ export default function AthleteHistoryPage() {
               </div>
 
               <button
-                onClick={() => openReport(r.assessment_id)}
+                onClick={() => openReportSmart(r.assessment_id)}
                 disabled={busyId === r.assessment_id}
                 style={{
                   height: 44,
