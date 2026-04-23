@@ -1,4 +1,4 @@
-"use client";
+﻿"use client";
 
 import { useEffect, useMemo, useState } from "react";
 import { supabase } from "../../../src/lib/supabaseClient";
@@ -29,27 +29,31 @@ export default function AthleteHistoryPage() {
       // abre placeholder para evitar bloqueio de popup
       reportWindow = window.open("about:blank", "_blank", "noopener,noreferrer");
 
-      // (1) garante/gera PDF (idempotente)
+      // 1) garante/gera PDF (idempotente)
       const r1 = await fetch("/api/report", {
         method: "POST",
         headers: { "content-type": "application/json" },
         body: JSON.stringify({ assessment_id: assessmentId }),
       });
+
       const j1: any = await r1.json().catch(() => ({}));
-      if (!r1.ok || !j1?.ok) throw new Error(j1?.error ?? "Erro ao gerar relatório.");
 
-      // (2) pega signed URL
-      const r2 = await fetch(`/api/report-url?assessment_id=${encodeURIComponent(assessmentId)}`);
-      const j2: any = await r2.json().catch(() => ({}));
+      if (!r1.ok || !j1?.ok) {
+        throw new Error(j1?.error ?? "Erro ao gerar relatório.");
+      }
 
-      const url = (j2?.signedUrl ?? j2?.signed_url ?? "") as string;
-      if (!r2.ok || !j2?.ok || !url) throw new Error(j2?.error ?? "Não foi possível obter a URL do relatório.");
+      // 2) abre a rota que REDIRECIONA para o PDF assinado
+      const routeUrl = `/api/report-url?assessment_id=${encodeURIComponent(assessmentId)}`;
 
-      // navega a aba já aberta (sem alert de popup)
-      if (reportWindow) reportWindow.location.replace(url);
-      else window.open(url, "_blank", "noopener,noreferrer");
+      if (reportWindow) {
+        reportWindow.location.replace(routeUrl);
+      } else {
+        window.open(routeUrl, "_blank", "noopener,noreferrer");
+      }
     } catch (e: any) {
-      if (reportWindow && !reportWindow.closed) reportWindow.close();
+      if (reportWindow && !reportWindow.closed) {
+        reportWindow.close();
+      }
       setErr(e?.message ?? "Erro ao abrir relatório.");
     } finally {
       setBusyId(null);
@@ -60,6 +64,7 @@ export default function AthleteHistoryPage() {
     (async () => {
       try {
         setErr(null);
+
         const athleteId = await getMyAthleteId();
 
         const { data, error } = await supabase
@@ -70,6 +75,7 @@ export default function AthleteHistoryPage() {
           .order("submitted_at", { ascending: false });
 
         if (error) throw error;
+
         setRows((data as Row[]) ?? []);
       } catch (e: any) {
         setErr(e?.message ?? "Erro ao carregar histórico.");
@@ -80,105 +86,93 @@ export default function AthleteHistoryPage() {
   const viewRows = useMemo<ViewRow[]>(() => {
     return rows.map((r) => {
       const dt = new Date(r.submitted_at ?? r.created_at);
-      return { ...r, date: dt.toLocaleDateString("pt-BR") };
+      return {
+        ...r,
+        date: dt.toLocaleDateString("pt-BR"),
+      };
     });
   }, [rows]);
 
   return (
-    <div style={{ display: "grid", gap: 16 }}>
-      <section
-        style={{
-          background: "linear-gradient(180deg, #ffffff 0%, #f8fafc 100%)",
-          border: "1px solid #e5e7eb",
-          borderRadius: 24,
-          padding: 22,
-          boxShadow: "0 18px 48px rgba(15,23,42,.06)",
-        }}
-      >
-        <div
-          style={{
-            display: "inline-flex",
-            alignItems: "center",
-            gap: 8,
-            border: "1px solid #dbeafe",
-            background: "#eff6ff",
-            color: "#1d4ed8",
-            borderRadius: 999,
-            padding: "8px 12px",
-            fontSize: 12,
-            fontWeight: 800,
-            letterSpacing: 0.3,
-          }}
-        >
-          Área do atleta
-        </div>
-
-        <h1 style={{ margin: "14px 0 10px", fontSize: 30, lineHeight: 1.1, letterSpacing: -0.6, color: "#0f172a" }}>
-          Histórico de avaliações
-        </h1>
-
-        <p style={{ margin: 0, color: "#64748b", lineHeight: 1.75, fontSize: 15, maxWidth: 760 }}>
+    <section style={{ maxWidth: 920, margin: "0 auto", padding: "24px 20px 40px" }}>
+      <div style={{ marginBottom: 18 }}>
+        <div style={{ fontSize: 13, color: "#6b7280", marginBottom: 6 }}>Área do atleta</div>
+        <h1 style={{ margin: 0, fontSize: 28, lineHeight: 1.1 }}>Histórico de avaliações</h1>
+        <p style={{ marginTop: 10, color: "#4b5563", maxWidth: 760 }}>
           Consulte aqui as avaliações concluídas e abra o relatório sempre que quiser revisitar seus resultados.
         </p>
+      </div>
 
-        <div
-          style={{
-            marginTop: 16,
-            display: "inline-flex",
-            alignItems: "center",
-            gap: 8,
-            borderRadius: 999,
-            padding: "8px 12px",
-            background: "#f8fafc",
-            border: "1px solid #e5e7eb",
-            color: "#475569",
-            fontSize: 13,
-            fontWeight: 700,
-          }}
-        >
-          {viewRows.length} {viewRows.length === 1 ? "avaliação" : "avaliações"}
-        </div>
-      </section>
+      <div
+        style={{
+          marginBottom: 16,
+          display: "inline-flex",
+          padding: "8px 12px",
+          borderRadius: 999,
+          background: "#f3f4f6",
+          color: "#111827",
+          fontWeight: 700,
+          fontSize: 13,
+        }}
+      >
+        {viewRows.length} {viewRows.length === 1 ? "avaliação" : "avaliações"}
+      </div>
 
       {err ? (
-        <div style={{ border: "1px solid #fecaca", background: "#fff1f2", color: "#9f1239", borderRadius: 18, padding: 16, lineHeight: 1.7 }}>
+        <div
+          style={{
+            marginBottom: 16,
+            padding: 14,
+            borderRadius: 14,
+            background: "#fef2f2",
+            color: "#991b1b",
+            border: "1px solid #fecaca",
+          }}
+        >
           {err}
         </div>
       ) : null}
 
       {viewRows.length === 0 ? (
-        <section
+        <div
           style={{
-            border: "1px solid #bbf7d0",
-            background: "linear-gradient(180deg, #f0fdf4 0%, #f8fafc 100%)",
-            borderRadius: 24,
-            padding: 20,
-            boxShadow: "0 18px 48px rgba(15,23,42,.04)",
+            padding: 22,
+            borderRadius: 20,
+            border: "1px solid #e5e7eb",
+            background: "#ffffff",
           }}
         >
-          <div style={{ fontWeight: 800, color: "#166534", fontSize: 16 }}>Nenhuma avaliação submetida ainda.</div>
-          <div style={{ marginTop: 6, color: "#4b5563", fontSize: 14, lineHeight: 1.7 }}>
+          <div style={{ fontSize: 18, fontWeight: 700, marginBottom: 6 }}>
+            Nenhuma avaliação submetida ainda.
+          </div>
+          <div style={{ color: "#6b7280" }}>
             Quando você concluir avaliações, elas aparecerão aqui para consulta.
           </div>
-        </section>
+        </div>
       ) : (
         <div style={{ display: "grid", gap: 14 }}>
           {viewRows.map((r) => (
             <article
               key={r.assessment_id}
               style={{
-                border: "1px solid #e5e7eb",
-                borderRadius: 22,
-                background: "#ffffff",
-                padding: 18,
-                boxShadow: "0 18px 48px rgba(15,23,42,.05)",
                 display: "grid",
-                gap: 14,
+                gridTemplateColumns: "1fr auto",
+                gap: 16,
+                alignItems: "center",
+                padding: 18,
+                borderRadius: 20,
+                border: "1px solid #e5e7eb",
+                background: "#ffffff",
+                boxShadow: "0 6px 20px rgba(17,24,39,0.04)",
               }}
             >
-              <div style={{ display: "grid", gap: 6 }}>
-                <div style={{ fontSize: 18, fontWeight: 900, color: "#0f172a", lineHeight: 1.3 }}>{r.instrument_version}</div>
-                <div style={{ color: "#64748b", fontSize: 13 }}>{r.date}</div>
+              <div>
+                <div style={{ fontSize: 18, fontWeight: 800, color: "#111827", marginBottom: 6 }}>
+                  {r.instrument_version}
+                </div>
+                <div style={{ color: "#6b7280", fontSize: 14 }}>
+                  Concluída em {r.date}
+                </div>
               </div>
 
               <button
@@ -186,13 +180,15 @@ export default function AthleteHistoryPage() {
                 disabled={busyId === r.assessment_id}
                 style={{
                   height: 44,
+                  padding: "0 16px",
                   borderRadius: 16,
-                  border: "1px solid #e5e7eb",
+                  border: "1px solid #111827",
                   background: "#111827",
                   color: "#ffffff",
                   fontWeight: 800,
                   letterSpacing: 0.2,
                   cursor: busyId === r.assessment_id ? "not-allowed" : "pointer",
+                  opacity: busyId === r.assessment_id ? 0.75 : 1,
                 }}
               >
                 {busyId === r.assessment_id ? "Abrindo..." : "Abrir relatório"}
@@ -201,6 +197,6 @@ export default function AthleteHistoryPage() {
           ))}
         </div>
       )}
-    </div>
+    </section>
   );
 }
