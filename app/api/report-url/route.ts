@@ -27,7 +27,10 @@ export async function GET(req: Request) {
       .maybeSingle();
 
     if (repErr) {
-      return NextResponse.json({ ok: false, error: "Erro ao consultar assessment_reports: " + repErr.message }, { status: 500 });
+      return NextResponse.json(
+        { ok: false, error: "Erro ao consultar assessment_reports: " + repErr.message },
+        { status: 500 }
+      );
     }
     if (!rep?.pdf_path) {
       return NextResponse.json({ ok: false, error: "no pdf_path" }, { status: 404 });
@@ -43,14 +46,12 @@ export async function GET(req: Request) {
       return NextResponse.json({ ok: false, error: "failed to sign url" }, { status: 500 });
     }
 
-    // ✅ Se o cliente pedir JSON explicitamente, devolve JSON
     const accept = req.headers.get("accept") || "";
     const wantsJson = accept.includes("application/json") || searchParams.get("json") === "1";
     if (wantsJson) {
       return NextResponse.json({ ok: true, pdf_path: pdfPath, signedUrl: signed.signedUrl });
     }
 
-    // ✅ Caso contrário: redirect direto (melhor UX pro botão "Abrir relatório")
     return NextResponse.redirect(signed.signedUrl, { status: 302 });
   } catch (e: any) {
     return NextResponse.json({ ok: false, error: e?.message ?? String(e) }, { status: 500 });
