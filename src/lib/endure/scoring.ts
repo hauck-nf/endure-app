@@ -1,4 +1,4 @@
-﻿export type BandKey = "low" | "mid" | "high";
+export type BandKey = "low" | "mid" | "high";
 
 export type InstrumentItem = {
   instrument_version: string;
@@ -135,9 +135,19 @@ export function scoreEndureAssessment(args: {
 
   // 3) mapa de texto: factor__band
   const textMap = new Map<string, BandTextRow>();
-  for (const r of factor_band_texts) {
-    if (r.instrument_version !== instrument_version) continue;
-    const key = `${r.factor}__${r.band}`;
+for (const r of factor_band_texts) {
+  if (r.instrument_version !== instrument_version) continue;
+
+  const ss = String((r as any).score_scale ?? "").trim();
+  const factor = String((r as any).factor ?? "").trim();
+  const band = String((r as any).band ?? "").trim();
+
+  // chave preferencial: score_scale__band
+  if (ss && band) textMap.set(`${ss}__${band}`, r);
+
+  // fallback: factor__band
+  if (factor && band) textMap.set(`${factor}__${band}`, r);
+}__${r.band}`;
     textMap.set(key, r);
   }
 
