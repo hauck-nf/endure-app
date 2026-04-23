@@ -147,11 +147,8 @@ for (const r of factor_band_texts) {
 
   // fallback: factor__band
   if (factor && band) textMap.set(`${factor}__${band}`, r);
-}__${r.band}`;
-    textMap.set(key, r);
-  }
-
-  // 4) regra principal: "score_scale" = it.factor (se existir) senão it.scale
+}
+// 4) regra principal: "score_scale" = it.factor (se existir) senão it.scale
   // (isso bate com seus itens do Negative affectivity: scale=Negative affectivity, factor=Anger/Anxiety/etc. :contentReference[oaicite:1]{index=1})
   const sumBy: Record<string, { sum: number; n: number }> = {};
 
