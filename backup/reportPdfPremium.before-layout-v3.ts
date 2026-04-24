@@ -98,17 +98,6 @@ const WORKING_MODEL_PT: Record<string, string[]> = {
   ],
 };
 
-function cleanText(s: string | null | undefined) {
-  return String(s ?? "").replace(/\s+/g, " ").trim();
-}
-
-function firstSentence(s: string | null | undefined) {
-  const txt = cleanText(s);
-  if (!txt) return "";
-  const parts = txt.split(/(?<=[.!?])\s+/);
-  return parts[0] ?? txt;
-}
-
 function fmtDateBR(iso: string | null | undefined) {
   if (!iso) return "—";
   const d = new Date(iso);
@@ -135,6 +124,17 @@ function fmtNum(n: number | null | undefined, digits = 0) {
 function fmtPct(n: number | null | undefined) {
   if (n === null || n === undefined || Number.isNaN(Number(n))) return "—";
   return `${Math.round(Number(n))}`;
+}
+
+function cleanText(s: string | null | undefined) {
+  return String(s ?? "").replace(/\s+/g, " ").trim();
+}
+
+function firstSentence(s: string | null | undefined) {
+  const txt = cleanText(s);
+  if (!txt) return "";
+  const parts = txt.split(/(?<=[.!?])\s+/);
+  return parts[0] ?? txt;
 }
 
 function tToZ(t: number | null | undefined) {
@@ -260,27 +260,6 @@ function wrapText(text: string, font: PDFFont, size: number, maxWidth: number) {
 
   if (current) lines.push(current);
   return lines;
-}
-
-function getParagraphMetrics(opts: {
-  text: string;
-  font: PDFFont;
-  size: number;
-  maxWidth: number;
-  lineHeight?: number;
-  maxLines?: number;
-}) {
-  const {
-    text,
-    font,
-    size,
-    maxWidth,
-    lineHeight = size + 4,
-    maxLines = 99,
-  } = opts;
-  const lines = wrapText(text, font, size, maxWidth).slice(0, maxLines);
-  const height = lines.length > 0 ? lineHeight * lines.length : lineHeight;
-  return { lines, height, lineHeight };
 }
 
 function drawParagraph(opts: {
@@ -558,7 +537,8 @@ function drawHeader(
   page: PDFPage,
   logoLight: PDFImage,
   titleRight: string,
-  regular: PDFFont
+  regular: PDFFont,
+  bold: PDFFont
 ) {
   drawImageContain({
     page,
@@ -605,27 +585,23 @@ function drawMetricBox(opts: {
   drawIconCircle({
     page,
     image: icon,
-    cx: x + w / 2,
-    cy: y + h - 20,
-    diameter: 24,
+    cx: x + 26,
+    cy: y + h - 24,
+    diameter: 28,
   });
 
-  const labelSize = 8.2;
-  const valueSize = value.length > 10 ? 13 : value.length > 6 ? 15 : 18;
-
-  const labelWidth = regular.widthOfTextAtSize(label, labelSize);
   page.drawText(label, {
-    x: x + (w - labelWidth) / 2,
-    y: y + h - 50,
-    size: labelSize,
+    x: x + 14,
+    y: y + 24,
+    size: 8.5,
     font: regular,
     color: C.steel,
   });
 
-  const valueWidth = bold.widthOfTextAtSize(value, valueSize);
+  const valueSize = value.length > 10 ? 13 : value.length > 6 ? 16 : 22;
   page.drawText(value, {
-    x: x + (w - valueWidth) / 2,
-    y: y + 12,
+    x: x + 14,
+    y: y + h - 62,
     size: valueSize,
     font: bold,
     color: C.navy,
@@ -651,7 +627,7 @@ function drawNormalCurveCard(opts: {
   page.drawText("Distribuição normal (escore T)", {
     x: x + 18,
     y: y + h - 24,
-    size: 10.2,
+    size: 10.5,
     font: bold,
     color: C.navy,
   });
@@ -659,7 +635,7 @@ function drawNormalCurveCard(opts: {
   const curveX = x + 20;
   const curveY = y + 52;
   const curveW = w - 40;
-  const curveH = h - 100;
+  const curveH = h - 96;
 
   const points: Array<{ x: number; y: number }> = [];
   const n = 100;
@@ -671,6 +647,7 @@ function drawNormalCurveCard(opts: {
     points.push({ x: px, y: py });
   }
 
+  // eixo
   page.drawLine({
     start: { x: curveX, y: curveY },
     end: { x: curveX + curveW, y: curveY },
@@ -678,6 +655,7 @@ function drawNormalCurveCard(opts: {
     color: C.steel,
   });
 
+  // marca média
   const meanX = curveX + curveW / 2;
   page.drawLine({
     start: { x: meanX, y: curveY },
@@ -686,6 +664,7 @@ function drawNormalCurveCard(opts: {
     color: C.line,
   });
 
+  // curva
   for (let i = 1; i < points.length; i++) {
     page.drawLine({
       start: points[i - 1],
@@ -700,6 +679,7 @@ function drawNormalCurveCard(opts: {
   const zMarker = (t - 50) / 10;
   const markerY = curveY + Math.exp(-(zMarker * zMarker) / 2) * curveH;
 
+  // linha marcador
   page.drawLine({
     start: { x: markerX, y: curveY },
     end: { x: markerX, y: markerY + 2 },
@@ -716,6 +696,7 @@ function drawNormalCurveCard(opts: {
     borderWidth: 0.8,
   });
 
+  // label
   page.drawLine({
     start: { x: markerX + 7, y: markerY + 8 },
     end: { x: markerX + 22, y: markerY + 8 },
@@ -726,7 +707,7 @@ function drawNormalCurveCard(opts: {
   page.drawText("Você está aqui", {
     x: markerX + 26,
     y: markerY + 3,
-    size: 8.5,
+    size: 8.8,
     font: bold,
     color: C.navy,
   });
@@ -746,282 +727,38 @@ function drawNormalCurveCard(opts: {
   page.drawText("Baixo", {
     x: curveX + 0,
     y: y + 16,
-    size: 8.2,
+    size: 8.5,
     font: regular,
     color: C.steel,
   });
   page.drawText("Médio", {
     x: curveX + curveW / 2 - 14,
     y: y + 16,
-    size: 8.2,
+    size: 8.5,
     font: bold,
     color: C.navy2,
   });
   page.drawText("Alto", {
     x: curveX + curveW - 18,
     y: y + 16,
-    size: 8.2,
+    size: 8.5,
     font: regular,
     color: C.steel,
   });
 
   if (bandLabel) {
-    drawBadge(page, bandLabel, x + w - 88, y + h - 34, 70, 20, regular, bold);
+    drawBadge(page, bandLabel, x + w - 86, y + h - 34, 68, 20, regular, bold);
   }
 
   if (percentile !== null && percentile !== undefined && !Number.isNaN(Number(percentile))) {
     page.drawText(`Percentil ${fmtPct(percentile)}`, {
       x: x + 18,
       y: y + h - 42,
-      size: 8.3,
+      size: 8.5,
       font: regular,
       color: C.steel,
     });
   }
-}
-
-function drawDynamicPracticalBox(opts: {
-  page: PDFPage;
-  x: number;
-  y: number;
-  w: number;
-  bullets: string[];
-  icon: PDFImage;
-  regular: PDFFont;
-  bold: PDFFont;
-}) {
-  const { page, x, y, w, bullets, icon, regular, bold } = opts;
-
-  const title = "Leitura prática";
-  const textX = x + 72;
-  const textW = w - 88;
-  const titleSize = 11.5;
-  const bulletSize = 9.4;
-  const bulletGap = 14;
-
-  const bulletText = bullets.map((b) => `• ${b}`).join("\n");
-  const bulletMetrics = getParagraphMetrics({
-    text: bulletText,
-    font: regular,
-    size: bulletSize,
-    maxWidth: textW,
-    lineHeight: bulletGap,
-    maxLines: 10,
-  });
-
-  const boxH = 20 + 16 + 8 + bulletMetrics.height + 10;
-
-  drawPanel(page, x, y, w, boxH, C.white);
-  drawIconCircle({ page, image: icon, cx: x + 22, cy: y + boxH - 22, diameter: 28 });
-
-  page.drawText(title, {
-    x: textX,
-    y: y + boxH - 18,
-    size: titleSize,
-    font: bold,
-    color: C.navy,
-  });
-
-  drawParagraph({
-    page,
-    text: bulletText,
-    x: textX,
-    y: y + boxH - 38,
-    maxWidth: textW,
-    font: regular,
-    size: bulletSize,
-    color: C.ink,
-    lineHeight: bulletGap,
-    maxLines: 10,
-  });
-}
-
-function drawWorkingModelCard(opts: {
-  page: PDFPage;
-  x: number;
-  y: number;
-  w: number;
-  dimension: BroadDimension;
-  idx: number;
-  icon: PDFImage;
-  regular: PDFFont;
-  bold: PDFFont;
-}) {
-  const { page, x, y, w, dimension, idx, icon, regular, bold } = opts;
-
-  const leftBarW = 54;
-  const innerX = x + leftBarW + 16;
-  const col1W = 122;
-  const col2W = 86;
-  const col3W = 158;
-
-  const componentsText = dimension.components.slice(0, 5).map((c) => `• ${c}`).join("\n");
-  const summaryText = dimension.summary;
-
-  const compMetrics = getParagraphMetrics({
-    text: componentsText,
-    font: regular,
-    size: 8.8,
-    maxWidth: col1W,
-    lineHeight: 12,
-    maxLines: 8,
-  });
-
-  const summaryMetrics = getParagraphMetrics({
-    text: summaryText,
-    font: regular,
-    size: 8.7,
-    maxWidth: col3W - 8,
-    lineHeight: 12,
-    maxLines: 5,
-  });
-
-  const contentH = Math.max(compMetrics.height, summaryMetrics.height, 56);
-  const cardH = Math.max(122, 58 + contentH);
-
-  drawPanel(page, x, y, w, cardH, C.white);
-
-  page.drawRectangle({
-    x,
-    y,
-    width: leftBarW,
-    height: cardH,
-    color: C.navy,
-  });
-
-  drawImageContain({
-    page,
-    image: icon,
-    x: x + 14,
-    y: y + cardH - 42,
-    w: 26,
-    h: 26,
-  });
-
-  page.drawText(`${idx + 1}. ${dimension.name}`, {
-    x: innerX,
-    y: y + cardH - 22,
-    size: 14,
-    font: bold,
-    color: C.navy,
-  });
-
-  page.drawText("COMPONENTES", {
-    x: innerX,
-    y: y + cardH - 46,
-    size: 8.2,
-    font: bold,
-    color: C.steel,
-  });
-
-  drawParagraph({
-    page,
-    text: componentsText,
-    x: innerX,
-    y: y + cardH - 64,
-    maxWidth: col1W,
-    font: regular,
-    size: 8.8,
-    color: C.ink,
-    lineHeight: 12,
-    maxLines: 8,
-  });
-
-  const sep1 = innerX + col1W + 18;
-  page.drawLine({
-    start: { x: sep1, y: y + 12 },
-    end: { x: sep1, y: y + cardH - 12 },
-    thickness: 1,
-    color: C.line,
-  });
-
-  const col2X = sep1 + 18;
-  page.drawText("ESCORE Z", {
-    x: col2X,
-    y: y + cardH - 40,
-    size: 8.2,
-    font: regular,
-    color: C.steel,
-  });
-
-  page.drawText(fmtNum(dimension.z_score, 2), {
-    x: col2X,
-    y: y + cardH - 76,
-    size: 16,
-    font: bold,
-    color: C.navy,
-  });
-
-  page.drawText("PERCENTIL", {
-    x: col2X,
-    y: y + cardH - 96,
-    size: 8.2,
-    font: regular,
-    color: C.steel,
-  });
-
-  page.drawText(fmtPct(dimension.percentile), {
-    x: col2X,
-    y: y + cardH - 118,
-    size: 16,
-    font: bold,
-    color: C.navy,
-  });
-
-  const sep2 = col2X + col2W;
-  page.drawLine({
-    start: { x: sep2, y: y + 12 },
-    end: { x: sep2, y: y + cardH - 12 },
-    thickness: 1,
-    color: C.line,
-  });
-
-  const col3X = sep2 + 18;
-  page.drawText("MARCADOR PERCENTÍLICO", {
-    x: col3X,
-    y: y + cardH - 32,
-    size: 8.2,
-    font: regular,
-    color: C.steel,
-  });
-
-  page.drawLine({
-    start: { x: col3X, y: y + cardH - 48 },
-    end: { x: col3X + 150, y: y + cardH - 48 },
-    thickness: 6,
-    color: C.panel2,
-  });
-
-  const px = col3X + (Math.max(0, Math.min(100, Number(dimension.percentile ?? 50))) / 100) * 150;
-  page.drawCircle({
-    x: px,
-    y: y + cardH - 48,
-    size: 5,
-    color: C.navy,
-  });
-
-  page.drawText("SÍNTESE", {
-    x: col3X,
-    y: y + cardH - 76,
-    size: 8.2,
-    font: bold,
-    color: C.navy,
-  });
-
-  drawParagraph({
-    page,
-    text: summaryText,
-    x: col3X,
-    y: y + cardH - 94,
-    maxWidth: col3W - 8,
-    font: regular,
-    size: 8.7,
-    color: C.ink,
-    lineHeight: 12,
-    maxLines: 5,
-  });
-
-  return cardH;
 }
 
 export async function buildEndurePremiumPdf(params: {
@@ -1043,6 +780,9 @@ export async function buildEndurePremiumPdf(params: {
 
   let pageNumber = 1;
 
+  // =========================
+  // CAPA
+  // =========================
   {
     const page = pdf.addPage([PAGE_W, PAGE_H]);
     drawPageFrame(page, img.cornerLines);
@@ -1062,76 +802,53 @@ export async function buildEndurePremiumPdf(params: {
     drawImageContain({
       page,
       image: img.coverRunner,
-      x: PAGE_W - 128,
-      y: FOOTER_H + 8,
-      w: 88,
-      h: 154,
+      x: PAGE_W - 132,
+      y: FOOTER_H + 4,
+      w: 96,
+      h: 158,
       alignX: "right",
       alignY: "bottom",
       opacity: 0.98,
     });
 
-    const coverLogoW = 305;
-    const coverLogoH = 76;
-    const coverLogoX = (PAGE_W - coverLogoW) / 2;
-
     drawImageContain({
       page,
       image: img.logo,
-      x: coverLogoX,
+      x: 145,
       y: PAGE_H - 162,
-      w: coverLogoW,
-      h: coverLogoH,
+      w: 305,
+      h: 76,
       alignX: "center",
       alignY: "middle",
     });
 
-    const coverTitleSize = 31;
-    const coverTitleLine1 = "Avaliação socioemocional";
-    const coverTitleLine2 = "para atletas de endurance";
-
-    const coverTitleLine1W = bold.widthOfTextAtSize(coverTitleLine1, coverTitleSize);
-    const coverTitleLine2W = bold.widthOfTextAtSize(coverTitleLine2, coverTitleSize);
-
-    const coverTitleLine1X = (PAGE_W - coverTitleLine1W) / 2;
-    const coverTitleLine2X = (PAGE_W - coverTitleLine2W) / 2;
-
-    page.drawText(coverTitleLine1, {
-      x: coverTitleLine1X,
+    page.drawText("Avaliação socioemocional", {
+      x: 96,
       y: PAGE_H - 300,
-      size: coverTitleSize,
+      size: 31,
       font: bold,
       color: C.navy,
     });
 
-    page.drawText(coverTitleLine2, {
-      x: coverTitleLine2X,
+    page.drawText("para atletas de endurance", {
+      x: 86,
       y: PAGE_H - 344,
-      size: coverTitleSize,
+      size: 31,
       font: bold,
       color: C.navy,
     });
 
-    const coverSubtitle = "Relatório de avaliação";
-    const coverSubtitleSize = 14.5;
-    const coverSubtitleW = regular.widthOfTextAtSize(coverSubtitle, coverSubtitleSize);
-    const coverSubtitleX = (PAGE_W - coverSubtitleW) / 2;
-
-    page.drawText(coverSubtitle, {
-      x: coverSubtitleX,
+    page.drawText("Relatório fictício de devolutiva", {
+      x: 196,
       y: PAGE_H - 408,
-      size: coverSubtitleSize,
+      size: 14.5,
       font: regular,
       color: C.steel,
     });
 
-    const coverLineW = 72;
-    const coverLineX1 = (PAGE_W - coverLineW) / 2;
-    const coverLineX2 = coverLineX1 + coverLineW;
-
     page.drawLine({
-      start: { x: coverLineX1, y: PAGE_H - 432 },
-      end: { x: coverLineX2, y: PAGE_H - 432 },
+      start: { x: 262, y: PAGE_H - 432 },
+      end: { x: 333, y: PAGE_H - 432 },
       thickness: 1.2,
       color: C.navy2,
     });
@@ -1265,10 +982,13 @@ export async function buildEndurePremiumPdf(params: {
     drawFooter(page, img.footerMark, regular, pageNumber++);
   }
 
+  // =========================
+  // VISÃO GERAL
+  // =========================
   {
     const page = pdf.addPage([PAGE_W, PAGE_H]);
     drawPageFrame(page, img.cornerLines);
-    drawHeader(page, img.logoLight, "VISÃO GERAL DOS RESULTADOS", regular);
+    drawHeader(page, img.logoLight, "VISÃO GERAL DOS RESULTADOS", regular, bold);
 
     page.drawText("Visão geral dos resultados", {
       x: 28,
@@ -1465,6 +1185,9 @@ export async function buildEndurePremiumPdf(params: {
     drawFooter(page, img.footerMark, regular, pageNumber++);
   }
 
+  // =========================
+  // FATORES
+  // =========================
   for (const factor of factorList) {
     const page = pdf.addPage([PAGE_W, PAGE_H]);
     drawPageFrame(page, img.cornerLines);
@@ -1475,25 +1198,50 @@ export async function buildEndurePremiumPdf(params: {
       x: 16,
       y: FOOTER_H,
       w: PAGE_W - 32,
-      h: 96,
+      h: 110,
       alignX: "center",
       alignY: "bottom",
-      opacity: 0.90,
+      opacity: 0.92,
     });
 
     drawImageContain({
       page,
       image: img.pageRunner,
-      x: PAGE_W - 104,
-      y: FOOTER_H + 2,
-      w: 74,
-      h: 112,
+      x: PAGE_W - 126,
+      y: FOOTER_H,
+      w: 94,
+      h: 130,
       alignX: "right",
       alignY: "bottom",
-      opacity: 0.96,
+      opacity: 0.97,
     });
 
-    drawHeader(page, img.logoLight, "FATORES SOCIOEMOCIONAIS", regular);
+    drawImageContain({
+      page,
+      image: img.logoLight,
+      x: 28,
+      y: PAGE_H - 64,
+      w: 90,
+      h: 28,
+      alignX: "left",
+      alignY: "middle",
+    });
+
+    page.drawLine({
+      start: { x: 138, y: PAGE_H - 63 },
+      end: { x: 138, y: PAGE_H - 34 },
+      thickness: 1,
+      color: C.navy2,
+    });
+
+    page.drawText("FATORES SOCIOEMOCIONAIS", {
+      x: 154,
+      y: PAGE_H - 48,
+      size: 12,
+      font: bold,
+      color: C.navy,
+    });
+
     page.drawText("Detalhe de fator", {
       x: 154,
       y: PAGE_H - 66,
@@ -1506,7 +1254,7 @@ export async function buildEndurePremiumPdf(params: {
     page.drawText(title, {
       x: 28,
       y: PAGE_H - 162,
-      size: 34,
+      size: 36,
       font: bold,
       color: C.navy,
     });
@@ -1521,7 +1269,7 @@ export async function buildEndurePremiumPdf(params: {
       text: subtitle,
       x: 28,
       y: PAGE_H - 198,
-      maxWidth: 390,
+      maxWidth: 370,
       font: regular,
       size: 10.8,
       color: C.navy2,
@@ -1531,14 +1279,16 @@ export async function buildEndurePremiumPdf(params: {
 
     drawBadge(page, factor.band_label ?? "—", PAGE_W - 108, PAGE_H - 166, 72, 24, regular, bold);
 
-    const metricY = 520;
-    const boxW = 122;
-    const boxH = 84;
+    // Métricas
+    const metricY = 530;
     const gap = 10;
+    const boxW = 125;
+    const boxH = 78;
+    const startX = 28;
 
     drawMetricBox({
       page,
-      x: 28,
+      x: startX,
       y: metricY,
       w: boxW,
       h: boxH,
@@ -1551,7 +1301,7 @@ export async function buildEndurePremiumPdf(params: {
 
     drawMetricBox({
       page,
-      x: 28 + (boxW + gap),
+      x: startX + boxW + gap,
       y: metricY,
       w: boxW,
       h: boxH,
@@ -1564,7 +1314,7 @@ export async function buildEndurePremiumPdf(params: {
 
     drawMetricBox({
       page,
-      x: 28 + (boxW + gap) * 2,
+      x: startX + (boxW + gap) * 2,
       y: metricY,
       w: boxW,
       h: boxH,
@@ -1577,7 +1327,7 @@ export async function buildEndurePremiumPdf(params: {
 
     drawMetricBox({
       page,
-      x: 28 + (boxW + gap) * 3,
+      x: startX + (boxW + gap) * 3,
       y: metricY,
       w: boxW,
       h: boxH,
@@ -1591,28 +1341,28 @@ export async function buildEndurePremiumPdf(params: {
     drawNormalCurveCard({
       page,
       x: 28,
-      y: 264,
-      w: 252,
+      y: 274,
+      w: 244,
       h: 220,
       tScore: factor.t_score,
       percentile: factor.percentile,
-      bandLabel: null,
+      bandLabel: factor.band_label,
       regular,
       bold,
     });
 
-    drawPanel(page, 296, 264, 262, 220, C.white);
+    drawPanel(page, 290, 274, 268, 220, C.white);
     page.drawText("Interpretação", {
-      x: 314,
-      y: 454,
+      x: 308,
+      y: 466,
       size: 16,
       font: bold,
       color: C.navy,
     });
 
     page.drawLine({
-      start: { x: 314, y: 438 },
-      end: { x: 350, y: 438 },
+      start: { x: 308, y: 450 },
+      end: { x: 345, y: 450 },
       thickness: 1.2,
       color: C.navy2,
     });
@@ -1623,14 +1373,25 @@ export async function buildEndurePremiumPdf(params: {
     drawParagraph({
       page,
       text: qual || fallbackInterpretation,
-      x: 314,
-      y: 416,
-      maxWidth: 224,
+      x: 308,
+      y: 428,
+      maxWidth: 230,
       font: regular,
-      size: 10.1,
+      size: 10.2,
       color: C.ink,
       lineHeight: 16,
-      maxLines: 9,
+      maxLines: 10,
+    });
+
+    drawPanel(page, 28, 172, 380, 76, C.white);
+    drawIconCircle({ page, image: img.brain, cx: 52, cy: 210, diameter: 32 });
+
+    page.drawText("Leitura prática", {
+      x: 80,
+      y: 220,
+      size: 12,
+      font: bold,
+      color: C.navy,
     });
 
     const bullets = [
@@ -1639,20 +1400,24 @@ export async function buildEndurePremiumPdf(params: {
       `Escore T de ${fmtNum(factor.t_score, 0)} para o fator avaliado.`,
     ];
 
-    drawDynamicPracticalBox({
-      page,
-      x: 28,
-      y: 154,
-      w: 388,
-      bullets,
-      icon: img.brain,
-      regular,
-      bold,
+    let by = 198;
+    bullets.forEach((b) => {
+      page.drawText(`• ${b}`, {
+        x: 80,
+        y: by,
+        size: 9.6,
+        font: regular,
+        color: C.ink,
+      });
+      by -= 15;
     });
 
     drawFooter(page, img.footerMark, regular, pageNumber++);
   }
 
+  // =========================
+  // WORKING MODEL
+  // =========================
   {
     const page = pdf.addPage([PAGE_W, PAGE_H]);
     drawPageFrame(page, img.cornerLines);
@@ -1663,10 +1428,10 @@ export async function buildEndurePremiumPdf(params: {
       x: 16,
       y: FOOTER_H,
       w: PAGE_W - 32,
-      h: 92,
+      h: 96,
       alignX: "center",
       alignY: "bottom",
-      opacity: 0.90,
+      opacity: 0.92,
     });
 
     drawImageContain({
@@ -1718,21 +1483,148 @@ export async function buildEndurePremiumPdf(params: {
     });
 
     const icons = [img.brain, img.star, img.target];
-    let y = 400;
+    let y = 404;
 
     broad.forEach((dim, idx) => {
-      const cardH = drawWorkingModelCard({
-        page,
+      drawPanel(page, 46, y, 502, 116, C.white);
+
+      page.drawRectangle({
         x: 46,
         y,
-        w: 502,
-        dimension: dim,
-        idx,
-        icon: icons[idx] ?? img.brain,
-        regular,
-        bold,
+        width: 56,
+        height: 116,
+        color: C.navy,
       });
-      y -= cardH + 12;
+
+      drawImageContain({
+        page,
+        image: icons[idx] ?? img.brain,
+        x: 60,
+        y: y + 62,
+        w: 28,
+        h: 28,
+      });
+
+      page.drawText(`${idx + 1}. ${dim.name}`, {
+        x: 116,
+        y: y + 88,
+        size: 14.2,
+        font: bold,
+        color: C.navy,
+      });
+
+      page.drawText("COMPONENTES", {
+        x: 116,
+        y: y + 64,
+        size: 8.3,
+        font: bold,
+        color: C.steel,
+      });
+
+      let cy = y + 48;
+      dim.components.slice(0, 8).forEach((c) => {
+        page.drawText(`• ${c}`, {
+          x: 116,
+          y: cy,
+          size: 9,
+          font: regular,
+          color: C.ink,
+        });
+        cy -= 12;
+      });
+
+      page.drawLine({
+        start: { x: 258, y: y + 10 },
+        end: { x: 258, y: y + 106 },
+        thickness: 1,
+        color: C.line,
+      });
+
+      page.drawText("ESCORE Z", {
+        x: 278,
+        y: y + 70,
+        size: 8.3,
+        font: regular,
+        color: C.steel,
+      });
+
+      page.drawText(fmtNum(dim.z_score, 2), {
+        x: 278,
+        y: y + 34,
+        size: 23,
+        font: bold,
+        color: C.navy,
+      });
+
+      page.drawText("PERCENTIL", {
+        x: 278,
+        y: y + 16,
+        size: 8.3,
+        font: regular,
+        color: C.steel,
+      });
+
+      page.drawText(fmtPct(dim.percentile), {
+        x: 278,
+        y: y - 8,
+        size: 23,
+        font: bold,
+        color: C.navy,
+      });
+
+      page.drawLine({
+        start: { x: 360, y: y + 10 },
+        end: { x: 360, y: y + 106 },
+        thickness: 1,
+        color: C.line,
+      });
+
+      page.drawText("MARCADOR PERCENTÍLICO", {
+        x: 378,
+        y: y + 78,
+        size: 8.3,
+        font: regular,
+        color: C.steel,
+      });
+
+      // trilho
+      page.drawLine({
+        start: { x: 378, y: y + 56 },
+        end: { x: 520, y: y + 56 },
+        thickness: 6,
+        color: C.panel2,
+      });
+
+      const px = 378 + (Math.max(0, Math.min(100, Number(dim.percentile ?? 50))) / 100) * 142;
+      page.drawCircle({
+        x: px,
+        y: y + 56,
+        size: 5,
+        color: C.navy,
+      });
+
+      page.drawText("SÍNTESE", {
+        x: 378,
+        y: y + 30,
+        size: 8.3,
+        font: bold,
+        color: C.navy,
+      });
+
+      drawParagraph({
+        page,
+        text: dim.summary,
+        x: 378,
+        y: y + 12,
+        maxWidth: 142,
+        font: regular,
+        size: 8.7,
+        color: C.ink,
+        lineHeight: 12,
+        maxLines: 4,
+      });
+
+      y -= 126;
     });
 
     drawFooter(page, img.footerMark, regular, pageNumber++);
@@ -1740,7 +1632,3 @@ export async function buildEndurePremiumPdf(params: {
 
   return await pdf.save();
 }
-
-
-
-

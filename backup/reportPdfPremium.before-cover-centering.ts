@@ -1071,51 +1071,37 @@ export async function buildEndurePremiumPdf(params: {
       opacity: 0.98,
     });
 
-    const coverLogoW = 305;
-    const coverLogoH = 76;
-    const coverLogoX = (PAGE_W - coverLogoW) / 2;
-
     drawImageContain({
       page,
       image: img.logo,
-      x: coverLogoX,
+      x: 145,
       y: PAGE_H - 162,
-      w: coverLogoW,
-      h: coverLogoH,
+      w: 305,
+      h: 76,
       alignX: "center",
       alignY: "middle",
     });
 
-    const coverTitleSize = 31;
-    const coverTitleLine1 = "Avaliação socioemocional";
-    const coverTitleLine2 = "para atletas de endurance";
-
-    const coverTitleLine1W = bold.widthOfTextAtSize(coverTitleLine1, coverTitleSize);
-    const coverTitleLine2W = bold.widthOfTextAtSize(coverTitleLine2, coverTitleSize);
-
-    const coverTitleLine1X = (PAGE_W - coverTitleLine1W) / 2;
-    const coverTitleLine2X = (PAGE_W - coverTitleLine2W) / 2;
-
-    page.drawText(coverTitleLine1, {
-      x: coverTitleLine1X,
+    page.drawText("Avaliação socioemocional", {
+      x: 96,
       y: PAGE_H - 300,
-      size: coverTitleSize,
+      size: 31,
       font: bold,
       color: C.navy,
     });
 
-    page.drawText(coverTitleLine2, {
-      x: coverTitleLine2X,
+    page.drawText("para atletas de endurance", {
+      x: 86,
       y: PAGE_H - 344,
-      size: coverTitleSize,
+      size: 31,
       font: bold,
       color: C.navy,
     });
 
     const coverSubtitle = "Relatório de avaliação";
     const coverSubtitleSize = 14.5;
-    const coverSubtitleW = regular.widthOfTextAtSize(coverSubtitle, coverSubtitleSize);
-    const coverSubtitleX = (PAGE_W - coverSubtitleW) / 2;
+    const coverSubtitleWidth = regular.widthOfTextAtSize(coverSubtitle, coverSubtitleSize);
+    const coverSubtitleX = (PAGE_W - coverSubtitleWidth) / 2;
 
     page.drawText(coverSubtitle, {
       x: coverSubtitleX,
@@ -1740,7 +1726,4 @@ export async function buildEndurePremiumPdf(params: {
 
   return await pdf.save();
 }
-
-
-
 

@@ -1,4 +1,5 @@
 ﻿import { NextResponse } from "next/server";
+import { createClient } from "@/src/lib/supabaseServer";
 import { createClient as createSupabaseAdmin } from "@supabase/supabase-js";
 import { scoreEndureAssessment } from "@/src/lib/endure/scoring";
 import { buildEndurePremiumPdf } from "@/src/lib/reportPdfPremium";
@@ -9,34 +10,22 @@ function json(status: number, body: any) {
   return NextResponse.json(body, { status });
 }
 
-function getBearerToken(req: Request) {
-  const auth = req.headers.get("authorization") || "";
-  const m = auth.match(/^Bearer\s+(.+)$/i);
-  return m ? m[1].trim() : "";
-}
-
 export async function POST(req: Request) {
   try {
+    const supabase = await createClient();
+
+    const { data: auth } = await supabase.auth.getUser();
+    if (!auth.user) return json(401, { ok: false, error: "not authenticated" });
+
     const url = process.env.NEXT_PUBLIC_SUPABASE_URL!;
-    const anonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!;
     const serviceKey = process.env.SUPABASE_SERVICE_ROLE_KEY!;
     const bucket = process.env.SUPABASE_REPORTS_BUCKET || "reports";
 
-    if (!url || !anonKey || !serviceKey) {
+    if (!url || !serviceKey) {
       return json(500, { ok: false, error: "missing SUPABASE env vars" });
     }
 
     const supabaseAdmin = createSupabaseAdmin(url, serviceKey);
-
-    const accessToken = getBearerToken(req);
-    if (!accessToken) {
-      return json(401, { ok: false, error: "not authenticated: missing bearer token" });
-    }
-
-    const { data: userData, error: userErr } = await supabaseAdmin.auth.getUser(accessToken);
-    if (userErr || !userData?.user) {
-      return json(401, { ok: false, error: "not authenticated" });
-    }
 
     const body = await req.json().catch(() => ({}));
     const assessment_id = String(body?.assessment_id ?? "").trim();
@@ -45,6 +34,7 @@ export async function POST(req: Request) {
       return json(400, { ok: false, error: "missing assessment_id" });
     }
 
+    // 1) Se já existe na V2, reutiliza
     const { data: existingV2, error: eExistingV2 } = await supabaseAdmin
       .from("assessment_reports_v2")
       .select("assessment_id, pdf_path, report_version, generated_at")
@@ -59,6 +49,7 @@ export async function POST(req: Request) {
       return json(200, { ok: true, pdf_path: existingV2.pdf_path, cached: true });
     }
 
+    // 2) Carrega assessment
     const { data: assessment, error: eAss } = await supabaseAdmin
       .from("assessments")
       .select("assessment_id, athlete_id, request_id, instrument_version, reference_window, status, raw_responses, created_at, submitted_at")
@@ -73,9 +64,10 @@ export async function POST(req: Request) {
       return json(400, { ok: false, error: "assessment is not submitted" });
     }
 
+    // 3) Carrega atleta
     const { data: athlete, error: eAth } = await supabaseAdmin
       .from("athletes")
-      .select("athlete_id, user_id, full_name, email, team, sport_primary, birth_date, sex, gender")
+      .select("athlete_id, full_name, email, team, sport_primary, birth_date, sex, gender")
       .eq("athlete_id", assessment.athlete_id)
       .maybeSingle();
 
@@ -83,25 +75,12 @@ export async function POST(req: Request) {
       return json(404, { ok: false, error: "athlete not found" });
     }
 
-    const { data: profile } = await supabaseAdmin
-      .from("profiles")
-      .select("role")
-      .eq("user_id", userData.user.id)
-      .maybeSingle();
-
-    const role = String(profile?.role ?? "");
-    const isOwner = athlete.user_id === userData.user.id;
-    const isStaff = role === "admin" || role === "coach";
-
-    if (!isOwner && !isStaff) {
-      return json(403, { ok: false, error: "forbidden" });
-    }
-
     const instrument_version = String(assessment.instrument_version ?? "").trim();
     if (!instrument_version) {
       return json(400, { ok: false, error: "assessment missing instrument_version" });
     }
 
+    // 4) Carrega tabelas de scoring
     const { data: instrument_items, error: eItems } = await supabaseAdmin
       .from("instrument_items")
       .select("itemcode, key, scale, factor, quest_section, instrument_version, opt_json")
@@ -129,6 +108,7 @@ export async function POST(req: Request) {
       return json(500, { ok: false, error: "failed to load factor_band_texts" });
     }
 
+    // 5) Recalcula scores
     const scored = scoreEndureAssessment({
       instrument_version,
       raw_responses: (assessment.raw_responses ?? {}) as any,
@@ -137,6 +117,7 @@ export async function POST(req: Request) {
       factor_band_texts: factor_band_texts as any,
     });
 
+    // Mantém assessment_scores atualizado
     await supabaseAdmin
       .from("assessment_scores")
       .upsert(
@@ -161,6 +142,7 @@ export async function POST(req: Request) {
       n_items_scored: f.n_items_scored == null ? null : Number(f.n_items_scored),
     }));
 
+    // 6) Gera PDF premium
     const pdfBytes = await buildEndurePremiumPdf({
       athlete: athlete as any,
       assessment: assessment as any,
@@ -178,6 +160,7 @@ export async function POST(req: Request) {
       return json(500, { ok: false, error: `upload failed: ${up.error.message}` });
     }
 
+    // 7) Grava SOMENTE na V2
     const now = new Date().toISOString();
 
     const { error: eRepV2 } = await supabaseAdmin

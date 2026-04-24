@@ -19,14 +19,6 @@ export default function AthleteHistoryPage() {
   const [err, setErr] = useState<string | null>(null);
   const [busyId, setBusyId] = useState<string | null>(null);
 
-  async function getAccessToken() {
-    const { data, error } = await supabase.auth.getSession();
-    if (error) throw error;
-    const token = data.session?.access_token;
-    if (!token) throw new Error("Sessão do usuário não encontrada.");
-    return token;
-  }
-
   async function openReport(assessmentId: string) {
     let reportWindow: Window | null = null;
 
@@ -36,34 +28,28 @@ export default function AthleteHistoryPage() {
 
       reportWindow = window.open("about:blank", "_blank");
 
-      const token = await getAccessToken();
-
       const r1 = await fetch("/api/report", {
         method: "POST",
-        headers: {
-          "content-type": "application/json",
-          "authorization": `Bearer ${token}`,
-        },
+        headers: { "content-type": "application/json" },
+        credentials: "include",
         body: JSON.stringify({ assessment_id: assessmentId }),
       });
 
       const j1: any = await r1.json().catch(() => ({}));
 
       if (!r1.ok || !j1?.ok) {
-        throw new Error(`Erro em /api/report: ${j1?.error ?? "falha desconhecida"}`);
+        throw new Error(j1?.error ?? "Erro ao gerar relatório.");
       }
 
       const r2 = await fetch(`/api/report-url?assessment_id=${encodeURIComponent(assessmentId)}`, {
         method: "GET",
-        headers: {
-          "authorization": `Bearer ${token}`,
-        },
+        credentials: "include",
       });
 
       const j2: any = await r2.json().catch(() => ({}));
 
       if (!r2.ok || !j2?.ok || !j2?.signedUrl) {
-        throw new Error(`Erro em /api/report-url: ${j2?.error ?? "falha desconhecida"}`);
+        throw new Error(j2?.error ?? "Erro ao obter link do relatório.");
       }
 
       if (reportWindow) {

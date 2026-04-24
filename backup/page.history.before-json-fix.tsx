@@ -1,4 +1,4 @@
-﻿"use client";
+"use client";
 
 import { useEffect, useMemo, useState } from "react";
 import { supabase } from "../../../src/lib/supabaseClient";
@@ -19,57 +19,36 @@ export default function AthleteHistoryPage() {
   const [err, setErr] = useState<string | null>(null);
   const [busyId, setBusyId] = useState<string | null>(null);
 
-  async function getAccessToken() {
-    const { data, error } = await supabase.auth.getSession();
-    if (error) throw error;
-    const token = data.session?.access_token;
-    if (!token) throw new Error("Sessão do usuário não encontrada.");
-    return token;
-  }
-
-  async function openReport(assessmentId: string) {
+  async function openReportSmart(assessmentId: string) {
     let reportWindow: Window | null = null;
 
     try {
       setErr(null);
       setBusyId(assessmentId);
 
-      reportWindow = window.open("about:blank", "_blank");
+      // abre placeholder para evitar bloqueio de popup
+      reportWindow = window.open("about:blank", "_blank", "noopener,noreferrer");
 
-      const token = await getAccessToken();
-
+      // 1) garante/gera PDF (idempotente)
       const r1 = await fetch("/api/report", {
         method: "POST",
-        headers: {
-          "content-type": "application/json",
-          "authorization": `Bearer ${token}`,
-        },
+        headers: { "content-type": "application/json" },
         body: JSON.stringify({ assessment_id: assessmentId }),
       });
 
       const j1: any = await r1.json().catch(() => ({}));
 
       if (!r1.ok || !j1?.ok) {
-        throw new Error(`Erro em /api/report: ${j1?.error ?? "falha desconhecida"}`);
+        throw new Error(j1?.error ?? "Erro ao gerar relatório.");
       }
 
-      const r2 = await fetch(`/api/report-url?assessment_id=${encodeURIComponent(assessmentId)}`, {
-        method: "GET",
-        headers: {
-          "authorization": `Bearer ${token}`,
-        },
-      });
-
-      const j2: any = await r2.json().catch(() => ({}));
-
-      if (!r2.ok || !j2?.ok || !j2?.signedUrl) {
-        throw new Error(`Erro em /api/report-url: ${j2?.error ?? "falha desconhecida"}`);
-      }
+      // 2) abre a rota que REDIRECIONA para o PDF assinado
+      const routeUrl = `/api/report-url?assessment_id=${encodeURIComponent(assessmentId)}`;
 
       if (reportWindow) {
-        reportWindow.location.replace(j2.signedUrl);
+        reportWindow.location.replace(routeUrl);
       } else {
-        window.open(j2.signedUrl, "_blank");
+        window.open(routeUrl, "_blank", "noopener,noreferrer");
       }
     } catch (e: any) {
       if (reportWindow && !reportWindow.closed) {
@@ -197,7 +176,7 @@ export default function AthleteHistoryPage() {
               </div>
 
               <button
-                onClick={() => openReport(r.assessment_id)}
+                onClick={() => openReportSmart(r.assessment_id)}
                 disabled={busyId === r.assessment_id}
                 style={{
                   height: 44,
