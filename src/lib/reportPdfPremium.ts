@@ -1,4 +1,4 @@
-﻿import {
+import {
   PDFDocument,
   StandardFonts,
   rgb,
@@ -28,6 +28,7 @@ type AssessmentRow = {
 
 type FactorScore = {
   score_scale: string;
+  definition?: string | null;
   raw_score: number | null;
   t_score: number | null;
   percentile: number | null;
@@ -452,6 +453,73 @@ function drawBadge(
     font,
     color: ink,
   });
+}
+
+function buildBulletRows(items: string[], font: PDFFont, size: number, maxWidth: number) {
+  const rows: Array<{ text: string; firstLine: boolean }> = [];
+  const bulletPrefix = "• ";
+  const bulletWidth = textWidth(font, bulletPrefix, size);
+
+  for (const item of items) {
+    const clean = String(item ?? "").trim();
+    if (!clean) continue;
+
+    const wrapped = wrapTextByWidth(clean, font, size, maxWidth - bulletWidth);
+    if (!wrapped.length) continue;
+
+    wrapped.forEach((line, idx) => {
+      rows.push({
+        text: line,
+        firstLine: idx === 0,
+      });
+    });
+  }
+
+  return rows;
+}
+
+function drawBulletRows(params: {
+  page: PdfPage;
+  rows: Array<{ text: string; firstLine: boolean }>;
+  x: number;
+  yTop: number;
+  textX: number;
+  font: PDFFont;
+  size: number;
+  color: any;
+  lineGap?: number;
+}) {
+  const { page, rows, x, yTop, textX, font, size, color, lineGap = 2.4 } = params;
+  const step = size + lineGap;
+
+  rows.forEach((row, idx) => {
+    const yy = yTop - idx * step;
+
+    if (row.firstLine) {
+      page.drawText("•", {
+        x,
+        y: yy,
+        size,
+        font,
+        color,
+      });
+    }
+
+    page.drawText(row.text, {
+      x: textX,
+      y: yy,
+      size,
+      font,
+      color,
+    });
+  });
+
+  return yTop - rows.length * step;
+}
+
+function estimateBulletBoxHeight(items: string[], regular: PDFFont, size: number, maxWidth: number) {
+  const rows = buildBulletRows(items, regular, size, maxWidth);
+  return Math.max(56, 30 + rows.length * (size + 2.8));
 }
 
 async function embedAssets(pdf: PDFDocument, assets: ReportAssets) {
@@ -1494,13 +1562,7 @@ export async function buildEndurePremiumPdf(params: {
     });
 
     drawHeader(page, img.logoLight, "FATORES SOCIOEMOCIONAIS", regular);
-    page.drawText("Detalhe de fator", {
-      x: 154,
-      y: PAGE_H - 66,
-      size: 10,
-      font: regular,
-      color: C.navy2,
-    });
+
 
     const title = cleanText(factor.score_scale) || "—";
     page.drawText(title, {
@@ -1513,7 +1575,7 @@ export async function buildEndurePremiumPdf(params: {
 
     const qual = cleanText(factor.text_port);
     const subtitle =
-      firstSentence(qual) ||
+      cleanText((factor as any).definition) ||
       "Descrição interpretativa do fator socioemocional avaliado.";
 
     drawParagraph({
@@ -1740,6 +1802,7 @@ export async function buildEndurePremiumPdf(params: {
 
   return await pdf.save();
 }
+
 
 
 

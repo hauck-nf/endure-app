@@ -210,10 +210,8 @@ export default function FlowPage() {
 
         const { data: d, error: e3 } = await supabase
           .from("instrument_items")
-          .select(
-            "itemcode, quest_section, type, scale, factor, item_text_port, instruction, opt_json"
-          )
-          .eq("instrument_version", (r as any).instrument_version);
+          .select("*")
+          .neq("itemcode","");
 
         if (e3) throw e3;
 

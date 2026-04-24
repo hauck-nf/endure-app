@@ -22,8 +22,8 @@ function typeKind(t: string | null | undefined) {
     s.includes("multiple response") ||
     s.includes("pick more than one") ||
     s.includes("checkbox") ||
-    s.includes("múltiplas") ||
-    s.includes("caixa de seleção") ||
+    s.includes("mÃºltiplas") ||
+    s.includes("caixa de seleÃ§Ã£o") ||
     s.includes("select all")
   ) {
     return "multi";
@@ -33,7 +33,7 @@ function typeKind(t: string | null | undefined) {
     s.includes("multiple choice") ||
     s.includes("single choice") ||
     s.includes("radio") ||
-    s.includes("escolha única") ||
+    s.includes("escolha Ãºnica") ||
     s.includes("choose best option") ||
     s.includes("scale") ||
     s.includes("likert") ||
@@ -106,7 +106,7 @@ export default function QuestionnairePage() {
           .from("assessments")
           .select("assessment_id, raw_responses")
           .eq("athlete_id", athleteId)
-          .eq("instrument_version", version)
+          .neq("itemcode","")
           .eq("status", "in_progress");
 
         if (requestId) q.eq("request_id", requestId);
@@ -129,7 +129,7 @@ export default function QuestionnairePage() {
             athlete_id: athleteId,
             request_id: requestId || null,
             instrument_version: version,
-            reference_window: "últimos 7 dias",
+            reference_window: "Ãºltimos 7 dias",
             status: "in_progress",
             raw_responses: {},
             raw_meta: { section, scale },
@@ -140,7 +140,7 @@ export default function QuestionnairePage() {
         if (error) throw error;
         setAssessmentId(created.assessment_id);
       } catch (e: any) {
-        setErr(e.message ?? "Erro ao criar/abrir avaliação.");
+        setErr(e.message ?? "Erro ao criar/abrir avaliaÃ§Ã£o.");
       }
     })();
   }, [section, scale, version, requestId]);
@@ -154,10 +154,8 @@ export default function QuestionnairePage() {
 
       const { data, error } = await supabase
         .from("instrument_items")
-        .select(
-          "itemcode, quest_section, type, scale, factor, item_text_port, instruction, opt_json"
-        )
-        .eq("instrument_version", version)
+        .select("*")
+        .neq("itemcode","")
         .eq("quest_section", section)
         .eq("scale", scale);
 
@@ -179,7 +177,7 @@ export default function QuestionnairePage() {
   const byFactor = useMemo(() => {
     const map: Record<string, Item[]> = {};
     for (const it of items) {
-      const f = (it.factor || "").trim() || "—";
+      const f = (it.factor || "").trim() || "â€”";
       map[f] ??= [];
       map[f].push(it);
     }
@@ -189,7 +187,7 @@ export default function QuestionnairePage() {
   const factorKeys = useMemo(() => {
     const ks = Object.keys(byFactor);
     return ks.sort((a, b) =>
-      a === "—" ? 1 : b === "—" ? -1 : a.localeCompare(b)
+      a === "â€”" ? 1 : b === "â€”" ? -1 : a.localeCompare(b)
     );
   }, [byFactor]);
 
@@ -229,7 +227,7 @@ export default function QuestionnairePage() {
 
   async function saveDraft() {
     try {
-      if (!assessmentId) throw new Error("Avaliação ainda não foi criada.");
+      if (!assessmentId) throw new Error("AvaliaÃ§Ã£o ainda nÃ£o foi criada.");
       setErr(null);
 
       const { error } = await supabase
@@ -265,7 +263,7 @@ export default function QuestionnairePage() {
     }
 
     try {
-      if (!assessmentId) throw new Error("Avaliação ainda não foi criada.");
+      if (!assessmentId) throw new Error("AvaliaÃ§Ã£o ainda nÃ£o foi criada.");
 
       const { error } = await supabase
         .from("assessments")
@@ -294,7 +292,7 @@ export default function QuestionnairePage() {
         if (e2) throw e2;
       }
 
-      setMsg("Avaliação enviada com sucesso. Ela aparecerá no histórico.");
+      setMsg("AvaliaÃ§Ã£o enviada com sucesso. Ela aparecerÃ¡ no histÃ³rico.");
       setErr(null);
     } catch (e: any) {
       setErr(e.message ?? "Erro ao finalizar.");
@@ -333,7 +331,7 @@ export default function QuestionnairePage() {
             fontSize: 14,
           }}
         >
-          ← Voltar
+          â† Voltar
         </a>
 
         <div
@@ -352,7 +350,7 @@ export default function QuestionnairePage() {
             letterSpacing: 0.3,
           }}
         >
-          Questionário
+          QuestionÃ¡rio
         </div>
 
         <h1
@@ -364,7 +362,7 @@ export default function QuestionnairePage() {
             color: "#0f172a",
           }}
         >
-          {section || "Avaliação"}
+          {section || "AvaliaÃ§Ã£o"}
         </h1>
 
         <div
@@ -483,7 +481,7 @@ export default function QuestionnairePage() {
               fontFamily: "inherit",
             }}
           >
-            Finalizar avaliação
+            Finalizar avaliaÃ§Ã£o
           </button>
         </div>
 
@@ -534,7 +532,7 @@ export default function QuestionnairePage() {
               gap: 14,
             }}
           >
-            {f !== "—" ? (
+            {f !== "â€”" ? (
               <div
                 style={{
                   fontWeight: 900,

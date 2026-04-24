@@ -1,86 +1,81 @@
 ﻿import { NextResponse } from "next/server";
-import { createClient } from "@supabase/supabase-js";
+import { createClient as createSupabaseAdmin } from "@supabase/supabase-js";
 import { scoreEndureAssessment } from "@/src/lib/endure/scoring";
 
-const supabaseAdmin = createClient(
-  process.env.NEXT_PUBLIC_SUPABASE_URL!,
-  process.env.SUPABASE_SERVICE_ROLE_KEY!
-);
+function json(status: number, body: any) {
+  return NextResponse.json(body, { status });
+}
 
 export async function POST(req: Request) {
   try {
-    const body = await req.json().catch(() => ({} as any));
-    const assessment_id = body?.assessment_id;
-    if (!assessment_id) {
-      return NextResponse.json({ error: "assessment_id ausente" }, { status: 400 });
+    const url = process.env.NEXT_PUBLIC_SUPABASE_URL!;
+    const serviceKey = process.env.SUPABASE_SERVICE_ROLE_KEY!;
+
+    if (!url || !serviceKey) {
+      return json(500, { ok: false, error: "missing SUPABASE env vars" });
     }
 
-    // 1) assessment + raw_responses
-    const { data: a, error: eA } = await supabaseAdmin
+    const supabaseAdmin = createSupabaseAdmin(url, serviceKey);
+
+    const body = await req.json().catch(() => ({}));
+    const assessment_id = String(body?.assessment_id ?? "").trim();
+
+    if (!assessment_id) {
+      return json(400, { ok: false, error: "missing assessment_id" });
+    }
+
+    const { data: assessment, error: eA } = await supabaseAdmin
       .from("assessments")
-      .select("assessment_id, athlete_id, instrument_version, raw_responses, created_at, submitted_at")
+      .select("*")
       .eq("assessment_id", assessment_id)
-      .single();
-    if (eA) throw eA;
+      .maybeSingle();
 
-    const instrument_version: string = a.instrument_version;
-    const raw_responses: Record<string, any> = (a.raw_responses ?? {}) as any;
+    if (eA || !assessment) {
+      return json(404, { ok: false, error: "assessment not found" });
+    }
 
-    // 2) reference data (Supabase por enquanto)
+    const instrument_version = String(assessment.instrument_version ?? "").trim();
+    if (!instrument_version) {
+      return json(400, { ok: false, error: "assessment missing instrument_version" });
+    }
+
     const { data: items, error: eI } = await supabaseAdmin
       .from("instrument_items")
-      .select("instrument_version,itemcode,quest_section,scale,factor,key,opt_json,type")
-      .eq("instrument_version", instrument_version);
+      .select("*");
     if (eI) throw eI;
 
     const { data: norms, error: eN } = await supabaseAdmin
       .from("scale_norms")
-      .select("instrument_version,score_scale,raw_score,theta_hat,percentile,t_score")
-      .eq("instrument_version", instrument_version);
+      .select("*");
     if (eN) throw eN;
 
     const { data: bandTexts, error: eT } = await supabaseAdmin
       .from("factor_band_texts")
-      .select("instrument_version,factor,band,text_port,band_label,score_scale")
-      .eq("instrument_version", instrument_version);
+      .select("*");
     if (eT) throw eT;
 
-    // 3) scoring
     const scored = scoreEndureAssessment({
       instrument_version,
-      raw_responses,
+      raw_responses: (assessment.raw_responses ?? {}) as any,
       instrument_items: (items ?? []) as any,
       scale_norms: (norms ?? []) as any,
       factor_band_texts: (bandTexts ?? []) as any,
     });
 
-    // 4) (por ora) readiness_score: opcional — manter null ou calcular depois com regra mais sofisticada
-    const readiness_score = null;
+    const { error: eUp } = await supabaseAdmin
+      .from("assessment_scores")
+      .upsert(
+        {
+          assessment_id,
+          scores_json: scored,
+        } as any,
+        { onConflict: "assessment_id" }
+      );
 
-    const scores_json = {
-      instrument_version,
-      scoring_version: "ENDURE_score_v2_local_engine",
-      factors: scored.factors,
-      factors_by_key: scored.factors_by_key,
-    };
-
-    const { error: eUp } = await supabaseAdmin.from("assessment_scores").upsert(
-      {
-        assessment_id,
-        scores_json,
-        readiness_score,
-        scoring_version: "ENDURE_score_v2_local_engine",
-        computed_at: new Date().toISOString(),
-      },
-      { onConflict: "assessment_id" }
-    );
     if (eUp) throw eUp;
 
-    return NextResponse.json({
-      ok: true,
-      n_factors: scored.factors.length,
-    });
+    return json(200, { ok: true, scores: scored });
   } catch (e: any) {
-    return NextResponse.json({ error: e.message ?? String(e) }, { status: 500 });
+    return json(500, { ok: false, error: e?.message ?? String(e) });
   }
 }

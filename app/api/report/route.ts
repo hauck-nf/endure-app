@@ -1,4 +1,4 @@
-﻿import { NextResponse } from "next/server";
+import { NextResponse } from "next/server";
 import { createClient as createSupabaseAdmin } from "@supabase/supabase-js";
 import { scoreEndureAssessment } from "@/src/lib/endure/scoring";
 import { buildEndurePremiumPdf } from "@/src/lib/reportPdfPremium";
@@ -18,11 +18,10 @@ function getBearerToken(req: Request) {
 export async function POST(req: Request) {
   try {
     const url = process.env.NEXT_PUBLIC_SUPABASE_URL!;
-    const anonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!;
     const serviceKey = process.env.SUPABASE_SERVICE_ROLE_KEY!;
     const bucket = process.env.SUPABASE_REPORTS_BUCKET || "reports";
 
-    if (!url || !anonKey || !serviceKey) {
+    if (!url || !serviceKey) {
       return json(500, { ok: false, error: "missing SUPABASE env vars" });
     }
 
@@ -47,7 +46,7 @@ export async function POST(req: Request) {
 
     const { data: existingV2, error: eExistingV2 } = await supabaseAdmin
       .from("assessment_reports_v2")
-      .select("assessment_id, pdf_path, report_version, generated_at")
+      .select("*")
       .eq("assessment_id", assessment_id)
       .maybeSingle();
 
@@ -61,7 +60,7 @@ export async function POST(req: Request) {
 
     const { data: assessment, error: eAss } = await supabaseAdmin
       .from("assessments")
-      .select("assessment_id, athlete_id, request_id, instrument_version, reference_window, status, raw_responses, created_at, submitted_at")
+      .select("*")
       .eq("assessment_id", assessment_id)
       .maybeSingle();
 
@@ -75,7 +74,7 @@ export async function POST(req: Request) {
 
     const { data: athlete, error: eAth } = await supabaseAdmin
       .from("athletes")
-      .select("athlete_id, user_id, full_name, email, team, sport_primary, birth_date, sex, gender")
+      .select("*")
       .eq("athlete_id", assessment.athlete_id)
       .maybeSingle();
 
@@ -104,8 +103,7 @@ export async function POST(req: Request) {
 
     const { data: instrument_items, error: eItems } = await supabaseAdmin
       .from("instrument_items")
-      .select("itemcode, key, scale, factor, quest_section, instrument_version, opt_json")
-      .eq("instrument_version", instrument_version);
+      .select("*");
 
     if (eItems || !instrument_items) {
       return json(500, { ok: false, error: "failed to load instrument_items" });
@@ -113,8 +111,7 @@ export async function POST(req: Request) {
 
     const { data: scale_norms, error: eNorms } = await supabaseAdmin
       .from("scale_norms")
-      .select("instrument_version, score_scale, raw_score, theta_hat, percentile, t_score")
-      .eq("instrument_version", instrument_version);
+      .select("*");
 
     if (eNorms || !scale_norms) {
       return json(500, { ok: false, error: "failed to load scale_norms" });
@@ -122,8 +119,7 @@ export async function POST(req: Request) {
 
     const { data: factor_band_texts, error: eBands } = await supabaseAdmin
       .from("factor_band_texts")
-      .select("instrument_version, score_scale, band, band_label, text_port")
-      .eq("instrument_version", instrument_version);
+      .select("*");
 
     if (eBands || !factor_band_texts) {
       return json(500, { ok: false, error: "failed to load factor_band_texts" });
@@ -143,23 +139,35 @@ export async function POST(req: Request) {
         {
           assessment_id,
           scores_json: scored,
-          scoring_version: "ENDURE_score_v3_premium_report",
-          computed_at: new Date().toISOString(),
         } as any,
         { onConflict: "assessment_id" }
       );
 
-    const factors = ((scored?.factors ?? []) as any[]).map((f) => ({
-      score_scale: String(f.score_scale ?? ""),
-      raw_score: f.raw_score == null ? null : Number(f.raw_score),
-      t_score: f.t_score == null ? null : Number(f.t_score),
-      percentile: f.percentile == null ? null : Number(f.percentile),
-      theta_hat: f.theta_hat == null ? null : Number(f.theta_hat),
-      band: f.band == null ? null : String(f.band),
-      band_label: f.band_label == null ? null : String(f.band_label),
-      text_port: f.text_port == null ? null : String(f.text_port),
-      n_items_scored: f.n_items_scored == null ? null : Number(f.n_items_scored),
-    }));
+    const definitionByScale = new Map<string, string>();
+    for (const row of (instrument_items ?? []) as any[]) {
+      const scale = String(row?.scale ?? "").trim();
+      const definition = String(row?.definition ?? "").trim();
+      if (scale && definition && !definitionByScale.has(scale)) {
+        definitionByScale.set(scale, definition);
+      }
+    }
+
+    const factors = ((scored?.factors ?? []) as any[]).map((f) => {
+      const scaleName = String(f.scale ?? f.score_scale ?? "").trim();
+      return {
+        score_scale: scaleName,
+        scale: scaleName,
+        definition: definitionByScale.get(scaleName) ?? null,
+        raw_score: f.raw_score == null ? null : Number(f.raw_score),
+        t_score: f.t_score == null ? null : Number(f.t_score),
+        percentile: f.percentile == null ? null : Number(f.percentile),
+        theta_hat: f.theta_hat == null ? null : Number(f.theta_hat),
+        band: f.band == null ? null : String(f.band),
+        band_label: f.band_label == null ? null : String(f.band_label),
+        text_port: f.text_port == null ? null : String(f.text_port),
+        n_items_scored: f.n_items_scored == null ? null : Number(f.n_items_scored),
+      };
+    });
 
     const pdfBytes = await buildEndurePremiumPdf({
       athlete: athlete as any,
@@ -187,7 +195,7 @@ export async function POST(req: Request) {
           assessment_id,
           pdf_path: pdfPath,
           report_version: "premium_v1",
-          scoring_version: "ENDURE_score_v3_premium_report",
+          scoring_version: "ENDURE_score_v2_scale_schema",
           generated_at: now,
           updated_at: now,
         } as any,
