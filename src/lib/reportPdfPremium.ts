@@ -458,20 +458,17 @@ function drawBadge(
 function buildBulletRows(items: string[], font: PDFFont, size: number, maxWidth: number) {
   const rows: Array<{ text: string; firstLine: boolean }> = [];
   const bulletPrefix = "• ";
-  const bulletWidth = textWidth(font, bulletPrefix, size);
+  const bulletWidth = font.widthOfTextAtSize(bulletPrefix, size);
 
   for (const item of items) {
     const clean = String(item ?? "").trim();
     if (!clean) continue;
 
-    const wrapped = wrapTextByWidth(clean, font, size, maxWidth - bulletWidth);
+    const wrapped = wrapText(clean, font, size, Math.max(20, maxWidth - bulletWidth));
     if (!wrapped.length) continue;
 
     wrapped.forEach((line, idx) => {
-      rows.push({
-        text: line,
-        firstLine: idx === 0,
-      });
+      rows.push({ text: line, firstLine: idx === 0 });
     });
   }
 
@@ -479,14 +476,14 @@ function buildBulletRows(items: string[], font: PDFFont, size: number, maxWidth:
 }
 
 function drawBulletRows(params: {
-  page: PdfPage;
+  page: PDFPage;
   rows: Array<{ text: string; firstLine: boolean }>;
   x: number;
   yTop: number;
   textX: number;
   font: PDFFont;
   size: number;
-  color: any;
+  color: ReturnType<typeof rgb>;
   lineGap?: number;
 }) {
   const { page, rows, x, yTop, textX, font, size, color, lineGap = 2.4 } = params;
@@ -494,24 +491,10 @@ function drawBulletRows(params: {
 
   rows.forEach((row, idx) => {
     const yy = yTop - idx * step;
-
     if (row.firstLine) {
-      page.drawText("•", {
-        x,
-        y: yy,
-        size,
-        font,
-        color,
-      });
+      page.drawText("•", { x, y: yy, size, font, color });
     }
-
-    page.drawText(row.text, {
-      x: textX,
-      y: yy,
-      size,
-      font,
-      color,
-    });
+    page.drawText(row.text, { x: textX, y: yy, size, font, color });
   });
 
   return yTop - rows.length * step;
@@ -862,22 +845,14 @@ function drawDynamicPracticalBox(opts: {
 
   const title = "Leitura prática";
   const textX = x + 72;
-  const textW = w - 88;
+  const textW = w - 92;
   const titleSize = 11.5;
-  const bulletSize = 9.4;
-  const bulletGap = 14;
+  const bulletSize = 9.0;
+  const bulletGap = 3.0;
 
-  const bulletText = bullets.map((b) => `• ${b}`).join("\n");
-  const bulletMetrics = getParagraphMetrics({
-    text: bulletText,
-    font: regular,
-    size: bulletSize,
-    maxWidth: textW,
-    lineHeight: bulletGap,
-    maxLines: 10,
-  });
-
-  const boxH = 20 + 16 + 8 + bulletMetrics.height + 10;
+  const rows = buildBulletRows(bullets, regular, bulletSize, textW);
+  const step = bulletSize + bulletGap;
+  const boxH = Math.max(66, 44 + rows.length * step + 12);
 
   drawPanel(page, x, y, w, boxH, C.white);
   drawIconCircle({ page, image: icon, cx: x + 22, cy: y + boxH - 22, diameter: 28 });
@@ -890,17 +865,16 @@ function drawDynamicPracticalBox(opts: {
     color: C.navy,
   });
 
-  drawParagraph({
+  drawBulletRows({
     page,
-    text: bulletText,
+    rows,
     x: textX,
-    y: y + boxH - 38,
-    maxWidth: textW,
+    yTop: y + boxH - 40,
+    textX: textX + 12,
     font: regular,
     size: bulletSize,
     color: C.ink,
-    lineHeight: bulletGap,
-    maxLines: 10,
+    lineGap: bulletGap,
   });
 }
 
@@ -919,52 +893,24 @@ function drawWorkingModelCard(opts: {
 
   const leftBarW = 54;
   const innerX = x + leftBarW + 16;
-  const col1W = 122;
-  const col2W = 86;
-  const col3W = 158;
+  const col1W = 126;
+  const col2W = 82;
+  const col3W = 156;
 
-  const componentsText = dimension.components.slice(0, 5).map((c) => `• ${c}`).join("\n");
-  const summaryText = dimension.summary;
+  const componentItems = dimension.components.slice(0, 6);
+  const componentRows = buildBulletRows(componentItems, regular, 8.4, col1W);
+  const summaryLines = wrapText(dimension.summary, regular, 8.5, col3W - 8);
 
-  const compMetrics = getParagraphMetrics({
-    text: componentsText,
-    font: regular,
-    size: 8.8,
-    maxWidth: col1W,
-    lineHeight: 12,
-    maxLines: 8,
-  });
-
-  const summaryMetrics = getParagraphMetrics({
-    text: summaryText,
-    font: regular,
-    size: 8.7,
-    maxWidth: col3W - 8,
-    lineHeight: 12,
-    maxLines: 5,
-  });
-
-  const contentH = Math.max(compMetrics.height, summaryMetrics.height, 56);
-  const cardH = Math.max(122, 58 + contentH);
+  const componentBlockH = Math.max(40, componentRows.length * 11.0);
+  const summaryBlockH = Math.max(34, summaryLines.length * 11.2);
+  const contentH = Math.max(componentBlockH, summaryBlockH, 58);
+  const cardH = Math.max(126, 62 + contentH);
 
   drawPanel(page, x, y, w, cardH, C.white);
 
-  page.drawRectangle({
-    x,
-    y,
-    width: leftBarW,
-    height: cardH,
-    color: C.navy,
-  });
+  page.drawRectangle({ x, y, width: leftBarW, height: cardH, color: C.navy });
 
-  drawImageContain({
-    page,
-    image: icon,
-    x: x + 14,
-    y: y + cardH - 42,
-    w: 26,
-    h: 26,
-  });
+  drawImageContain({ page, image: icon, x: x + 14, y: y + cardH - 42, w: 26, h: 26 });
 
   page.drawText(`${idx + 1}. ${dimension.name}`, {
     x: innerX,
@@ -982,111 +928,48 @@ function drawWorkingModelCard(opts: {
     color: C.steel,
   });
 
-  drawParagraph({
+  drawBulletRows({
     page,
-    text: componentsText,
+    rows: componentRows,
     x: innerX,
-    y: y + cardH - 64,
-    maxWidth: col1W,
+    yTop: y + cardH - 64,
+    textX: innerX + 12,
     font: regular,
-    size: 8.8,
+    size: 8.4,
     color: C.ink,
-    lineHeight: 12,
-    maxLines: 8,
+    lineGap: 2.6,
   });
 
   const sep1 = innerX + col1W + 18;
-  page.drawLine({
-    start: { x: sep1, y: y + 12 },
-    end: { x: sep1, y: y + cardH - 12 },
-    thickness: 1,
-    color: C.line,
-  });
+  page.drawLine({ start: { x: sep1, y: y + 12 }, end: { x: sep1, y: y + cardH - 12 }, thickness: 1, color: C.line });
 
-  const col2X = sep1 + 18;
-  page.drawText("ESCORE Z", {
-    x: col2X,
-    y: y + cardH - 40,
-    size: 8.2,
-    font: regular,
-    color: C.steel,
-  });
-
-  page.drawText(fmtNum(dimension.z_score, 2), {
-    x: col2X,
-    y: y + cardH - 76,
-    size: 16,
-    font: bold,
-    color: C.navy,
-  });
-
-  page.drawText("PERCENTIL", {
-    x: col2X,
-    y: y + cardH - 96,
-    size: 8.2,
-    font: regular,
-    color: C.steel,
-  });
-
-  page.drawText(fmtPct(dimension.percentile), {
-    x: col2X,
-    y: y + cardH - 118,
-    size: 16,
-    font: bold,
-    color: C.navy,
-  });
+  const col2X = sep1 + 16;
+  page.drawText("ESCORE Z", { x: col2X, y: y + cardH - 40, size: 8.2, font: regular, color: C.steel });
+  page.drawText(fmtNum(dimension.z_score, 2), { x: col2X, y: y + cardH - 72, size: 15, font: bold, color: C.navy });
+  page.drawText("PERCENTIL", { x: col2X, y: y + cardH - 92, size: 8.2, font: regular, color: C.steel });
+  page.drawText(fmtPct(dimension.percentile), { x: col2X, y: y + cardH - 124, size: 15, font: bold, color: C.navy });
 
   const sep2 = col2X + col2W;
-  page.drawLine({
-    start: { x: sep2, y: y + 12 },
-    end: { x: sep2, y: y + cardH - 12 },
-    thickness: 1,
-    color: C.line,
-  });
+  page.drawLine({ start: { x: sep2, y: y + 12 }, end: { x: sep2, y: y + cardH - 12 }, thickness: 1, color: C.line });
 
   const col3X = sep2 + 18;
-  page.drawText("MARCADOR PERCENTÍLICO", {
-    x: col3X,
-    y: y + cardH - 32,
-    size: 8.2,
-    font: regular,
-    color: C.steel,
-  });
-
-  page.drawLine({
-    start: { x: col3X, y: y + cardH - 48 },
-    end: { x: col3X + 150, y: y + cardH - 48 },
-    thickness: 6,
-    color: C.panel2,
-  });
-
+  page.drawText("MARCADOR PERCENTÍLICO", { x: col3X, y: y + cardH - 32, size: 8.2, font: regular, color: C.steel });
+  page.drawLine({ start: { x: col3X, y: y + cardH - 48 }, end: { x: col3X + 150, y: y + cardH - 48 }, thickness: 6, color: C.panel2 });
   const px = col3X + (Math.max(0, Math.min(100, Number(dimension.percentile ?? 50))) / 100) * 150;
-  page.drawCircle({
-    x: px,
-    y: y + cardH - 48,
-    size: 5,
-    color: C.navy,
-  });
+  page.drawCircle({ x: px, y: y + cardH - 48, size: 5, color: C.navy });
 
-  page.drawText("SÍNTESE", {
-    x: col3X,
-    y: y + cardH - 76,
-    size: 8.2,
-    font: bold,
-    color: C.navy,
-  });
-
+  page.drawText("SÍNTESE", { x: col3X, y: y + cardH - 76, size: 8.2, font: bold, color: C.navy });
   drawParagraph({
     page,
-    text: summaryText,
+    text: dimension.summary,
     x: col3X,
     y: y + cardH - 94,
     maxWidth: col3W - 8,
     font: regular,
-    size: 8.7,
+    size: 8.5,
     color: C.ink,
-    lineHeight: 12,
-    maxLines: 5,
+    lineHeight: 11.2,
+    maxLines: 6,
   });
 
   return cardH;
@@ -1115,25 +998,28 @@ export async function buildEndurePremiumPdf(params: {
     const page = pdf.addPage([PAGE_W, PAGE_H]);
     drawPageFrame(page, img.cornerLines);
 
+    const mountainsY = FOOTER_H;
+    const mountainsH = 205;
+
     drawImageContain({
       page,
       image: img.coverMountains,
-      x: 16,
-      y: FOOTER_H,
-      w: PAGE_W - 32,
-      h: 150,
+      x: 0,
+      y: mountainsY,
+      w: PAGE_W,
+      h: mountainsH,
       alignX: "center",
       alignY: "bottom",
-      opacity: 0.95,
+      opacity: 0.98,
     });
 
     drawImageContain({
       page,
       image: img.coverRunner,
-      x: PAGE_W - 128,
-      y: FOOTER_H + 8,
-      w: 88,
-      h: 154,
+      x: PAGE_W - 118,
+      y: mountainsY + 10,
+      w: 84,
+      h: 150,
       alignX: "right",
       alignY: "bottom",
       opacity: 0.98,

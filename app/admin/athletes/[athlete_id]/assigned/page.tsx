@@ -144,6 +144,18 @@ function formatDate(value?: string | null) {
   }
 }
 
+async function openStoredReport(pdfPath: string) {
+  const { data, error } = await supabaseBrowser.storage
+    .from("reports")
+    .createSignedUrl(pdfPath, 60);
+
+  if (error || !data?.signedUrl) {
+    throw new Error(error?.message || "Falha ao abrir relatório.");
+  }
+
+  window.open(data.signedUrl, "_blank", "noopener,noreferrer");
+}
+
 export default function AssignedEvaluationsPageClient() {
   const params = useParams();
   const router = useRouter();
@@ -156,6 +168,141 @@ export default function AssignedEvaluationsPageClient() {
   const [requests, setRequests] = useState<ReqRow[]>([]);
   const [assessments, setAssessments] = useState<AssessmentRow[]>([]);
   const [reports, setReports] = useState<ReportRow[]>([]);
+
+
+    async function resolveAssessmentId(
+  requestId: string | null | undefined,
+  fallbackAssessmentId?: string | null,
+  instrumentVersion?: string | null
+) {
+  if (fallbackAssessmentId && isUuid(fallbackAssessmentId)) {
+    return fallbackAssessmentId;
+  }
+
+  const rid = String(requestId ?? "").trim();
+
+  if (rid && isUuid(rid)) {
+    const q = await supabaseBrowser
+      .from("assessments")
+      .select("assessment_id, request_id, athlete_id, instrument_version, status, submitted_at, created_at")
+      .eq("request_id", rid)
+      .order("created_at", { ascending: false })
+      .limit(1)
+      .maybeSingle();
+
+    if (q.error) {
+      throw new Error(q.error.message || "Falha ao localizar assessment.");
+    }
+
+    const assessmentId = String(q.data?.assessment_id ?? "").trim();
+    if (assessmentId && isUuid(assessmentId)) {
+      return assessmentId;
+    }
+  }
+
+  if (!athleteId || !isUuid(athleteId)) {
+    throw new Error("athlete_id inválido para localizar o relatório.");
+  }
+
+  const iv = String(instrumentVersion ?? "").trim();
+  if (iv) {
+    const q2 = await supabaseBrowser
+      .from("assessments")
+      .select("assessment_id, request_id, athlete_id, instrument_version, status, submitted_at, created_at")
+      .eq("athlete_id", athleteId)
+      .eq("instrument_version", iv)
+      .in("status", ["submitted", "completed"])
+      .order("submitted_at", { ascending: false })
+      .limit(1)
+      .maybeSingle();
+
+    if (q2.error) {
+      throw new Error(q2.error.message || "Falha ao localizar assessment por fallback.");
+    }
+
+    const byFallback = String(q2.data?.assessment_id ?? "").trim();
+    if (byFallback && isUuid(byFallback)) {
+      return byFallback;
+    }
+  }
+
+  throw new Error("Assessment ainda não encontrado para esta avaliação.");
+}
+  }
+
+  if (!athleteId || !isUuid(athleteId)) {
+    throw new Error("athlete_id inválido para localizar o relatório.");
+  }
+
+  const iv = String(instrumentVersion ?? "").trim();
+  if (iv) {
+    const q2 = await supabaseBrowser
+      .from("assessments")
+      .select("assessment_id, request_id, athlete_id, instrument_version, status, submitted_at, created_at")
+      .eq("athlete_id", athleteId)
+      .eq("instrument_version", iv)
+      .in("status", ["submitted", "completed"])
+      .order("submitted_at", { ascending: false })
+      .limit(1)
+      .maybeSingle();
+
+    if (q2.error) {
+      throw new Error(q2.error.message || "Falha ao localizar assessment por fallback.");
+    }
+
+    const byFallback = String(q2.data?.assessment_id ?? "").trim();
+    if (byFallback && isUuid(byFallback)) {
+      return byFallback;
+    }
+  }
+
+  throw new Error("Assessment ainda não encontrado para esta avaliação.");
+}
+async function openOrGenerateReport(assessmentId: string, existingPdfPath?: string | null) {
+    if (existingPdfPath) {
+      await openStoredReport(existingPdfPath);
+      return;
+    }
+
+    const { data: sessionData } = await supabaseBrowser.auth.getSession();
+    const accessToken = sessionData.session?.access_token;
+    if (!accessToken) throw new Error("Sessão não encontrada.");
+
+    const res = await fetch("/api/report", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${accessToken}`,
+      },
+      body: JSON.stringify({ assessment_id: assessmentId }),
+    });
+
+    const payload = await res.json().catch(() => ({}));
+
+    if (!res.ok || !payload?.ok) {
+      throw new Error(payload?.error || "Falha ao gerar relatório.");
+    }
+
+    const pdfPath = String(payload?.pdf_path ?? "").trim();
+    if (!pdfPath) throw new Error("pdf_path não retornado pela API.");
+
+    setReports((prev) => {
+      const next = [...prev];
+      const idx = next.findIndex((x: any) => x.assessment_id === assessmentId);
+      const row = {
+        assessment_id: assessmentId,
+        pdf_path: pdfPath,
+        generated_at: new Date().toISOString(),
+      } as any;
+
+      if (idx >= 0) next[idx] = row;
+      else next.push(row);
+
+      return next;
+    });
+
+    await openStoredReport(pdfPath);
+  }
 
   useEffect(() => {
     (async () => {
@@ -223,7 +370,7 @@ export default function AssignedEvaluationsPageClient() {
         }
 
         const rep = await supabaseBrowser
-          .from("assessment_reports")
+          .from("assessment_reports_v2")
           .select("assessment_id, pdf_path, generated_at")
           .in("assessment_id", assessmentIds)
           .limit(2000);
@@ -421,9 +568,8 @@ export default function AssignedEvaluationsPageClient() {
       ) : (
         <section style={{ display: "grid", gap: 12 }}>
           {requests.map((r) => {
-            const a = assessmentByRequest.get(r.request_id) ?? null;
-            const rep = a ? reportByAssessment.get(a.assessment_id) ?? null : null;
-            const reportHref = a && rep ? `/admin/reports/${a.assessment_id}` : null;
+          const a = assessmentByRequest.get(r.request_id) ?? null;
+          const rep = a ? reportByAssessment.get(a.assessment_id) ?? null : null;
 
             return (
               <article
@@ -548,19 +694,22 @@ export default function AssignedEvaluationsPageClient() {
                       alignItems: "start",
                     }}
                   >
-                    {reportHref ? (
-                      <a
-                        href={reportHref}
-                        target="_blank"
-                        style={actionCellStyle(false)}
-                      >
-                        Relatório
-                      </a>
-                    ) : (
-                      <button type="button" disabled style={actionCellStyle(true)}>
-                        Relatório
-                      </button>
-                    )}
+<button
+  type="button"
+  disabled={r.status === "pending" || r.status === "in_progress"}
+  style={actionCellStyle(r.status === "pending" || r.status === "in_progress")}
+  onClick={async () => {
+    try {
+      const assessmentId = await resolveAssessmentId(r.request_id, a?.assessment_id ?? null, r.instrument_version);
+
+      await openOrGenerateReport(assessmentId, rep?.pdf_path ?? null);
+    } catch (e: any) {
+      alert(e?.message ?? "Falha ao abrir relatório.");
+    }
+  }}
+>
+  Relatório
+</button>
 
                     <CancelButton
                       requestId={r.request_id}
