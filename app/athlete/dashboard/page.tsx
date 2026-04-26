@@ -124,21 +124,21 @@ function canonicalScaleName(x: any): string {
   const key = normalizeKey(original);
 
   const aliases: Record<string, string> = {
-    strivings: "Perfectionism-strivings",
+    "strivings": "Perfectionism-strivings",
     "perfectionism-strivings": "Perfectionism-strivings",
 
-    concerns: "Perfectionism-concerns",
+    "concerns": "Perfectionism-concerns",
     "perfectionism-concerns": "Perfectionism-concerns",
 
     "vigor/energia": "Vigor",
     "vigor-energia": "Vigor",
-    energy: "Vigor",
-    vigor: "Vigor",
+    "energy": "Vigor",
+    "vigor": "Vigor",
 
-    autodialogo: "Autodiálogo",
+    "autodialogo": "Autodiálogo",
     "auto-dialogo": "Autodiálogo",
     "self-talk": "Autodiálogo",
-    selftalk: "Autodiálogo",
+    "selftalk": "Autodiálogo",
   };
 
   return aliases[key] ?? original;
@@ -165,11 +165,15 @@ function numOrNull(x: any): number | null {
   return Number.isFinite(n) ? n : null;
 }
 
-function formatDate(value?: string | null) {
+function formatDate(value?: string | null, shortYear = false) {
   if (!value) return "—";
 
   try {
-    return new Date(value).toLocaleDateString("pt-BR");
+    return new Date(value).toLocaleDateString("pt-BR", {
+      day: "2-digit",
+      month: "2-digit",
+      year: shortYear ? "2-digit" : "numeric",
+    });
   } catch {
     return "—";
   }
@@ -302,6 +306,20 @@ export default function AthleteDashboard() {
   const [err, setErr] = useState<string | null>(null);
   const [scale, setScale] = useState("");
   const [loading, setLoading] = useState(true);
+  const [isMobile, setIsMobile] = useState(false);
+
+  useEffect(() => {
+    const handleResize = () => {
+      if (typeof window !== "undefined") {
+        setIsMobile(window.innerWidth <= 520);
+      }
+    };
+
+    handleResize();
+    window.addEventListener("resize", handleResize);
+
+    return () => window.removeEventListener("resize", handleResize);
+  }, []);
 
   useEffect(() => {
     (async () => {
@@ -313,25 +331,28 @@ export default function AthleteDashboard() {
         const { data: sessionData } = await supabase.auth.getSession();
         const token = sessionData.session?.access_token ?? "";
 
-        const [{ data: assessmentsData, error: assessmentsError }, { data: pendingData, error: pendingError }, instrumentResponse] =
-          await Promise.all([
-            supabase
-              .from("assessments")
-              .select("assessment_id, submitted_at, created_at, assessment_scores(scores_json)")
-              .eq("athlete_id", athleteId)
-              .eq("status", "submitted")
-              .order("submitted_at", { ascending: true }),
-            supabase
-              .from("assessment_requests")
-              .select("request_id, title, status, created_at")
-              .eq("athlete_id", athleteId)
-              .in("status", ["pending", "in_progress"])
-              .order("created_at", { ascending: false }),
-            fetch("/api/instrument-items", {
-              method: "GET",
-              headers: token ? { authorization: `Bearer ${token}` } : {},
-            }),
-          ]);
+        const [
+          { data: assessmentsData, error: assessmentsError },
+          { data: pendingData, error: pendingError },
+          instrumentResponse,
+        ] = await Promise.all([
+          supabase
+            .from("assessments")
+            .select("assessment_id, submitted_at, created_at, assessment_scores(scores_json)")
+            .eq("athlete_id", athleteId)
+            .eq("status", "submitted")
+            .order("submitted_at", { ascending: true }),
+          supabase
+            .from("assessment_requests")
+            .select("request_id, title, status, created_at")
+            .eq("athlete_id", athleteId)
+            .in("status", ["pending", "in_progress"])
+            .order("created_at", { ascending: false }),
+          fetch("/api/instrument-items", {
+            method: "GET",
+            headers: token ? { authorization: `Bearer ${token}` } : {},
+          }),
+        ]);
 
         if (assessmentsError) throw assessmentsError;
         if (pendingError) throw pendingError;
@@ -343,9 +364,7 @@ export default function AthleteDashboard() {
         }
 
         const instrumentItems = (instrumentPayload.items ?? []) as InstrumentItem[];
-
         const allowedSections = ["ENDURE", "Socioemocional core"];
-
         const scaleMap = new Map<string, string>();
 
         for (const item of instrumentItems) {
@@ -353,7 +372,6 @@ export default function AthleteDashboard() {
           const itemScale = canonicalScaleName(item.scale);
 
           if (!itemScale) continue;
-
           if (!allowedSections.some((s) => sameSection(s, section))) continue;
 
           scaleMap.set(scaleKey(itemScale), itemScale);
@@ -382,10 +400,10 @@ export default function AthleteDashboard() {
         setPendingRequests((pendingData as PendingRequest[]) ?? []);
 
         if (instrumentScaleList.length > 0) {
-          setScale(instrumentScaleList[0]);
+          setScale((prev) => prev || instrumentScaleList[0]);
         } else {
           const firstScores = out.map((r) => extractScales(r.scores_json)).find((x) => x.length > 0);
-          setScale(firstScores?.[0]?.scale ?? "");
+          setScale((prev) => prev || firstScores?.[0]?.scale || "");
         }
       } catch (e: any) {
         setErr(e?.message ?? "Erro ao carregar dashboard.");
@@ -403,8 +421,8 @@ export default function AthleteDashboard() {
     return latestRow ? extractScales(latestRow.scores_json) : [];
   }, [latestRow]);
 
-  const latestDate = useMemo(() => {
-    return formatDate(latestRow?.submitted_at ?? latestRow?.created_at);
+  const latestDateShort = useMemo(() => {
+    return formatDate(latestRow?.submitted_at ?? latestRow?.created_at, true);
   }, [latestRow]);
 
   const scoredScaleFallback = useMemo(() => {
@@ -443,7 +461,13 @@ export default function AthleteDashboard() {
         const dt = dtRaw ? new Date(dtRaw) : null;
 
         return {
-          dateLabel: dt ? dt.toLocaleDateString("pt-BR") : "",
+          dateLabel: dt
+            ? dt.toLocaleDateString("pt-BR", {
+                day: "2-digit",
+                month: "2-digit",
+                year: "2-digit",
+              })
+            : "",
           ts: dt ? dt.getTime() : 0,
           percentile: sc?.percentile ?? null,
         };
@@ -465,8 +489,12 @@ export default function AthleteDashboard() {
   const latestPending = pendingRequests[0] ?? null;
 
   return (
-    <main style={pageStyle()}>
+    <main className="dashboard-page" style={pageStyle()}>
       <style>{`
+        .dashboard-page {
+          min-height: 100vh;
+        }
+
         .dashboard-shell {
           width: min(100%, 1180px);
           margin: 0 auto;
@@ -475,10 +503,6 @@ export default function AthleteDashboard() {
 
         .hero-card {
           padding: 28px;
-          background: linear-gradient(135deg, rgba(15,23,42,.97), rgba(30,41,59,.95));
-          color: #fff;
-          overflow: hidden;
-          position: relative;
         }
 
         .hero-title {
@@ -486,6 +510,7 @@ export default function AthleteDashboard() {
           font-size: 34px;
           line-height: 1.05;
           letter-spacing: -0.8px;
+          color: #ffffff;
         }
 
         .summary-grid {
@@ -515,14 +540,33 @@ export default function AthleteDashboard() {
           min-width: 280px;
         }
 
+        .stat-card {
+          min-height: 158px;
+          display: flex;
+          flex-direction: column;
+          justify-content: flex-start;
+        }
+
+        .stat-value {
+          font-size: clamp(26px, 4vw, 30px);
+          line-height: 0.95;
+          overflow-wrap: anywhere;
+          word-break: break-word;
+        }
+
+        .stat-helper {
+          line-height: 1.12;
+          overflow-wrap: anywhere;
+          word-break: break-word;
+        }
+
         @media (max-width: 860px) {
-          main {
+          .dashboard-page {
             padding: 16px !important;
           }
 
           .hero-card {
             padding: 22px !important;
-            border-radius: 26px !important;
           }
 
           .hero-title {
@@ -545,12 +589,17 @@ export default function AthleteDashboard() {
         }
 
         @media (max-width: 520px) {
-          main {
+          .dashboard-page {
             padding: 12px !important;
           }
 
+          .hero-card {
+            padding: 18px !important;
+            border-radius: 24px !important;
+          }
+
           .hero-title {
-            font-size: 30px;
+            font-size: 28px;
             line-height: 1.08;
           }
 
@@ -560,16 +609,18 @@ export default function AthleteDashboard() {
           }
 
           .stat-card {
+            min-height: 126px;
             padding: 14px !important;
             border-radius: 22px !important;
           }
 
           .stat-value {
-            font-size: 27px !important;
+            font-size: clamp(20px, 7.6vw, 28px) !important;
           }
 
           .stat-helper {
-            font-size: 12px !important;
+            font-size: 11.5px !important;
+            line-height: 1.08 !important;
           }
 
           .content-card {
@@ -579,6 +630,7 @@ export default function AthleteDashboard() {
 
           .content-title {
             font-size: 23px !important;
+            line-height: 1.08 !important;
           }
         }
 
@@ -590,7 +642,17 @@ export default function AthleteDashboard() {
       `}</style>
 
       <div className="dashboard-shell">
-        <section className="hero-card" style={cardStyle()}>
+        <section
+          className="hero-card"
+          style={cardStyle({
+            padding: 28,
+            background:
+              "linear-gradient(135deg, rgba(15,23,42,.97), rgba(30,41,59,.95))",
+            color: "#fff",
+            overflow: "hidden",
+            position: "relative",
+          })}
+        >
           <div
             style={{
               position: "absolute",
@@ -631,7 +693,15 @@ export default function AthleteDashboard() {
 
             <h1 className="hero-title">Dashboard socioemocional</h1>
 
-            <p style={{ margin: "12px 0 0", maxWidth: 740, color: "#cbd5e1", lineHeight: 1.65 }}>
+            <p
+              style={{
+                margin: "12px 0 0",
+                maxWidth: 740,
+                color: "#cbd5e1",
+                lineHeight: 1.65,
+                fontSize: isMobile ? 15 : 16,
+              }}
+            >
               Acompanhe seu retrato socioemocional recente, seus principais destaques e a evolução das escalas ao longo das avaliações.
             </p>
           </div>
@@ -656,7 +726,7 @@ export default function AthleteDashboard() {
         <section className="summary-grid">
           <StatCard
             label="Última avaliação"
-            value={loading ? "..." : latestDate}
+            value={loading ? "..." : latestDateShort}
             helper="Base do retrato atual"
           />
 
@@ -806,6 +876,7 @@ export default function AthleteDashboard() {
                     label: p.dateLabel,
                     y: Number(p.percentile),
                   }))}
+                  compact={isMobile}
                 />
               )}
             </div>
@@ -825,7 +896,7 @@ export default function AthleteDashboard() {
             <div>
               <p style={miniLabelStyle()}>Pendências</p>
 
-              <h2 style={{ margin: "6px 0 0", fontSize: 22 }}>
+              <h2 style={{ margin: "6px 0 0", fontSize: 22, lineHeight: 1.05 }}>
                 {pendingCount > 0
                   ? `${pendingCount} avaliação${pendingCount > 1 ? "ões" : ""} pendente${pendingCount > 1 ? "s" : ""}`
                   : "Nenhuma avaliação pendente"}
@@ -879,12 +950,25 @@ function StatCard({
 
       <div
         className="stat-value"
-        style={{ marginTop: 8, fontSize: 30, fontWeight: 950, letterSpacing: -0.8 }}
+        style={{
+          marginTop: 8,
+          fontSize: 30,
+          fontWeight: 950,
+          letterSpacing: -0.8,
+          color: "#0f172a",
+        }}
       >
         {value}
       </div>
 
-      <p className="stat-helper" style={{ margin: "6px 0 0", color: "#64748b", fontSize: 13 }}>
+      <p
+        className="stat-helper"
+        style={{
+          margin: "8px 0 0",
+          color: "#64748b",
+          fontSize: 13,
+        }}
+      >
         {helper}
       </p>
     </section>
@@ -968,7 +1052,8 @@ function ModelBar({
           style={{
             position: "absolute",
             inset: 0,
-            background: "linear-gradient(90deg, rgba(255,255,255,.22), rgba(255,255,255,0))",
+            background:
+              "linear-gradient(90deg, rgba(255,255,255,.22), rgba(255,255,255,0))",
           }}
         />
       </div>
@@ -1077,16 +1162,18 @@ function HighlightGroup({
 function PercentileChart({
   title,
   points,
+  compact = false,
 }: {
   title: string;
   points: { label: string; y: number }[];
+  compact?: boolean;
 }) {
-  const W = 920;
-  const H = 300;
-  const padL = 70;
-  const padR = 24;
-  const padT = 22;
-  const padB = 46;
+  const W = compact ? 620 : 920;
+  const H = compact ? 430 : 340;
+  const padL = compact ? 52 : 70;
+  const padR = compact ? 20 : 24;
+  const padT = 24;
+  const padB = compact ? 58 : 46;
   const innerW = W - padL - padR;
   const innerH = H - padT - padB;
 
@@ -1100,10 +1187,16 @@ function PercentileChart({
     .map((x, i) => `${i === 0 ? "M" : "L"} ${x.toFixed(2)} ${ys[i].toFixed(2)}`)
     .join(" ");
 
+  const areaPath =
+    xs.length > 0
+      ? `${path} L ${xs[xs.length - 1].toFixed(2)} ${(padT + innerH).toFixed(2)} L ${xs[0].toFixed(2)} ${(padT + innerH).toFixed(2)} Z`
+      : "";
+
   const grid = [0, 25, 50, 75, 100];
-  const maxLabels = 6;
+  const maxLabels = compact ? 4 : 6;
   const step = points.length <= maxLabels ? 1 : Math.ceil(points.length / maxLabels);
   const last = points[points.length - 1];
+  const gradId = `series-${normalizeKey(title) || "scale"}`;
 
   return (
     <div>
@@ -1113,20 +1206,21 @@ function PercentileChart({
           justifyContent: "space-between",
           gap: 12,
           alignItems: "center",
-          marginBottom: 8,
+          marginBottom: 12,
           flexWrap: "wrap",
         }}
       >
-        <strong>{title}</strong>
+        <strong style={{ fontSize: compact ? 20 : 22 }}>{title}</strong>
 
         <span
           style={{
-            minHeight: 30,
-            padding: "6px 10px",
+            minHeight: 34,
+            padding: "7px 12px",
             borderRadius: 999,
-            background: "#eff6ff",
-            color: "#1d4ed8",
-            fontSize: 12,
+            background: "#ecfeff",
+            color: "#0f766e",
+            border: "1px solid #99f6e4",
+            fontSize: compact ? 11.5 : 12.5,
             fontWeight: 900,
           }}
         >
@@ -1134,7 +1228,23 @@ function PercentileChart({
         </span>
       </div>
 
-      <svg viewBox={`0 0 ${W} ${H}`} style={{ width: "100%", height: "auto", display: "block" }}>
+      <svg
+        viewBox={`0 0 ${W} ${H}`}
+        style={{ width: "100%", height: "auto", display: "block" }}
+      >
+        <defs>
+          <linearGradient id={`${gradId}-line`} x1="0%" y1="0%" x2="100%" y2="0%">
+            <stop offset="0%" stopColor="#0ea5e9" />
+            <stop offset="50%" stopColor="#14b8a6" />
+            <stop offset="100%" stopColor="#22c55e" />
+          </linearGradient>
+
+          <linearGradient id={`${gradId}-area`} x1="0%" y1="0%" x2="0%" y2="100%">
+            <stop offset="0%" stopColor="rgba(20,184,166,0.28)" />
+            <stop offset="100%" stopColor="rgba(20,184,166,0.03)" />
+          </linearGradient>
+        </defs>
+
         <rect x="0" y="0" width={W} height={H} rx="22" fill="#f8fafc" />
 
         {grid.map((g) => {
@@ -1142,38 +1252,36 @@ function PercentileChart({
 
           return (
             <g key={g}>
-              <line x1={padL} x2={W - padR} y1={y} y2={y} stroke="#e2e8f0" strokeWidth="1" />
-              <text x={padL - 16} y={y + 4} fontSize="11" fill="#64748b" textAnchor="end">
+              <line
+                x1={padL}
+                x2={W - padR}
+                y1={y}
+                y2={y}
+                stroke="#dbeafe"
+                strokeWidth="1"
+              />
+              <text x={padL - 12} y={y + 4} fontSize="11" fill="#64748b" textAnchor="end">
                 {g}
               </text>
             </g>
           );
         })}
 
-        <line
-          x1={padL}
-          x2={W - padR}
-          y1={padT + innerH * 0.25}
-          y2={padT + innerH * 0.25}
-          stroke="#cbd5e1"
-          strokeWidth="1"
-          strokeDasharray="5 5"
-        />
+        {areaPath ? (
+          <path d={areaPath} fill={`url(#${gradId}-area)`} stroke="none" />
+        ) : null}
 
-        <line
-          x1={padL}
-          x2={W - padR}
-          y1={padT + innerH * 0.75}
-          y2={padT + innerH * 0.75}
-          stroke="#cbd5e1"
-          strokeWidth="1"
-          strokeDasharray="5 5"
+        <path
+          d={path}
+          fill="none"
+          stroke={`url(#${gradId}-line)`}
+          strokeWidth={compact ? 4 : 4}
+          strokeLinecap="round"
+          strokeLinejoin="round"
         />
-
-        <path d={path} fill="none" stroke="#0f172a" strokeWidth="3" strokeLinecap="round" />
 
         {xs.map((x, i) => (
-          <circle key={i} cx={x} cy={ys[i]} r="5" fill="#0f172a" />
+          <circle key={i} cx={x} cy={ys[i]} r={compact ? 5.5 : 5} fill="#0f766e" />
         ))}
 
         {points.map((p, i) => {
@@ -1184,7 +1292,7 @@ function PercentileChart({
               key={`${p.label}-${i}`}
               x={xs[i]}
               y={H - 18}
-              fontSize="11"
+              fontSize={compact ? "10.5" : "11"}
               fill="#64748b"
               textAnchor="middle"
             >
@@ -1194,11 +1302,11 @@ function PercentileChart({
         })}
 
         <text
-          x="20"
+          x="18"
           y={padT + innerH / 2}
           fontSize="12"
           fill="#64748b"
-          transform={`rotate(-90 20 ${padT + innerH / 2})`}
+          transform={`rotate(-90 18 ${padT + innerH / 2})`}
           textAnchor="middle"
         >
           Percentil
