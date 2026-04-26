@@ -30,6 +30,12 @@ type ScaleScore = {
   text_port?: string | null;
 };
 
+type InstrumentItem = {
+  itemcode: string | null;
+  quest_section: string | null;
+  scale: string | null;
+};
+
 const POSITIVE_COMPETENCE_KEYS = [
   "autodialogo",
   "grit",
@@ -118,21 +124,21 @@ function canonicalScaleName(x: any): string {
   const key = normalizeKey(original);
 
   const aliases: Record<string, string> = {
-    "strivings": "Perfectionism-strivings",
+    strivings: "Perfectionism-strivings",
     "perfectionism-strivings": "Perfectionism-strivings",
 
-    "concerns": "Perfectionism-concerns",
+    concerns: "Perfectionism-concerns",
     "perfectionism-concerns": "Perfectionism-concerns",
 
     "vigor/energia": "Vigor",
     "vigor-energia": "Vigor",
-    "energy": "Vigor",
-    "vigor": "Vigor",
+    energy: "Vigor",
+    vigor: "Vigor",
 
-    "autodialogo": "Autodiálogo",
+    autodialogo: "Autodiálogo",
     "auto-dialogo": "Autodiálogo",
     "self-talk": "Autodiálogo",
-    "selftalk": "Autodiálogo",
+    selftalk: "Autodiálogo",
   };
 
   return aliases[key] ?? original;
@@ -140,6 +146,14 @@ function canonicalScaleName(x: any): string {
 
 function scaleKey(x: any): string {
   return normalizeKey(canonicalScaleName(x));
+}
+
+function sameScale(a: any, b: any) {
+  return scaleKey(a) === scaleKey(b);
+}
+
+function sameSection(a: any, b: any) {
+  return normalizeKey(a) === normalizeKey(b);
 }
 
 function clamp100(v: number) {
@@ -252,6 +266,7 @@ function pageStyle(): React.CSSProperties {
       "radial-gradient(circle at top left, rgba(20,184,166,.14), transparent 30%), radial-gradient(circle at top right, rgba(249,115,22,.12), transparent 28%), #f8fafc",
     color: "#0f172a",
     padding: 24,
+    overflowX: "hidden",
   };
 }
 
@@ -263,6 +278,8 @@ function cardStyle(extra?: React.CSSProperties): React.CSSProperties {
     padding: 22,
     boxShadow: "0 22px 60px rgba(15,23,42,.08)",
     backdropFilter: "blur(10px)",
+    minWidth: 0,
+    boxSizing: "border-box",
     ...extra,
   };
 }
@@ -281,6 +298,7 @@ function miniLabelStyle(): React.CSSProperties {
 export default function AthleteDashboard() {
   const [rows, setRows] = useState<Row[]>([]);
   const [pendingRequests, setPendingRequests] = useState<PendingRequest[]>([]);
+  const [instrumentScales, setInstrumentScales] = useState<string[]>([]);
   const [err, setErr] = useState<string | null>(null);
   const [scale, setScale] = useState("");
   const [loading, setLoading] = useState(true);
@@ -292,14 +310,14 @@ export default function AthleteDashboard() {
         setErr(null);
 
         const athleteId = await getMyAthleteId();
+        const { data: sessionData } = await supabase.auth.getSession();
+        const token = sessionData.session?.access_token ?? "";
 
-        const [{ data: assessmentsData, error: assessmentsError }, { data: pendingData, error: pendingError }] =
+        const [{ data: assessmentsData, error: assessmentsError }, { data: pendingData, error: pendingError }, instrumentResponse] =
           await Promise.all([
             supabase
               .from("assessments")
-              .select(
-                "assessment_id, submitted_at, created_at, assessment_scores(scores_json)"
-              )
+              .select("assessment_id, submitted_at, created_at, assessment_scores(scores_json)")
               .eq("athlete_id", athleteId)
               .eq("status", "submitted")
               .order("submitted_at", { ascending: true }),
@@ -309,10 +327,43 @@ export default function AthleteDashboard() {
               .eq("athlete_id", athleteId)
               .in("status", ["pending", "in_progress"])
               .order("created_at", { ascending: false }),
+            fetch("/api/instrument-items", {
+              method: "GET",
+              headers: token ? { authorization: `Bearer ${token}` } : {},
+            }),
           ]);
 
         if (assessmentsError) throw assessmentsError;
         if (pendingError) throw pendingError;
+
+        const instrumentPayload: any = await instrumentResponse.json().catch(() => ({}));
+
+        if (!instrumentResponse.ok || !instrumentPayload?.ok) {
+          throw new Error(instrumentPayload?.error ?? "Falha ao carregar escalas do instrumento.");
+        }
+
+        const instrumentItems = (instrumentPayload.items ?? []) as InstrumentItem[];
+
+        const allowedSections = ["ENDURE", "Socioemocional core"];
+
+        const scaleMap = new Map<string, string>();
+
+        for (const item of instrumentItems) {
+          const section = String(item.quest_section ?? "").trim();
+          const itemScale = canonicalScaleName(item.scale);
+
+          if (!itemScale) continue;
+
+          if (!allowedSections.some((s) => sameSection(s, section))) continue;
+
+          scaleMap.set(scaleKey(itemScale), itemScale);
+        }
+
+        const instrumentScaleList = Array.from(scaleMap.values()).sort((a, b) =>
+          a.localeCompare(b)
+        );
+
+        setInstrumentScales(instrumentScaleList);
 
         const out: Row[] = ((assessmentsData as any[]) ?? []).map((r) => {
           const scoreRel = Array.isArray(r.assessment_scores)
@@ -330,8 +381,12 @@ export default function AthleteDashboard() {
         setRows(out);
         setPendingRequests((pendingData as PendingRequest[]) ?? []);
 
-        const firstScores = out.map((r) => extractScales(r.scores_json)).find((x) => x.length > 0);
-        setScale(firstScores?.[0]?.scale ?? "");
+        if (instrumentScaleList.length > 0) {
+          setScale(instrumentScaleList[0]);
+        } else {
+          const firstScores = out.map((r) => extractScales(r.scores_json)).find((x) => x.length > 0);
+          setScale(firstScores?.[0]?.scale ?? "");
+        }
       } catch (e: any) {
         setErr(e?.message ?? "Erro ao carregar dashboard.");
       } finally {
@@ -352,7 +407,7 @@ export default function AthleteDashboard() {
     return formatDate(latestRow?.submitted_at ?? latestRow?.created_at);
   }, [latestRow]);
 
-  const availableScales = useMemo(() => {
+  const scoredScaleFallback = useMemo(() => {
     const m = new Map<string, string>();
 
     for (const r of rows) {
@@ -364,8 +419,16 @@ export default function AthleteDashboard() {
     return Array.from(m.values()).sort((a, b) => a.localeCompare(b));
   }, [rows]);
 
+  const availableScales = useMemo(() => {
+    return instrumentScales.length > 0 ? instrumentScales : scoredScaleFallback;
+  }, [instrumentScales, scoredScaleFallback]);
+
   useEffect(() => {
     if (!scale && availableScales.length > 0) {
+      setScale(availableScales[0]);
+    }
+
+    if (scale && availableScales.length > 0 && !availableScales.some((s) => sameScale(s, scale))) {
       setScale(availableScales[0]);
     }
   }, [availableScales, scale]);
@@ -376,7 +439,8 @@ export default function AthleteDashboard() {
     return rows
       .map((r) => {
         const sc = extractScales(r.scores_json).find((s) => sameScale(s.scale, scale));
-        const dt = r.submitted_at ?? r.created_at ? new Date(r.submitted_at ?? r.created_at ?? "") : null;
+        const dtRaw = r.submitted_at ?? r.created_at;
+        const dt = dtRaw ? new Date(dtRaw) : null;
 
         return {
           dateLabel: dt ? dt.toLocaleDateString("pt-BR") : "",
@@ -402,19 +466,131 @@ export default function AthleteDashboard() {
 
   return (
     <main style={pageStyle()}>
-      <div style={{ maxWidth: 1180, margin: "0 auto" }}>
-        <section
-          style={{
-            ...cardStyle({
-              padding: 28,
-              background:
-                "linear-gradient(135deg, rgba(15,23,42,.97), rgba(30,41,59,.95))",
-              color: "#fff",
-              overflow: "hidden",
-              position: "relative",
-            }),
-          }}
-        >
+      <style>{`
+        .dashboard-shell {
+          width: min(100%, 1180px);
+          margin: 0 auto;
+          box-sizing: border-box;
+        }
+
+        .hero-card {
+          padding: 28px;
+          background: linear-gradient(135deg, rgba(15,23,42,.97), rgba(30,41,59,.95));
+          color: #fff;
+          overflow: hidden;
+          position: relative;
+        }
+
+        .hero-title {
+          margin: 8px 0 0;
+          font-size: 34px;
+          line-height: 1.05;
+          letter-spacing: -0.8px;
+        }
+
+        .summary-grid {
+          display: grid;
+          grid-template-columns: repeat(4, minmax(0, 1fr));
+          gap: 16px;
+          margin-top: 16px;
+        }
+
+        .main-grid {
+          display: grid;
+          grid-template-columns: minmax(0, 1.1fr) minmax(0, .9fr);
+          gap: 16px;
+          margin-top: 16px;
+          align-items: stretch;
+        }
+
+        .chart-header {
+          display: flex;
+          justify-content: space-between;
+          gap: 16px;
+          align-items: flex-start;
+          flex-wrap: wrap;
+        }
+
+        .select-wrap {
+          min-width: 280px;
+        }
+
+        @media (max-width: 860px) {
+          main {
+            padding: 16px !important;
+          }
+
+          .hero-card {
+            padding: 22px !important;
+            border-radius: 26px !important;
+          }
+
+          .hero-title {
+            font-size: 31px;
+          }
+
+          .summary-grid {
+            grid-template-columns: repeat(2, minmax(0, 1fr));
+            gap: 12px;
+          }
+
+          .main-grid {
+            grid-template-columns: 1fr;
+          }
+
+          .select-wrap {
+            width: 100%;
+            min-width: 0;
+          }
+        }
+
+        @media (max-width: 520px) {
+          main {
+            padding: 12px !important;
+          }
+
+          .hero-title {
+            font-size: 30px;
+            line-height: 1.08;
+          }
+
+          .summary-grid {
+            grid-template-columns: repeat(2, minmax(0, 1fr));
+            gap: 10px;
+          }
+
+          .stat-card {
+            padding: 14px !important;
+            border-radius: 22px !important;
+          }
+
+          .stat-value {
+            font-size: 27px !important;
+          }
+
+          .stat-helper {
+            font-size: 12px !important;
+          }
+
+          .content-card {
+            padding: 18px !important;
+            border-radius: 24px !important;
+          }
+
+          .content-title {
+            font-size: 23px !important;
+          }
+        }
+
+        @media (max-width: 380px) {
+          .summary-grid {
+            grid-template-columns: 1fr;
+          }
+        }
+      `}</style>
+
+      <div className="dashboard-shell">
+        <section className="hero-card" style={cardStyle()}>
           <div
             style={{
               position: "absolute",
@@ -453,9 +629,7 @@ export default function AthleteDashboard() {
               Área do atleta
             </p>
 
-            <h1 style={{ margin: "8px 0 0", fontSize: 34, letterSpacing: -0.8 }}>
-              Dashboard socioemocional
-            </h1>
+            <h1 className="hero-title">Dashboard socioemocional</h1>
 
             <p style={{ margin: "12px 0 0", maxWidth: 740, color: "#cbd5e1", lineHeight: 1.65 }}>
               Acompanhe seu retrato socioemocional recente, seus principais destaques e a evolução das escalas ao longo das avaliações.
@@ -479,14 +653,7 @@ export default function AthleteDashboard() {
           </section>
         ) : null}
 
-        <section
-          style={{
-            display: "grid",
-            gridTemplateColumns: "repeat(4, minmax(0, 1fr))",
-            gap: 16,
-            marginTop: 16,
-          }}
-        >
+        <section className="summary-grid">
           <StatCard
             label="Última avaliação"
             value={loading ? "..." : latestDate}
@@ -512,19 +679,11 @@ export default function AthleteDashboard() {
           />
         </section>
 
-        <section
-          style={{
-            display: "grid",
-            gridTemplateColumns: "1.1fr .9fr",
-            gap: 16,
-            marginTop: 16,
-            alignItems: "stretch",
-          }}
-        >
-          <section style={cardStyle()}>
+        <section className="main-grid">
+          <section className="content-card" style={cardStyle()}>
             <p style={miniLabelStyle()}>Retrato socioemocional recente</p>
 
-            <h2 style={{ margin: "6px 0 0", fontSize: 24 }}>
+            <h2 className="content-title" style={{ margin: "6px 0 0", fontSize: 24 }}>
               Modelo geral de três fatores
             </h2>
 
@@ -549,10 +708,10 @@ export default function AthleteDashboard() {
             )}
           </section>
 
-          <section style={cardStyle()}>
+          <section className="content-card" style={cardStyle()}>
             <p style={miniLabelStyle()}>Destaques</p>
 
-            <h2 style={{ margin: "6px 0 0", fontSize: 24 }}>
+            <h2 className="content-title" style={{ margin: "6px 0 0", fontSize: 24 }}>
               Última avaliação
             </h2>
 
@@ -585,37 +744,22 @@ export default function AthleteDashboard() {
           </section>
         </section>
 
-        <section
-          style={{
-            display: "grid",
-            gridTemplateColumns: "1fr",
-            gap: 16,
-            marginTop: 16,
-          }}
-        >
-          <section style={cardStyle()}>
-            <div
-              style={{
-                display: "flex",
-                justifyContent: "space-between",
-                gap: 16,
-                alignItems: "flex-start",
-                flexWrap: "wrap",
-              }}
-            >
+        <section style={{ marginTop: 16 }}>
+          <section className="content-card" style={cardStyle()}>
+            <div className="chart-header">
               <div>
                 <p style={miniLabelStyle()}>Evolução por escala</p>
 
-                <h2 style={{ margin: "6px 0 0", fontSize: 24 }}>
+                <h2 className="content-title" style={{ margin: "6px 0 0", fontSize: 24 }}>
                   Série temporal de percentis
                 </h2>
 
                 <p style={{ margin: "8px 0 0", color: "#64748b", lineHeight: 1.55 }}>
-                  Selecione uma escala para acompanhar sua evolução ao longo das avaliações.
+                  Selecione qualquer escala das seções ENDURE e Socioemocional core para acompanhar a curva de desenvolvimento.
                 </p>
               </div>
 
-              <div style={{ minWidth: 280 }}>
+              <div className="select-wrap">
                 <label style={{ display: "block", fontWeight: 800, marginBottom: 8 }}>
                   Escala
                 </label>
@@ -654,7 +798,7 @@ export default function AthleteDashboard() {
               ) : rows.length === 0 ? (
                 <EmptyBox text="Nenhuma avaliação submetida ainda." />
               ) : series.length === 0 ? (
-                <EmptyBox text="Sem dados para esta escala." />
+                <EmptyBox text="Ainda não há pontos históricos para esta escala." />
               ) : (
                 <PercentileChart
                   title={scale}
@@ -668,7 +812,7 @@ export default function AthleteDashboard() {
           </section>
         </section>
 
-        <section style={{ ...cardStyle(), marginTop: 16 }}>
+        <section className="content-card" style={{ ...cardStyle(), marginTop: 16 }}>
           <div
             style={{
               display: "flex",
@@ -720,10 +864,6 @@ export default function AthleteDashboard() {
   );
 }
 
-function sameScale(a: any, b: any) {
-  return scaleKey(a) === scaleKey(b);
-}
-
 function StatCard({
   label,
   value,
@@ -734,14 +874,17 @@ function StatCard({
   helper: string;
 }) {
   return (
-    <section style={cardStyle({ padding: 18 })}>
+    <section className="stat-card" style={cardStyle({ padding: 18 })}>
       <p style={miniLabelStyle()}>{label}</p>
 
-      <div style={{ marginTop: 8, fontSize: 30, fontWeight: 950, letterSpacing: -0.8 }}>
+      <div
+        className="stat-value"
+        style={{ marginTop: 8, fontSize: 30, fontWeight: 950, letterSpacing: -0.8 }}
+      >
         {value}
       </div>
 
-      <p style={{ margin: "6px 0 0", color: "#64748b", fontSize: 13 }}>
+      <p className="stat-helper" style={{ margin: "6px 0 0", color: "#64748b", fontSize: 13 }}>
         {helper}
       </p>
     </section>
@@ -825,8 +968,7 @@ function ModelBar({
           style={{
             position: "absolute",
             inset: 0,
-            background:
-              "linear-gradient(90deg, rgba(255,255,255,.22), rgba(255,255,255,0))",
+            background: "linear-gradient(90deg, rgba(255,255,255,.22), rgba(255,255,255,0))",
           }}
         />
       </div>
@@ -972,6 +1114,7 @@ function PercentileChart({
           gap: 12,
           alignItems: "center",
           marginBottom: 8,
+          flexWrap: "wrap",
         }}
       >
         <strong>{title}</strong>
@@ -991,7 +1134,7 @@ function PercentileChart({
         </span>
       </div>
 
-      <svg viewBox={`0 0 ${W} ${H}`} style={{ width: "100%", height: "auto" }}>
+      <svg viewBox={`0 0 ${W} ${H}`} style={{ width: "100%", height: "auto", display: "block" }}>
         <rect x="0" y="0" width={W} height={H} rx="22" fill="#f8fafc" />
 
         {grid.map((g) => {
