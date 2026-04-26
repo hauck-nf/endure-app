@@ -1,4 +1,4 @@
-﻿export type InstrumentItem = {
+export type InstrumentItem = {
   instrument_version?: string | null;
   itemcode: string;
   quest_section?: string | null;
@@ -64,8 +64,21 @@ function normText(x: any): string {
   return String(x ?? "").trim();
 }
 
+function canonicalScaleName(scale: any): string {
+  const s = normText(scale);
+
+  const aliases: Record<string, string> = {
+    "Strivings": "Perfectionism-strivings",
+    "Concerns": "Perfectionism-concerns",
+    "Vigor/Energia": "Vigor",
+    "Energy": "Vigor"
+  };
+
+  return aliases[s] ?? s;
+}
+
 function normScale(row: any): string {
-  return normText(row?.scale);
+  return canonicalScaleName(row?.scale);
 }
 
 function parseMaybeNumber(x: any): number | null {

@@ -1,4 +1,4 @@
-import { NextResponse } from "next/server";
+﻿import { NextResponse } from "next/server";
 import { createClient as createSupabaseAdmin } from "@supabase/supabase-js";
 import { scoreEndureAssessment } from "@/src/lib/endure/scoring";
 import { buildEndurePremiumPdf } from "@/src/lib/reportPdfPremium";
@@ -28,11 +28,14 @@ export async function POST(req: Request) {
     const supabaseAdmin = createSupabaseAdmin(url, serviceKey);
 
     const accessToken = getBearerToken(req);
+
     if (!accessToken) {
       return json(401, { ok: false, error: "not authenticated: missing bearer token" });
     }
 
-    const { data: userData, error: userErr } = await supabaseAdmin.auth.getUser(accessToken);
+    const { data: userData, error: userErr } =
+      await supabaseAdmin.auth.getUser(accessToken);
+
     if (userErr || !userData?.user) {
       return json(401, { ok: false, error: "not authenticated" });
     }
@@ -44,18 +47,25 @@ export async function POST(req: Request) {
       return json(400, { ok: false, error: "missing assessment_id" });
     }
 
-    const { data: existingV2, error: eExistingV2 } = await supabaseAdmin
+    const { data: existingReport, error: eExistingReport } = await supabaseAdmin
       .from("assessment_reports_v2")
-      .select("*")
+      .select("assessment_id, pdf_path")
       .eq("assessment_id", assessment_id)
       .maybeSingle();
 
-    if (eExistingV2) {
-      return json(500, { ok: false, error: `failed to read assessment_reports_v2: ${eExistingV2.message}` });
+    if (eExistingReport) {
+      return json(500, {
+        ok: false,
+        error: `failed to read assessment_reports_v2: ${eExistingReport.message}`,
+      });
     }
 
-    if (existingV2?.pdf_path) {
-      return json(200, { ok: true, pdf_path: existingV2.pdf_path, cached: true });
+    if (existingReport?.pdf_path) {
+      return json(200, {
+        ok: true,
+        pdf_path: existingReport.pdf_path,
+        cached: true,
+      });
     }
 
     const { data: assessment, error: eAss } = await supabaseAdmin
@@ -68,7 +78,7 @@ export async function POST(req: Request) {
       return json(404, { ok: false, error: "assessment not found" });
     }
 
-    if (assessment.status !== "submitted") {
+    if (!["submitted", "completed"].includes(String(assessment.status))) {
       return json(400, { ok: false, error: "assessment is not submitted" });
     }
 
@@ -96,57 +106,100 @@ export async function POST(req: Request) {
       return json(403, { ok: false, error: "forbidden" });
     }
 
-    const instrument_version = String(assessment.instrument_version ?? "").trim();
-    if (!instrument_version) {
-      return json(400, { ok: false, error: "assessment missing instrument_version" });
-    }
+    let scored: any = null;
 
-    const { data: instrument_items, error: eItems } = await supabaseAdmin
-      .from("instrument_items")
-      .select("*");
-
-    if (eItems || !instrument_items) {
-      return json(500, { ok: false, error: "failed to load instrument_items" });
-    }
-
-    const { data: scale_norms, error: eNorms } = await supabaseAdmin
-      .from("scale_norms")
-      .select("*");
-
-    if (eNorms || !scale_norms) {
-      return json(500, { ok: false, error: "failed to load scale_norms" });
-    }
-
-    const { data: factor_band_texts, error: eBands } = await supabaseAdmin
-      .from("factor_band_texts")
-      .select("*");
-
-    if (eBands || !factor_band_texts) {
-      return json(500, { ok: false, error: "failed to load factor_band_texts" });
-    }
-
-    const scored = scoreEndureAssessment({
-      instrument_version,
-      raw_responses: (assessment.raw_responses ?? {}) as any,
-      instrument_items: instrument_items as any,
-      scale_norms: scale_norms as any,
-      factor_band_texts: factor_band_texts as any,
-    });
-
-    await supabaseAdmin
+    const { data: existingScores, error: eScores } = await supabaseAdmin
       .from("assessment_scores")
-      .upsert(
-        {
-          assessment_id,
-          scores_json: scored,
-        } as any,
-        { onConflict: "assessment_id" }
-      );
+      .select("assessment_id, scores_json")
+      .eq("assessment_id", assessment_id)
+      .maybeSingle();
+
+    if (eScores) {
+      return json(500, {
+        ok: false,
+        error: `failed to read assessment_scores: ${eScores.message}`,
+      });
+    }
+
+    if (existingScores?.scores_json) {
+      scored = existingScores.scores_json;
+    } else {
+      const instrument_version = String(assessment.instrument_version ?? "").trim();
+
+      if (!instrument_version) {
+        return json(400, {
+          ok: false,
+          error: "assessment missing instrument_version",
+        });
+      }
+
+      const { data: instrument_items, error: eItems } = await supabaseAdmin
+        .from("instrument_items")
+        .select("*");
+
+      if (eItems || !instrument_items) {
+        return json(500, { ok: false, error: "failed to load instrument_items" });
+      }
+
+      const { data: scale_norms, error: eNorms } = await supabaseAdmin
+        .from("scale_norms")
+        .select("*");
+
+      if (eNorms || !scale_norms) {
+        return json(500, { ok: false, error: "failed to load scale_norms" });
+      }
+
+      const { data: factor_band_texts, error: eBands } = await supabaseAdmin
+        .from("factor_band_texts")
+        .select("*");
+
+      if (eBands || !factor_band_texts) {
+        return json(500, { ok: false, error: "failed to load factor_band_texts" });
+      }
+
+      scored = scoreEndureAssessment({
+        instrument_version,
+        raw_responses: (assessment.raw_responses ?? {}) as any,
+        instrument_items: instrument_items as any,
+        scale_norms: scale_norms as any,
+        factor_band_texts: factor_band_texts as any,
+      });
+
+      const { error: eUpScores } = await supabaseAdmin
+        .from("assessment_scores")
+        .upsert(
+          {
+            assessment_id,
+            scores_json: scored,
+          } as any,
+          { onConflict: "assessment_id" }
+        );
+
+      if (eUpScores) {
+        return json(500, {
+          ok: false,
+          error: `assessment_scores upsert failed: ${eUpScores.message}`,
+        });
+      }
+    }
+
+    const { data: instrument_items_for_defs, error: eDefs } = await supabaseAdmin
+      .from("instrument_items")
+      .select("scale, definition");
+
+    if (eDefs) {
+      return json(500, {
+        ok: false,
+        error: `failed to load scale definitions: ${eDefs.message}`,
+      });
+    }
 
     const definitionByScale = new Map<string, string>();
-    for (const row of (instrument_items ?? []) as any[]) {
+
+    for (const row of (instrument_items_for_defs ?? []) as any[]) {
       const scale = String(row?.scale ?? "").trim();
       const definition = String(row?.definition ?? "").trim();
+
       if (scale && definition && !definitionByScale.has(scale)) {
         definitionByScale.set(scale, definition);
       }
@@ -154,6 +207,7 @@ export async function POST(req: Request) {
 
     const factors = ((scored?.factors ?? []) as any[]).map((f) => {
       const scaleName = String(f.scale ?? f.score_scale ?? "").trim();
+
       return {
         score_scale: scaleName,
         scale: scaleName,
@@ -183,7 +237,10 @@ export async function POST(req: Request) {
     });
 
     if (up.error) {
-      return json(500, { ok: false, error: `upload failed: ${up.error.message}` });
+      return json(500, {
+        ok: false,
+        error: `upload failed: ${up.error.message}`,
+      });
     }
 
     const now = new Date().toISOString();
@@ -203,10 +260,17 @@ export async function POST(req: Request) {
       );
 
     if (eRepV2) {
-      return json(500, { ok: false, error: `assessment_reports_v2 upsert failed: ${eRepV2.message}` });
+      return json(500, {
+        ok: false,
+        error: `assessment_reports_v2 upsert failed: ${eRepV2.message}`,
+      });
     }
 
-    return json(200, { ok: true, pdf_path: pdfPath, cached: false });
+    return json(200, {
+      ok: true,
+      pdf_path: pdfPath,
+      cached: false,
+    });
   } catch (e: any) {
     return json(500, { ok: false, error: e?.message ?? String(e) });
   }
