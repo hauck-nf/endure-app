@@ -65,16 +65,26 @@ function normText(x: any): string {
 }
 
 function canonicalScaleName(scale: any): string {
-  const s = normText(scale);
+  const original = normText(scale);
+  const key = original
+    .toLowerCase()
+    .replace(/_/g, "-")
+    .replace(/\s+/g, "-");
 
   const aliases: Record<string, string> = {
-    "Strivings": "Perfectionism-strivings",
-    "Concerns": "Perfectionism-concerns",
-    "Vigor/Energia": "Vigor",
-    "Energy": "Vigor"
+    "strivings": "Perfectionism-strivings",
+    "perfectionism-strivings": "Perfectionism-strivings",
+
+    "concerns": "Perfectionism-concerns",
+    "perfectionism-concerns": "Perfectionism-concerns",
+
+    "vigor/energia": "Vigor",
+    "vigor-energia": "Vigor",
+    "energy": "Vigor",
+    "vigor": "Vigor"
   };
 
-  return aliases[s] ?? s;
+  return aliases[key] ?? original;
 }
 
 function normScale(row: any): string {

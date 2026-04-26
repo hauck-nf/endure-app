@@ -1220,64 +1220,15 @@ export async function buildEndurePremiumPdf(params: {
   }
 
   {
-    const page = pdf.addPage([PAGE_W, PAGE_H]);
-    drawPageFrame(page, img.cornerLines);
-    drawHeader(page, img.logoLight, "VISÃO GERAL DOS RESULTADOS", regular);
+  const tableX = 28;
+  const tableW = PAGE_W - 56;
+  const headerH = 28;
+  const rowH = 27;
+  const bottomY = FOOTER_H + 34;
+  const colW = [180, 78, 78, 82, 95];
+  const headers = ["FATOR", "ESCORE BRUTO", "ESCORE T", "PERCENTIL", "CLASSIFICAÇÃO"];
 
-    page.drawText("Visão geral dos resultados", {
-      x: 28,
-      y: PAGE_H - 130,
-      size: 28,
-      font: bold,
-      color: C.navy,
-    });
-
-    page.drawLine({
-      start: { x: 28, y: PAGE_H - 150 },
-      end: { x: 70, y: PAGE_H - 150 },
-      thickness: 1.6,
-      color: C.navy2,
-    });
-
-    drawPanel(page, 28, PAGE_H - 280, PAGE_W - 56, 74, C.white);
-    drawIconCircle({ page, image: img.shield, cx: 60, cy: PAGE_H - 243, diameter: 34 });
-
-    drawParagraph({
-      page,
-      text: "A ENDURE é uma bateria de autorrelato de avaliação de características psicológicas empiricamente relacionadas ao desempenho em atletas de endurance.",
-      x: 96,
-      y: PAGE_H - 230,
-      maxWidth: PAGE_W - 140,
-      font: regular,
-      size: 10.8,
-      color: C.ink,
-      lineHeight: 16,
-      maxLines: 3,
-    });
-
-    page.drawText("Resultado geral", {
-      x: 28,
-      y: PAGE_H - 330,
-      size: 16,
-      font: bold,
-      color: C.navy,
-    });
-
-    page.drawLine({
-      start: { x: 28, y: PAGE_H - 347 },
-      end: { x: 64, y: PAGE_H - 347 },
-      thickness: 1.3,
-      color: C.navy2,
-    });
-
-    const tableX = 28;
-    const tableTop = PAGE_H - 370;
-    const tableW = PAGE_W - 56;
-    const headerH = 28;
-    const rowH = 27;
-    const colW = [180, 78, 78, 82, 95];
-    const rows = factorList.slice(0, 8);
-
+  const drawTableHeader = (page: PDFPage, tableTop: number) => {
     page.drawRectangle({
       x: tableX,
       y: tableTop - headerH,
@@ -1286,8 +1237,8 @@ export async function buildEndurePremiumPdf(params: {
       color: C.navy,
     });
 
-    const headers = ["FATOR", "ESCORE BRUTO", "ESCORE T", "PERCENTIL", "CLASSIFICAÇÃO"];
     let hx = tableX + 10;
+
     headers.forEach((h, i) => {
       page.drawText(h, {
         x: hx,
@@ -1296,9 +1247,12 @@ export async function buildEndurePremiumPdf(params: {
         font: bold,
         color: C.white,
       });
+
       hx += colW[i];
     });
+  };
 
+  const drawResultRows = (page: PDFPage, rows: FactorScore[], tableTop: number) => {
     rows.forEach((r, idx) => {
       const y = tableTop - headerH - rowH * (idx + 1);
 
@@ -1313,6 +1267,7 @@ export async function buildEndurePremiumPdf(params: {
       });
 
       let x = tableX + 10;
+
       const vals = [
         cleanText(r.score_scale) || "—",
         fmtNum(r.raw_score, 0),
@@ -1322,104 +1277,345 @@ export async function buildEndurePremiumPdf(params: {
       ];
 
       vals.forEach((v, i) => {
-        page.drawText(v, {
+        const txt = String(v ?? "—");
+        const maxChars = i === 0 ? 28 : 14;
+        const safeTxt = txt.length > maxChars ? `${txt.slice(0, maxChars - 1)}…` : txt;
+
+        page.drawText(safeTxt, {
           x,
           y: y + 9,
-          size: i === 0 ? 10 : 9.8,
+          size: i === 0 ? 9.6 : 9.4,
           font: i === 4 ? bold : regular,
           color: i === 4 ? C.navy2 : C.ink,
         });
+
         x += colW[i];
       });
     });
+  };
 
-    page.drawText("Destaques", {
-      x: 28,
-      y: 184,
-      size: 16,
-      font: bold,
-      color: C.navy,
-    });
+  let remainingRows = [...factorList];
+  let overviewPageIndex = 0;
 
-    page.drawLine({
-      start: { x: 28, y: 168 },
-      end: { x: 64, y: 168 },
-      thickness: 1.3,
-      color: C.navy2,
-    });
+  while (remainingRows.length > 0 || overviewPageIndex === 0) {
+    const page = pdf.addPage([PAGE_W, PAGE_H]);
 
-    const low = factorList.filter((f) => Number(f.percentile ?? 101) < 25).slice(0, 3);
-    const high = factorList.filter((f) => Number(f.percentile ?? -1) > 75).slice(0, 3);
+    drawPageFrame(page, img.cornerLines);
+    drawHeader(page, img.logoLight, "VISÃO GERAL DOS RESULTADOS", regular);
 
-    drawPanel(page, 28, 56, 236, 102, C.white);
-    drawPanel(page, 290, 56, 277, 102, C.white);
+    let tableTop = PAGE_H - 160;
 
-    drawIconCircle({ page, image: img.chart, cx: 50, cy: 134, diameter: 28 });
-    page.drawText("Potenciais a serem desenvolvidos", {
-      x: 70,
-      y: 130,
-      size: 11.8,
-      font: bold,
-      color: C.navy,
-    });
+    if (overviewPageIndex === 0) {
+      page.drawText("Visão geral dos resultados", {
+        x: 28,
+        y: PAGE_H - 130,
+        size: 28,
+        font: bold,
+        color: C.navy,
+      });
 
-    let yl = 104;
-    if (low.length === 0) {
-      page.drawText("Nenhum fator em faixa baixa.", {
-        x: 42,
-        y: yl,
-        size: 10.4,
+      page.drawLine({
+        start: { x: 28, y: PAGE_H - 150 },
+        end: { x: 70, y: PAGE_H - 150 },
+        thickness: 1.6,
+        color: C.navy2,
+      });
+
+      drawPanel(page, 28, PAGE_H - 280, PAGE_W - 56, 74, C.white);
+
+      drawIconCircle({
+        page,
+        image: img.shield,
+        cx: 60,
+        cy: PAGE_H - 243,
+        diameter: 34,
+      });
+
+      drawParagraph({
+        page,
+        text: "A ENDURE é uma bateria de autorrelato de avaliação de características psicológicas empiricamente relacionadas ao desempenho em atletas de endurance.",
+        x: 96,
+        y: PAGE_H - 230,
+        maxWidth: PAGE_W - 140,
         font: regular,
+        size: 10.8,
         color: C.ink,
+        lineHeight: 16,
+        maxLines: 3,
       });
+
+      page.drawText("Resultado geral", {
+        x: 28,
+        y: PAGE_H - 330,
+        size: 16,
+        font: bold,
+        color: C.navy,
+      });
+
+      page.drawLine({
+        start: { x: 28, y: PAGE_H - 347 },
+        end: { x: 64, y: PAGE_H - 347 },
+        thickness: 1.3,
+        color: C.navy2,
+      });
+
+      tableTop = PAGE_H - 370;
     } else {
-      low.forEach((f) => {
-        page.drawText(`• ${cleanText(f.score_scale)}`, {
-          x: 42,
-          y: yl,
-          size: 10.2,
-          font: regular,
-          color: C.ink,
-        });
-        yl -= 21;
+      page.drawText("Resultado geral", {
+        x: 28,
+        y: PAGE_H - 128,
+        size: 22,
+        font: bold,
+        color: C.navy,
       });
+
+      page.drawText("continuação", {
+        x: 28,
+        y: PAGE_H - 150,
+        size: 10.5,
+        font: regular,
+        color: C.steel,
+      });
+
+      page.drawLine({
+        start: { x: 28, y: PAGE_H - 166 },
+        end: { x: 64, y: PAGE_H - 166 },
+        thickness: 1.3,
+        color: C.navy2,
+      });
+
+      tableTop = PAGE_H - 190;
     }
 
-    drawIconCircle({ page, image: img.star, cx: 312, cy: 134, diameter: 28 });
-    page.drawText("Competências bem desenvolvidas", {
-      x: 332,
-      y: 130,
-      size: 11.8,
-      font: bold,
-      color: C.navy,
-    });
+    const maxRowsThisPage = Math.max(
+      1,
+      Math.floor((tableTop - headerH - bottomY) / rowH)
+    );
 
-    let yh = 104;
-    if (high.length === 0) {
-      page.drawText("Nenhum fator em faixa alta.", {
-        x: 304,
-        y: yh,
-        size: 10.4,
-        font: regular,
-        color: C.ink,
-      });
-    } else {
-      high.forEach((f) => {
-        page.drawText(`• ${cleanText(f.score_scale)}`, {
-          x: 304,
-          y: yh,
-          size: 10.2,
-          font: regular,
-          color: C.ink,
-        });
-        yh -= 21;
-      });
-    }
+    const rowsThisPage = remainingRows.slice(0, maxRowsThisPage);
+
+    drawTableHeader(page, tableTop);
+    drawResultRows(page, rowsThisPage, tableTop);
+
+    remainingRows = remainingRows.slice(rowsThisPage.length);
 
     drawFooter(page, img.footerMark, regular, pageNumber++);
+
+    overviewPageIndex += 1;
+  }
+}
+
+{
+  const page = pdf.addPage([PAGE_W, PAGE_H]);
+
+  drawPageFrame(page, img.cornerLines);
+  drawHeader(page, img.logoLight, "DESTAQUES", regular);
+
+  page.drawText("Destaques", {
+    x: 28,
+    y: PAGE_H - 130,
+    size: 28,
+    font: bold,
+    color: C.navy,
+  });
+
+  page.drawLine({
+    start: { x: 28, y: PAGE_H - 150 },
+    end: { x: 70, y: PAGE_H - 150 },
+    thickness: 1.6,
+    color: C.navy2,
+  });
+
+  drawParagraph({
+    page,
+    text: "Esta seção resume competências bem desenvolvidas, competências a desenvolver e elementos negativos salientes, considerando a classificação obtida em cada escala.",
+    x: 28,
+    y: PAGE_H - 188,
+    maxWidth: PAGE_W - 56,
+    font: regular,
+    size: 10.8,
+    color: C.ink,
+    lineHeight: 16,
+    maxLines: 3,
+  });
+
+  const canonical = (s: string | null | undefined) =>
+    cleanText(s)
+      .toLowerCase()
+      .replace(/_/g, "-")
+      .replace(/\s+/g, "-");
+
+  const displayNameByKey: Record<string, string> = {
+    "autodiálogo": "Autodiálogo",
+    "grit": "Grit",
+    "mastery-approach-goals": "Mastery approach goals",
+    "mental-practice": "Mental practice",
+    "mindfulness": "Mindfulness",
+    "performance-approach-goals": "Performance approach goals",
+    "perfectionism-strivings": "Perfectionism-strivings",
+    "self-efficacy": "Self-efficacy",
+    "task-oriented-coping": "Task-oriented coping",
+    "vigor": "Vigor",
+
+    "anger": "Anger",
+    "anxiety": "Anxiety",
+    "depression": "Depression",
+    "fatigue": "Fatigue",
+    "mastery-avoidance-goals": "Mastery avoidance goals",
+    "perfectionism-concerns": "Perfectionism-concerns",
+    "rumination": "Rumination"
+  };
+
+  const positiveCompetenceKeys = [
+    "autodiálogo",
+    "grit",
+    "mastery-approach-goals",
+    "mental-practice",
+    "mindfulness",
+    "performance-approach-goals",
+    "perfectionism-strivings",
+    "self-efficacy",
+    "task-oriented-coping",
+    "vigor"
+  ];
+
+  const negativeElementKeys = [
+    "anger",
+    "anxiety",
+    "depression",
+    "fatigue",
+    "mastery-avoidance-goals",
+    "perfectionism-concerns",
+    "rumination"
+  ];
+
+  const byKey = new Map<string, FactorScore>();
+
+  for (const f of factorList) {
+    byKey.set(canonical(f.score_scale), f);
   }
 
-  for (const factor of factorList) {
+  const isHigh = (f: FactorScore | undefined) =>
+    cleanText(f?.band_label).toLowerCase() === "alto";
+
+  const isLow = (f: FactorScore | undefined) =>
+    cleanText(f?.band_label).toLowerCase() === "baixo";
+
+  const makeItem = (key: string) => {
+    const f = byKey.get(key);
+    const label = displayNameByKey[key] ?? cleanText(f?.score_scale) ?? key;
+    const pct = f?.percentile == null ? "—" : fmtPct(f.percentile);
+    return `${label} (P${pct})`;
+  };
+
+  const wellDeveloped = positiveCompetenceKeys
+    .filter((key) => isHigh(byKey.get(key)))
+    .map(makeItem);
+
+  const toDevelop = positiveCompetenceKeys
+    .filter((key) => isLow(byKey.get(key)))
+    .map(makeItem);
+
+  const salientNegative = negativeElementKeys
+    .filter((key) => isHigh(byKey.get(key)))
+    .map(makeItem);
+
+  const drawHighlightBox = (opts: {
+    title: string;
+    icon: PDFImage;
+    x: number;
+    yTop: number;
+    w: number;
+    items: string[];
+    emptyText: string;
+  }) => {
+    const { title, icon, x, yTop, w, items, emptyText } = opts;
+
+    const rows = items.length
+      ? buildBulletRows(items, regular, 9.4, w - 44)
+      : buildBulletRows([emptyText], regular, 9.4, w - 44);
+
+    const headerSpace = 62;
+    const rowHeight = 13.2;
+    const bottomPadding = 20;
+    const h = Math.max(88, headerSpace + rows.length * rowHeight + bottomPadding);
+    const y = yTop - h;
+
+    drawPanel(page, x, y, w, h, C.white);
+
+    drawIconCircle({
+      page,
+      image: icon,
+      cx: x + 25,
+      cy: yTop - 32,
+      diameter: 30,
+    });
+
+    page.drawText(title, {
+      x: x + 48,
+      y: yTop - 37,
+      size: 12,
+      font: bold,
+      color: C.navy,
+    });
+
+    drawBulletRows({
+      page,
+      rows,
+      x: x + 18,
+      textX: x + 30,
+      yTop: yTop - 70,
+      font: regular,
+      size: 9.4,
+      color: C.ink,
+      lineGap: 3,
+    });
+
+    return h;
+  };
+
+  let highlightYTop = PAGE_H - 270;
+  const highlightGap = 18;
+  const highlightW = PAGE_W - 56;
+
+  const h1 = drawHighlightBox({
+    title: "Competências bem desenvolvidas",
+    icon: img.star,
+    x: 28,
+    yTop: highlightYTop,
+    w: highlightW,
+    items: wellDeveloped,
+    emptyText: "Nenhuma competência positiva foi classificada como alta nesta avaliação.",
+  });
+
+  highlightYTop -= h1 + highlightGap;
+
+  const h2 = drawHighlightBox({
+    title: "Competências a desenvolver",
+    icon: img.target,
+    x: 28,
+    yTop: highlightYTop,
+    w: highlightW,
+    items: toDevelop,
+    emptyText: "Nenhuma competência positiva foi classificada como baixa nesta avaliação.",
+  });
+
+  highlightYTop -= h2 + highlightGap;
+
+  drawHighlightBox({
+    title: "Elementos negativos salientes",
+    icon: img.chart,
+    x: 28,
+    yTop: highlightYTop,
+    w: highlightW,
+    items: salientNegative,
+    emptyText: "Nenhum elemento negativo foi classificado como alto nesta avaliação.",
+  });
+
+  drawFooter(page, img.footerMark, regular, pageNumber++);
+}
+
+for (const factor of factorList) {
     const page = pdf.addPage([PAGE_W, PAGE_H]);
     drawPageFrame(page, img.cornerLines);
 

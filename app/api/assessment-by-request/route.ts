@@ -52,7 +52,7 @@ export async function GET(req: Request) {
 
     const { data: requestRow, error: requestErr } = await supabaseAdmin
       .from("assessment_requests")
-      .select("request_id, athlete_id, status")
+      .select("request_id, athlete_id, status, title, created_at")
       .eq("request_id", requestId)
       .maybeSingle();
 
@@ -91,37 +91,67 @@ export async function GET(req: Request) {
       return json(403, { ok: false, error: "forbidden" });
     }
 
-    const { data: assessment, error: assessmentErr } = await supabaseAdmin
+    // 1) Caminho principal: assessment submitted/completed vinculado ao request_id.
+    const { data: completedAssessments, error: completedErr } = await supabaseAdmin
       .from("assessments")
       .select("assessment_id, request_id, athlete_id, status, submitted_at, created_at")
       .eq("request_id", requestId)
-      .eq("status", "submitted")
+      .eq("athlete_id", requestRow.athlete_id)
+      .in("status", ["submitted", "completed"])
       .order("submitted_at", { ascending: false, nullsFirst: false })
       .order("created_at", { ascending: false })
-      .limit(1)
-      .maybeSingle();
+      .limit(10);
 
-    if (assessmentErr) {
+    if (completedErr) {
       return json(500, {
         ok: false,
-        error: `failed to read submitted assessment: ${assessmentErr.message}`,
+        error: `failed to read completed assessments: ${completedErr.message}`,
       });
     }
 
-    if (!assessment?.assessment_id) {
-      return json(404, {
+    const completed = completedAssessments?.[0];
+
+    if (completed?.assessment_id) {
+      return json(200, {
+        ok: true,
+        request_id: requestId,
+        assessment_id: completed.assessment_id,
+        assessment_status: completed.status,
+        submitted_at: completed.submitted_at,
+        source: "completed_assessment_by_request",
+      });
+    }
+
+    // 2) Diagnóstico/fallback controlado:
+    // busca qualquer assessment vinculado ao request para explicar melhor o erro.
+    const { data: anyAssessments, error: anyErr } = await supabaseAdmin
+      .from("assessments")
+      .select("assessment_id, request_id, athlete_id, status, submitted_at, created_at")
+      .eq("request_id", requestId)
+      .eq("athlete_id", requestRow.athlete_id)
+      .order("created_at", { ascending: false })
+      .limit(10);
+
+    if (anyErr) {
+      return json(500, {
         ok: false,
-        error: "no submitted assessment found for this request_id",
-        request_status: requestRow.status,
+        error: `failed to read assessments for diagnostics: ${anyErr.message}`,
       });
     }
 
-    return json(200, {
-      ok: true,
+    return json(404, {
+      ok: false,
+      error: "no submitted or completed assessment found for this request_id",
       request_id: requestId,
-      assessment_id: assessment.assessment_id,
-      assessment_status: assessment.status,
-      submitted_at: assessment.submitted_at,
+      request_status: requestRow.status,
+      request_title: requestRow.title,
+      linked_assessments_found: anyAssessments?.length ?? 0,
+      linked_assessment_statuses: (anyAssessments ?? []).map((a: any) => ({
+        assessment_id: a.assessment_id,
+        status: a.status,
+        submitted_at: a.submitted_at,
+        created_at: a.created_at,
+      })),
     });
   } catch (e: any) {
     return json(500, { ok: false, error: e?.message ?? String(e) });
