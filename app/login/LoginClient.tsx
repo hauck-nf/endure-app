@@ -327,7 +327,54 @@ export default function LoginClient() {
         </div>
       </div>
 
-      <style jsx>{`
+      
+      <footer className="login-footer">
+        <div className="login-footer-brand">
+          <span className="login-footer-line" />
+          <span>ENDURE</span>
+          <span className="login-footer-line" />
+        </div>
+
+        <div>Avaliação socioemocional para atletas de endurance</div>
+        <div className="login-footer-author">
+          Prof. Dr. Nelson Hauck Filho
+        </div>
+      </footer>
+<style jsx>{`
+        .login-footer {
+          margin: 24px auto 0;
+          padding: 18px 0 4px;
+          width: min(100%, 1180px);
+          text-align: center;
+          color: #64748b;
+          font-size: 13px;
+          line-height: 1.55;
+        }
+
+        .login-footer-brand {
+          display: inline-flex;
+          align-items: center;
+          justify-content: center;
+          gap: 10px;
+          margin-bottom: 8px;
+          color: #0f172a;
+          font-weight: 950;
+          letter-spacing: 0.2px;
+        }
+
+        .login-footer-line {
+          width: 36px;
+          height: 2px;
+          border-radius: 999px;
+          background: #0f172a;
+          display: inline-block;
+        }
+
+        .login-footer-author {
+          margin-top: 2px;
+          font-weight: 700;
+        }
+
         .login-shell {
           min-height: 100vh;
           background:

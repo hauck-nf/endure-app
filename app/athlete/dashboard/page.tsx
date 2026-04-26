@@ -594,13 +594,31 @@ export default function AthleteDashboard() {
           }
 
           .hero-card {
-            padding: 18px !important;
-            border-radius: 24px !important;
+            padding: 22px 18px !important;
+            border-radius: 26px !important;
+            min-height: 315px;
+            display: flex;
+            align-items: flex-end;
+          }
+
+          .hero-card::after {
+            content: "";
+            position: absolute;
+            inset: 0;
+            background: linear-gradient(180deg, rgba(15,23,42,.18), rgba(15,23,42,.72));
+            pointer-events: none;
+          }
+
+          .hero-card > div:last-child {
+            position: relative;
+            z-index: 2;
           }
 
           .hero-title {
-            font-size: 28px;
-            line-height: 1.08;
+            font-size: 30px;
+            line-height: 1.04;
+            letter-spacing: -0.9px;
+            text-shadow: 0 2px 14px rgba(0,0,0,.22);
           }
 
           .summary-grid {
@@ -609,18 +627,27 @@ export default function AthleteDashboard() {
           }
 
           .stat-card {
-            min-height: 126px;
-            padding: 14px !important;
+            min-height: 122px;
+            padding: 13px !important;
             border-radius: 22px !important;
           }
 
+          .stat-card p:first-child {
+            font-size: 10.5px !important;
+            line-height: 1.12 !important;
+            letter-spacing: .35px !important;
+          }
+
           .stat-value {
-            font-size: clamp(20px, 7.6vw, 28px) !important;
+            font-size: clamp(21px, 7.2vw, 27px) !important;
+            line-height: .95 !important;
+            letter-spacing: -0.7px !important;
           }
 
           .stat-helper {
             font-size: 11.5px !important;
-            line-height: 1.08 !important;
+            line-height: 1.12 !important;
+            margin-top: 7px !important;
           }
 
           .content-card {
@@ -897,9 +924,7 @@ export default function AthleteDashboard() {
               <p style={miniLabelStyle()}>Pendências</p>
 
               <h2 style={{ margin: "6px 0 0", fontSize: 22, lineHeight: 1.05 }}>
-                {pendingCount > 0
-                  ? `${pendingCount} avaliação${pendingCount > 1 ? "ões" : ""} pendente${pendingCount > 1 ? "s" : ""}`
-                  : "Nenhuma avaliação pendente"}
+                {pendingCount > 0 ? pendingTitle(pendingCount) : "Nenhuma avaliação pendente"}
               </h2>
 
               <p style={{ margin: "8px 0 0", color: "#64748b" }}>
@@ -933,6 +958,11 @@ export default function AthleteDashboard() {
       </div>
     </main>
   );
+}
+
+function pendingTitle(n: number) {
+  if (n === 1) return "1 avaliação pendente";
+  return `${n} avaliações pendentes`;
 }
 
 function StatCard({
@@ -1168,12 +1198,12 @@ function PercentileChart({
   points: { label: string; y: number }[];
   compact?: boolean;
 }) {
-  const W = compact ? 620 : 920;
-  const H = compact ? 430 : 340;
-  const padL = compact ? 52 : 70;
-  const padR = compact ? 20 : 24;
+  const W = compact ? 430 : 920;
+  const H = compact ? 455 : 340;
+  const padL = compact ? 44 : 70;
+  const padR = compact ? 16 : 24;
   const padT = 24;
-  const padB = compact ? 58 : 46;
+  const padB = compact ? 62 : 46;
   const innerW = W - padL - padR;
   const innerH = H - padT - padB;
 
@@ -1217,9 +1247,9 @@ function PercentileChart({
             minHeight: 34,
             padding: "7px 12px",
             borderRadius: 999,
-            background: "#ecfeff",
-            color: "#0f766e",
-            border: "1px solid #99f6e4",
+            background: "linear-gradient(135deg, #ecfeff, #dbeafe)",
+            color: "#075985",
+            border: "1px solid #7dd3fc",
             fontSize: compact ? 11.5 : 12.5,
             fontWeight: 900,
           }}

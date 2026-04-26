@@ -1,28 +1,8 @@
-﻿"use client";
+"use client";
 
 import { useState } from "react";
 import { supabaseBrowser } from "@/src/lib/supabaseBrowser";
-
-function cancelButtonStyle(disabled = false): React.CSSProperties {
-  return {
-    display: "inline-flex",
-    alignItems: "center",
-    justifyContent: "center",
-    width: "100%",
-    minHeight: 38,
-    padding: "0 12px",
-    borderRadius: 12,
-    border: "1px solid #fecaca",
-    background: "#fff",
-    color: disabled ? "#9ca3af" : "#b91c1c",
-    fontSize: 13,
-    fontWeight: 600,
-    cursor: disabled ? "not-allowed" : "pointer",
-    whiteSpace: "nowrap",
-    fontFamily: "inherit",
-    opacity: disabled ? 0.7 : 1,
-  };
-}
+import { PremiumButton } from "@/src/components/ui/premium";
 
 export default function CancelButton({
   requestId,
@@ -31,57 +11,42 @@ export default function CancelButton({
   requestId: string;
   disabled?: boolean;
 }) {
-  const [loading, setLoading] = useState(false);
-  const [msg, setMsg] = useState<string | null>(null);
+  const [busy, setBusy] = useState(false);
 
   async function cancel() {
-    if (disabled || loading) return;
+    if (disabled || busy) return;
 
-    const ok = window.confirm("Cancelar esta avaliação pendente?");
+    const ok = window.confirm("Cancelar esta avaliação designada?");
+
     if (!ok) return;
 
     try {
-      setLoading(true);
-      setMsg(null);
+      setBusy(true);
 
       const { error } = await supabaseBrowser
         .from("assessment_requests")
         .update({ status: "cancelled" })
         .eq("request_id", requestId);
 
-      if (error) throw new Error(error.message);
+      if (error) throw error;
 
-      setMsg("Avaliação cancelada.");
-      setTimeout(() => window.location.reload(), 450);
+      window.location.reload();
     } catch (e: any) {
-      setMsg(e?.message ?? "Erro ao cancelar.");
+      alert(e?.message ?? "Erro ao cancelar avaliação.");
     } finally {
-      setLoading(false);
+      setBusy(false);
     }
   }
 
   return (
-    <div style={{ display: "grid", gap: 8 }}>
-      <button
-        type="button"
-        onClick={cancel}
-        disabled={disabled || loading}
-        style={cancelButtonStyle(disabled || loading)}
-      >
-        {loading ? "Cancelando..." : "Cancelar"}
-      </button>
-
-      {msg ? (
-        <div
-          style={{
-            fontSize: 12,
-            color: "#64748b",
-            lineHeight: 1.5,
-          }}
-        >
-          {msg}
-        </div>
-      ) : null}
-    </div>
+    <PremiumButton
+      tone="danger"
+      disabled={disabled || busy}
+      onClick={cancel}
+      full
+      style={{ minHeight: 38, fontSize: 13 }}
+    >
+      {busy ? "Cancelando..." : "Cancelar"}
+    </PremiumButton>
   );
 }
