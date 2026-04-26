@@ -341,9 +341,335 @@ export default function LoginClient() {
         </div>
       </footer>
 <style jsx>{`
+        .login-shell {
+          min-height: calc(100vh - 110px);
+          background:
+            radial-gradient(circle at top left, rgba(20,184,166,.15), transparent 30%),
+            radial-gradient(circle at top right, rgba(249,115,22,.12), transparent 28%),
+            linear-gradient(180deg, #f8fafc 0%, #eef2ff 52%, #f8fafc 100%);
+          padding: 24px 16px 18px;
+          display: grid;
+          place-items: center;
+          overflow: hidden;
+        }
+
+        .login-wrap {
+          width: min(100%, 1180px);
+          display: grid;
+          gap: 18px;
+          box-sizing: border-box;
+        }
+
+        .brand-panel,
+        .form-panel {
+          border-radius: 30px;
+          padding: 24px;
+          box-shadow: 0 24px 70px rgba(15, 23, 42, 0.10);
+          box-sizing: border-box;
+          min-width: 0;
+        }
+
+        .brand-panel {
+          position: relative;
+          overflow: hidden;
+          min-height: 560px;
+          background:
+            radial-gradient(circle at 15% 10%, rgba(45,212,191,.24), transparent 28%),
+            radial-gradient(circle at 100% 0%, rgba(249,115,22,.18), transparent 26%),
+            linear-gradient(135deg, rgba(15,23,42,.98), rgba(30,41,59,.97));
+          border: 1px solid rgba(148,163,184,.22);
+          color: #ffffff;
+          display: flex;
+          flex-direction: column;
+          justify-content: flex-end;
+        }
+
+        .brand-panel::before {
+          content: "";
+          position: absolute;
+          inset: 0;
+          background:
+            linear-gradient(180deg, rgba(15,23,42,.04), rgba(15,23,42,.70)),
+            radial-gradient(circle at 45% 50%, rgba(255,255,255,.08), transparent 42%);
+          pointer-events: none;
+        }
+
+        .brand-panel > * {
+          position: relative;
+          z-index: 1;
+        }
+
+        .form-panel {
+          background: rgba(255,255,255,.94);
+          border: 1px solid rgba(226,232,240,.92);
+          backdrop-filter: blur(12px);
+          align-self: center;
+        }
+
+        .badge,
+        .secure-badge {
+          display: inline-flex;
+          align-items: center;
+          gap: 8px;
+          border-radius: 999px;
+          font-size: 12px;
+          font-weight: 900;
+          letter-spacing: 0.35px;
+        }
+
+        .badge {
+          border: 1px solid rgba(153,246,228,.35);
+          background: rgba(15,23,42,.38);
+          color: #99f6e4;
+          padding: 8px 12px;
+          backdrop-filter: blur(8px);
+          width: fit-content;
+        }
+
+        .secure-badge {
+          border: 1px solid #e2e8f0;
+          background: #f8fafc;
+          color: #334155;
+          padding: 7px 11px;
+        }
+
+        .brand-header {
+          display: flex;
+          align-items: center;
+          gap: 13px;
+          margin-top: 22px;
+        }
+
+        .logo-box {
+          width: 54px;
+          height: 54px;
+          border-radius: 18px;
+          border: 1px solid rgba(255,255,255,.20);
+          background: rgba(255,255,255,.96);
+          box-shadow: 0 18px 38px rgba(0, 0, 0, 0.20);
+          display: grid;
+          place-items: center;
+          flex: 0 0 auto;
+        }
+
+        .logo-image {
+          width: 31px;
+          height: 31px;
+          object-fit: contain;
+        }
+
+        .brand-name {
+          font-weight: 950;
+          letter-spacing: 1px;
+          font-size: 23px;
+          color: #ffffff;
+        }
+
+        .brand-subtitle {
+          color: #cbd5e1;
+          font-size: 14px;
+          margin-top: 2px;
+        }
+
+        .hero-title {
+          margin: 28px 0 14px;
+          font-size: clamp(2.45rem, 6vw, 4.35rem);
+          line-height: .96;
+          letter-spacing: -1.8px;
+          color: #ffffff;
+          max-width: 850px;
+          text-shadow: 0 2px 20px rgba(0,0,0,.22);
+        }
+
+        .hero-text {
+          margin: 0;
+          color: #dbeafe;
+          font-size: 15.5px;
+          line-height: 1.82;
+          max-width: 780px;
+        }
+
+        .benefit-list {
+          display: grid;
+          grid-template-columns: repeat(3, minmax(0, 1fr));
+          gap: 12px;
+          margin-top: 24px;
+        }
+
+        .benefit-card {
+          border: 1px solid rgba(226,232,240,.16);
+          border-radius: 20px;
+          padding: 16px;
+          background: rgba(255,255,255,.08);
+          backdrop-filter: blur(10px);
+          box-shadow: inset 0 1px 0 rgba(255,255,255,.08);
+        }
+
+        .benefit-label {
+          font-size: 12px;
+          color: #99f6e4;
+          font-weight: 900;
+          letter-spacing: .25px;
+          text-transform: uppercase;
+        }
+
+        .benefit-title {
+          margin-top: 8px;
+          font-weight: 950;
+          font-size: 18px;
+          color: #ffffff;
+          line-height: 1.18;
+          letter-spacing: -0.3px;
+        }
+
+        .benefit-text {
+          margin: 10px 0 0;
+          color: #cbd5e1;
+          line-height: 1.62;
+          font-size: 13.5px;
+        }
+
+        .form-title {
+          font-size: 30px;
+          font-weight: 950;
+          margin-top: 14px;
+          color: #0f172a;
+          letter-spacing: -0.6px;
+          line-height: 1.05;
+        }
+
+        .form-subtitle {
+          color: #64748b;
+          margin-top: 9px;
+          line-height: 1.65;
+          font-size: 15px;
+        }
+
+        .mode-switch {
+          display: flex;
+          gap: 8px;
+          background: #f1f5f9;
+          padding: 6px;
+          border-radius: 18px;
+          border: 1px solid #e2e8f0;
+          margin-top: 20px;
+        }
+
+        .mode-btn {
+          flex: 1;
+          height: 44px;
+          border-radius: 14px;
+          border: 1px solid transparent;
+          background: transparent;
+          color: #0f172a;
+          font-weight: 900;
+          cursor: pointer;
+          font-family: inherit;
+        }
+
+        .mode-btn.active {
+          background: linear-gradient(180deg, #111827 0%, #0f172a 100%);
+          color: #ffffff;
+          box-shadow: 0 14px 28px rgba(15,23,42,.16);
+        }
+
+        .form-grid {
+          display: grid;
+          gap: 14px;
+          margin-top: 20px;
+        }
+
+        .field {
+          display: grid;
+          gap: 7px;
+        }
+
+        .field-label {
+          font-size: 13px;
+          color: #475569;
+          font-weight: 900;
+        }
+
+        .field-input {
+          height: 52px;
+          padding: 0 16px;
+          border-radius: 16px;
+          border: 1px solid #cbd5e1;
+          background: #ffffff;
+          outline: none;
+          font-size: 15px;
+          color: #0f172a;
+          font-family: inherit;
+          transition: border-color .15s ease, box-shadow .15s ease;
+        }
+
+        .field-input:focus {
+          border-color: #14b8a6;
+          box-shadow: 0 0 0 4px rgba(20,184,166,.12);
+        }
+
+        .submit-btn {
+          height: 52px;
+          border-radius: 16px;
+          border: 1px solid #0f172a;
+          background: linear-gradient(180deg, #111827 0%, #0f172a 100%);
+          color: #ffffff;
+          font-weight: 950;
+          font-size: 15px;
+          cursor: pointer;
+          font-family: inherit;
+          box-shadow: 0 18px 34px rgba(15,23,42,.18);
+          transition: transform .15s ease, box-shadow .15s ease, opacity .15s ease;
+        }
+
+        .submit-btn:hover {
+          transform: translateY(-1px);
+          box-shadow: 0 22px 42px rgba(15,23,42,.22);
+        }
+
+        .submit-btn:disabled {
+          background: #334155;
+          cursor: wait;
+          opacity: .82;
+          transform: none;
+          box-shadow: none;
+        }
+
+        .message-box {
+          padding: 14px;
+          border-radius: 16px;
+          font-size: 14px;
+          line-height: 1.7;
+          font-weight: 700;
+        }
+
+        .helper-box {
+          display: grid;
+          gap: 10px;
+          border: 1px solid #e5e7eb;
+          background:
+            radial-gradient(circle at top left, rgba(20,184,166,.10), transparent 36%),
+            #f8fafc;
+          border-radius: 20px;
+          padding: 16px;
+          margin-top: 18px;
+        }
+
+        .helper-title {
+          font-weight: 900;
+          color: #0f172a;
+          font-size: 14px;
+        }
+
+        .helper-text {
+          color: #64748b;
+          font-size: 13px;
+          line-height: 1.65;
+        }
+
         .login-footer {
-          margin: 24px auto 0;
-          padding: 18px 0 4px;
+          margin: 0 auto;
+          padding: 18px 16px 26px;
           width: min(100%, 1180px);
           text-align: center;
           color: #64748b;
@@ -375,287 +701,72 @@ export default function LoginClient() {
           font-weight: 700;
         }
 
-        .login-shell {
-          min-height: 100vh;
-          background:
-            radial-gradient(circle at top left, rgba(59,130,246,.08), transparent 28%),
-            radial-gradient(circle at bottom right, rgba(15,23,42,.06), transparent 28%),
-            linear-gradient(180deg, #f8fafc 0%, #eef2ff 50%, #f8fafc 100%);
-          padding: 20px 16px 32px;
-          display: grid;
-          place-items: center;
-        }
-
-        .login-wrap {
-          width: 100%;
-          max-width: 1180px;
-          display: grid;
-          gap: 20px;
-        }
-
-        .brand-panel,
-        .form-panel {
-          background: #ffffff;
-          border: 1px solid #e5e7eb;
-          border-radius: 24px;
-          padding: 22px;
-          box-shadow: 0 18px 48px rgba(15, 23, 42, 0.06);
-        }
-
-        .brand-panel {
-          background: linear-gradient(
-            180deg,
-            rgba(255,255,255,1) 0%,
-            rgba(248,250,252,1) 100%
-          );
-        }
-
-        .badge,
-        .secure-badge {
-          display: inline-flex;
-          align-items: center;
-          gap: 8px;
-          border-radius: 999px;
-          font-size: 12px;
-          font-weight: 800;
-          letter-spacing: 0.3px;
-        }
-
-        .badge {
-          border: 1px solid #dbeafe;
-          background: #eff6ff;
-          color: #1d4ed8;
-          padding: 8px 12px;
-        }
-
-        .secure-badge {
-          border: 1px solid #e2e8f0;
-          background: #f8fafc;
-          color: #334155;
-          padding: 7px 11px;
-        }
-
-        .brand-header {
-          display: flex;
-          align-items: center;
-          gap: 12px;
-          margin-top: 18px;
-        }
-
-        .logo-box {
-          width: 48px;
-          height: 48px;
-          border-radius: 16px;
-          border: 1px solid #e5e7eb;
-          background: linear-gradient(
-            180deg,
-            rgba(255,255,255,.96) 0%,
-            rgba(241,245,249,.96) 100%
-          );
-          box-shadow: 0 12px 30px rgba(15, 23, 42, 0.08);
-          display: grid;
-          place-items: center;
-          flex: 0 0 auto;
-        }
-
-        .logo-image {
-          width: 26px;
-          height: 26px;
-          object-fit: contain;
-        }
-
-        .brand-name {
-          font-weight: 900;
-          letter-spacing: 0.8px;
-          font-size: 22px;
-          color: #0f172a;
-        }
-
-        .brand-subtitle {
-          color: #64748b;
-          font-size: 14px;
-        }
-
-        .hero-title {
-          margin: 18px 0 12px;
-          font-size: clamp(1.95rem, 6vw, 3.8rem);
-          line-height: 1.05;
-          letter-spacing: -1.2px;
-          color: #0f172a;
-          max-width: 820px;
-        }
-
-        .hero-text {
-          margin: 0;
-          color: #475569;
-          font-size: 15px;
-          line-height: 1.85;
-          max-width: 760px;
-        }
-
-        .benefit-list {
-          display: grid;
-          gap: 12px;
-          margin-top: 18px;
-        }
-
-        .benefit-card {
-          border: 1px solid #e5e7eb;
-          border-radius: 18px;
-          padding: 16px;
-          background: #ffffff;
-        }
-
-        .benefit-label {
-          font-size: 13px;
-          color: #64748b;
-        }
-
-        .benefit-title {
-          margin-top: 8px;
-          font-weight: 900;
-          font-size: 20px;
-          color: #0f172a;
-          line-height: 1.25;
-        }
-
-        .benefit-text {
-          margin: 10px 0 0;
-          color: #64748b;
-          line-height: 1.75;
-          font-size: 14px;
-        }
-
-        .form-title {
-          font-size: 26px;
-          font-weight: 900;
-          margin-top: 14px;
-          color: #0f172a;
-        }
-
-        .form-subtitle {
-          color: #64748b;
-          margin-top: 8px;
-          line-height: 1.7;
-          font-size: 15px;
-        }
-
-        .mode-switch {
-          display: flex;
-          gap: 8px;
-          background: #f1f5f9;
-          padding: 6px;
-          border-radius: 18px;
-          border: 1px solid #e2e8f0;
-          margin-top: 18px;
-        }
-
-        .mode-btn {
-          flex: 1;
-          height: 44px;
-          border-radius: 14px;
-          border: 1px solid transparent;
-          background: transparent;
-          color: #0f172a;
-          font-weight: 800;
-          cursor: pointer;
-        }
-
-        .mode-btn.active {
-          background: linear-gradient(180deg, #111827 0%, #0f172a 100%);
-          color: #ffffff;
-        }
-
-        .form-grid {
-          display: grid;
-          gap: 14px;
-          margin-top: 18px;
-        }
-
-        .field {
-          display: grid;
-          gap: 7px;
-        }
-
-        .field-label {
-          font-size: 13px;
-          color: #475569;
-          font-weight: 800;
-        }
-
-        .field-input {
-          height: 50px;
-          padding: 0 16px;
-          border-radius: 16px;
-          border: 1px solid #cbd5e1;
-          background: #ffffff;
-          outline: none;
-          font-size: 15px;
-          color: #0f172a;
-        }
-
-        .submit-btn {
-          height: 50px;
-          border-radius: 16px;
-          border: 1px solid #0f172a;
-          background: linear-gradient(180deg, #111827 0%, #0f172a 100%);
-          color: #ffffff;
-          font-weight: 900;
-          font-size: 15px;
-          cursor: pointer;
-        }
-
-        .submit-btn:disabled {
-          background: #334155;
-          cursor: wait;
-        }
-
-        .message-box {
-          padding: 14px;
-          border-radius: 16px;
-          font-size: 14px;
-          line-height: 1.7;
-        }
-
-        .helper-box {
-          display: grid;
-          gap: 12px;
-          border: 1px solid #e5e7eb;
-          background: #f8fafc;
-          border-radius: 18px;
-          padding: 16px;
-          margin-top: 18px;
-        }
-
-        .helper-title {
-          font-weight: 800;
-          color: #0f172a;
-          font-size: 14px;
-        }
-
-        .helper-text {
-          color: #64748b;
-          font-size: 13px;
-          line-height: 1.7;
-        }
-
         @media (min-width: 960px) {
           .login-shell {
-            padding: 28px 24px 40px;
+            padding: 28px 24px 18px;
           }
 
           .login-wrap {
-            grid-template-columns: 1.05fr 0.95fr;
+            grid-template-columns: minmax(0, 1.1fr) minmax(360px, .9fr);
             align-items: stretch;
           }
 
           .brand-panel,
           .form-panel {
-            padding: 28px;
+            padding: 30px;
+          }
+        }
+
+        @media (max-width: 959px) {
+          .brand-panel {
+            min-height: auto;
           }
 
+          .benefit-list {
+            grid-template-columns: 1fr;
+          }
+        }
+
+        @media (max-width: 560px) {
+          .login-shell {
+            padding: 12px;
+            place-items: start center;
+          }
+
+          .brand-panel,
           .form-panel {
-            align-self: center;
+            border-radius: 26px;
+            padding: 20px;
+          }
+
+          .brand-panel {
+            min-height: 520px;
+          }
+
+          .hero-title {
+            font-size: 2.45rem;
+            letter-spacing: -1.2px;
+          }
+
+          .hero-text {
+            font-size: 14.5px;
+            line-height: 1.72;
+          }
+
+          .benefit-card {
+            padding: 14px;
+          }
+
+          .benefit-title {
+            font-size: 17px;
+          }
+
+          .form-title {
+            font-size: 28px;
+          }
+
+          .login-footer {
+            padding-bottom: 22px;
           }
         }
       `}</style>
