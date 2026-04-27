@@ -337,7 +337,7 @@ export default function LoginClient() {
 
         <div>Avaliação socioemocional para atletas de endurance</div>
         <div className="login-footer-author">
-          Prof. Dr. Nelson Hauck Filho
+          Prof. Dr. Nelson Hauck Filho · hauck.nf@gmail.com
         </div>
       </footer>
 <style jsx>{`
