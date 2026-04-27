@@ -1,9 +1,12 @@
-﻿import { NextResponse } from "next/server";
+import { NextResponse } from "next/server";
 import { createClient as createSupabaseAdmin } from "@supabase/supabase-js";
 import { scoreEndureAssessment } from "@/src/lib/endure/scoring";
 import { buildEndurePremiumPdf } from "@/src/lib/reportPdfPremium";
+import { displayScaleName } from "@/src/lib/endure/displayNames";
 
 export const dynamic = "force-dynamic";
+
+const CURRENT_REPORT_VERSION = "premium_v4_pt_scale_labels";
 
 function json(status: number, body: any) {
   return NextResponse.json(body, { status });
@@ -42,6 +45,7 @@ export async function POST(req: Request) {
 
     const body = await req.json().catch(() => ({}));
     const assessment_id = String(body?.assessment_id ?? "").trim();
+    const force = Boolean(body?.force ?? body?.regenerate);
 
     if (!assessment_id) {
       return json(400, { ok: false, error: "missing assessment_id" });
@@ -49,7 +53,7 @@ export async function POST(req: Request) {
 
     const { data: existingReport, error: eExistingReport } = await supabaseAdmin
       .from("assessment_reports_v2")
-      .select("assessment_id, pdf_path")
+      .select("assessment_id, pdf_path, report_version")
       .eq("assessment_id", assessment_id)
       .maybeSingle();
 
@@ -60,7 +64,11 @@ export async function POST(req: Request) {
       });
     }
 
-    if (existingReport?.pdf_path) {
+    if (
+      existingReport?.pdf_path &&
+      existingReport?.report_version === CURRENT_REPORT_VERSION &&
+      !force
+    ) {
       return json(200, {
         ok: true,
         pdf_path: existingReport.pdf_path,
@@ -106,81 +114,71 @@ export async function POST(req: Request) {
       return json(403, { ok: false, error: "forbidden" });
     }
 
-    let scored: any = null;
+    const instrument_version = String(assessment.instrument_version ?? "").trim();
 
-    const { data: existingScores, error: eScores } = await supabaseAdmin
-      .from("assessment_scores")
-      .select("assessment_id, scores_json")
-      .eq("assessment_id", assessment_id)
-      .maybeSingle();
-
-    if (eScores) {
-      return json(500, {
+    if (!instrument_version) {
+      return json(400, {
         ok: false,
-        error: `failed to read assessment_scores: ${eScores.message}`,
+        error: "assessment missing instrument_version",
       });
     }
 
-    if (existingScores?.scores_json) {
-      scored = existingScores.scores_json;
-    } else {
-      const instrument_version = String(assessment.instrument_version ?? "").trim();
+    const { data: instrument_items, error: eItems } = await supabaseAdmin
+      .from("instrument_items")
+      .select("*");
 
-      if (!instrument_version) {
-        return json(400, {
-          ok: false,
-          error: "assessment missing instrument_version",
-        });
-      }
-
-      const { data: instrument_items, error: eItems } = await supabaseAdmin
-        .from("instrument_items")
-        .select("*");
-
-      if (eItems || !instrument_items) {
-        return json(500, { ok: false, error: "failed to load instrument_items" });
-      }
-
-      const { data: scale_norms, error: eNorms } = await supabaseAdmin
-        .from("scale_norms")
-        .select("*");
-
-      if (eNorms || !scale_norms) {
-        return json(500, { ok: false, error: "failed to load scale_norms" });
-      }
-
-      const { data: factor_band_texts, error: eBands } = await supabaseAdmin
-        .from("factor_band_texts")
-        .select("*");
-
-      if (eBands || !factor_band_texts) {
-        return json(500, { ok: false, error: "failed to load factor_band_texts" });
-      }
-
-      scored = scoreEndureAssessment({
-        instrument_version,
-        raw_responses: (assessment.raw_responses ?? {}) as any,
-        instrument_items: instrument_items as any,
-        scale_norms: scale_norms as any,
-        factor_band_texts: factor_band_texts as any,
+    if (eItems || !instrument_items) {
+      return json(500, {
+        ok: false,
+        error: `failed to load instrument_items: ${eItems?.message ?? ""}`,
       });
+    }
 
-      const { error: eUpScores } = await supabaseAdmin
-        .from("assessment_scores")
-        .upsert(
-          {
-            assessment_id,
-            scores_json: scored,
-          } as any,
-          { onConflict: "assessment_id" }
-        );
+    const { data: scale_norms, error: eNorms } = await supabaseAdmin
+      .from("scale_norms")
+      .select("*");
 
-      if (eUpScores) {
-        return json(500, {
-          ok: false,
-          error: `assessment_scores upsert failed: ${eUpScores.message}`,
-        });
-      }
+    if (eNorms || !scale_norms) {
+      return json(500, {
+        ok: false,
+        error: `failed to load scale_norms: ${eNorms?.message ?? ""}`,
+      });
+    }
+
+    const { data: factor_band_texts, error: eBands } = await supabaseAdmin
+      .from("factor_band_texts")
+      .select("*");
+
+    if (eBands || !factor_band_texts) {
+      return json(500, {
+        ok: false,
+        error: `failed to load factor_band_texts: ${eBands?.message ?? ""}`,
+      });
+    }
+
+    const scored = scoreEndureAssessment({
+      instrument_version,
+      raw_responses: (assessment.raw_responses ?? {}) as any,
+      instrument_items: instrument_items as any,
+      scale_norms: scale_norms as any,
+      factor_band_texts: factor_band_texts as any,
+    });
+
+    const { error: eUpScores } = await supabaseAdmin
+      .from("assessment_scores")
+      .upsert(
+        {
+          assessment_id,
+          scores_json: scored,
+        } as any,
+        { onConflict: "assessment_id" }
+      );
+
+    if (eUpScores) {
+      return json(500, {
+        ok: false,
+        error: `assessment_scores upsert failed: ${eUpScores.message}`,
+      });
     }
 
     const { data: instrument_items_for_defs, error: eDefs } = await supabaseAdmin
@@ -211,6 +209,7 @@ export async function POST(req: Request) {
       return {
         score_scale: scaleName,
         scale: scaleName,
+        display_scale: displayScaleName(scaleName),
         definition: definitionByScale.get(scaleName) ?? null,
         raw_score: f.raw_score == null ? null : Number(f.raw_score),
         t_score: f.t_score == null ? null : Number(f.t_score),
@@ -251,8 +250,8 @@ export async function POST(req: Request) {
         {
           assessment_id,
           pdf_path: pdfPath,
-          report_version: "premium_v1",
-          scoring_version: "ENDURE_score_v2_scale_schema",
+          report_version: CURRENT_REPORT_VERSION,
+          scoring_version: "ENDURE_score_v3_text_port_pt_labels",
           generated_at: now,
           updated_at: now,
         } as any,
@@ -270,6 +269,9 @@ export async function POST(req: Request) {
       ok: true,
       pdf_path: pdfPath,
       cached: false,
+      report_version: CURRENT_REPORT_VERSION,
+      factors_with_text: factors.filter((f) => !!f.text_port).length,
+      factors_total: factors.length,
     });
   } catch (e: any) {
     return json(500, { ok: false, error: e?.message ?? String(e) });

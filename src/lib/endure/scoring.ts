@@ -9,6 +9,7 @@ export type InstrumentItem = {
   key?: number | string | null;
   item_text_port?: string | null;
   instruction?: string | null;
+  opt_json?: any;
   [key: string]: any;
 };
 
@@ -53,38 +54,66 @@ export type ScoreResult = {
   factors_by_key: Record<string, ScoredScale>;
 };
 
-const ELIGIBLE_SECTIONS = new Set([
-  "ENDURE",
-  "Rest & well-being",
-  "Socioemotional core",
-  "Well-being",
+const ELIGIBLE_SECTION_KEYS = new Set([
+  "endure",
+  "rest-&-well-being",
+  "rest-and-well-being",
+  "socioemocional-core",
+  "socioemotional-core",
+  "well-being",
 ]);
 
 function normText(x: any): string {
   return String(x ?? "").trim();
 }
 
-function canonicalScaleName(scale: any): string {
-  const original = normText(scale);
-  const key = original
+function normKey(x: any): string {
+  return normText(x)
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
     .toLowerCase()
     .replace(/_/g, "-")
-    .replace(/\s+/g, "-");
+    .replace(/\s+/g, "-")
+    .trim();
+}
+
+function isEligibleSection(section: any): boolean {
+  const raw = normText(section);
+
+  if (!raw) return true;
+
+  return ELIGIBLE_SECTION_KEYS.has(normKey(raw));
+}
+
+function canonicalScaleName(scale: any): string {
+  const original = normText(scale);
+  const key = normKey(original);
 
   const aliases: Record<string, string> = {
-    "strivings": "Perfectionism-strivings",
+    strivings: "Perfectionism-strivings",
     "perfectionism-strivings": "Perfectionism-strivings",
+    "perfectionism-striving": "Perfectionism-strivings",
 
-    "concerns": "Perfectionism-concerns",
+    concerns: "Perfectionism-concerns",
     "perfectionism-concerns": "Perfectionism-concerns",
+    "perfectionism-concern": "Perfectionism-concerns",
 
     "vigor/energia": "Vigor",
     "vigor-energia": "Vigor",
-    "energy": "Vigor",
-    "vigor": "Vigor"
+    energy: "Vigor",
+    vigor: "Vigor",
+
+    autodialogo: "Autodiálogo",
+    "auto-dialogo": "Autodiálogo",
+    selftalk: "Autodiálogo",
+    "self-talk": "Autodiálogo",
   };
 
   return aliases[key] ?? original;
+}
+
+function scaleKey(scale: any): string {
+  return normKey(canonicalScaleName(scale));
 }
 
 function normScale(row: any): string {
@@ -97,6 +126,7 @@ function parseMaybeNumber(x: any): number | null {
 
   const s = String(x).trim().replace(/\./g, "").replace(",", ".");
   const n = Number(s);
+
   return Number.isFinite(n) ? n : null;
 }
 
@@ -107,22 +137,50 @@ function parseMaybeInteger(x: any): number | null {
 }
 
 function normalizeBandLabelToKey(label: string | null | undefined): string | null {
-  const s = normText(label).toLowerCase();
+  const s = normKey(label);
+
   if (!s) return null;
   if (s === "baixo") return "low";
-  if (s === "médio" || s === "medio") return "mid";
+  if (s === "medio") return "mid";
   if (s === "alto") return "high";
-  if (s === "grupo clínico" || s === "grupo clinico") return "clinical";
-  if (s === "grupo controle") return "control";
+  if (s === "grupo-clinico") return "clinical";
+  if (s === "grupo-controle") return "control";
+
   return null;
 }
 
 function extractOptions(item: InstrumentItem): string[] {
   const out: string[] = [];
+
+  if (Array.isArray(item.opt_json)) {
+    for (const v of item.opt_json) {
+      if (typeof v === "string") out.push(v);
+      else if (v?.label) out.push(String(v.label));
+      else if (v?.text) out.push(String(v.text));
+      else if (v?.value) out.push(String(v.value));
+    }
+
+    if (out.length > 0) return out;
+  }
+
+  if (item.opt_json && typeof item.opt_json === "object") {
+    for (let i = 1; i <= 11; i++) {
+      const v =
+        item.opt_json[`opt${i}`] ??
+        item.opt_json[String(i)] ??
+        item.opt_json[i];
+
+      if (v) out.push(String(v));
+    }
+
+    if (out.length > 0) return out;
+  }
+
   for (let i = 1; i <= 11; i++) {
     const v = normText(item[`opt${i}`]);
     if (v) out.push(v);
   }
+
   return out;
 }
 
@@ -136,18 +194,22 @@ function mapResponseToOrdinal(value: any, item: InstrumentItem): number | null {
 
   const options = extractOptions(item);
   const k = options.length;
+
   if (!k) return null;
 
   const s = String(value).trim();
-
   const m = s.match(/^opt(\d+)$/i);
+
   if (m) {
     const n = Number(m[1]);
     if (Number.isFinite(n) && n >= 1 && n <= k) return n;
   }
 
   const asNum = Number(s);
-  if (Number.isFinite(asNum) && asNum >= 1 && asNum <= k) return asNum;
+
+  if (Number.isFinite(asNum) && asNum >= 1 && asNum <= k) {
+    return asNum;
+  }
 
   const idx = options.findIndex((t) => t === s);
   if (idx !== -1) return idx + 1;
@@ -161,7 +223,9 @@ function mapResponseToOrdinal(value: any, item: InstrumentItem): number | null {
 function invertIfNeeded(x: number, item: InstrumentItem): number {
   const k = optCount(item);
   const key = Number(item.key ?? 1);
-  if (key === -1 && k >= 2) return (k + 1) - x;
+
+  if (key === -1 && k >= 2) return k + 1 - x;
+
   return x;
 }
 
@@ -169,8 +233,10 @@ function percentileBand(percentile: number | null): { band: string; band_label: 
   if (percentile === null || Number.isNaN(percentile)) {
     return { band: "mid", band_label: "Médio" };
   }
+
   if (percentile <= 25) return { band: "low", band_label: "Baixo" };
   if (percentile <= 75) return { band: "mid", band_label: "Médio" };
+
   return { band: "high", band_label: "Alto" };
 }
 
@@ -178,6 +244,7 @@ function wellBeingBand(raw_score: number): { band: string; band_label: string } 
   if (raw_score >= 1 && raw_score <= 12) {
     return { band: "clinical", band_label: "Grupo clínico" };
   }
+
   return { band: "control", band_label: "Grupo controle" };
 }
 
@@ -197,10 +264,7 @@ export function scoreEndureAssessment(args: {
   } = args;
 
   const items = instrument_items
-    .filter((it) => {
-      const sec = normText(it.quest_section);
-      return !sec || ELIGIBLE_SECTIONS.has(sec);
-    })
+    .filter((it) => isEligibleSection(it.quest_section))
     .filter((it) => !!normScale(it))
     .filter((it) => optCount(it) > 0)
     .filter((it) => {
@@ -209,31 +273,33 @@ export function scoreEndureAssessment(args: {
     });
 
   const normMap = new Map<string, NormRow>();
+
   for (const r of scale_norms) {
     const rowVersion = normText(r.instrument_version);
     if (rowVersion && rowVersion !== instrument_version) continue;
 
-    const scale = normScale(r);
+    const scale = scaleKey(r.scale);
     const raw = parseMaybeInteger(r.raw_score);
+
     if (!scale || raw === null) continue;
 
     normMap.set(`${scale}__${raw}`, r);
   }
 
   const textMap = new Map<string, BandTextRow>();
+
   for (const r of factor_band_texts) {
     const rowVersion = normText(r.instrument_version);
     if (rowVersion && rowVersion !== instrument_version) continue;
 
-    const scale = normScale(r);
+    const scale = scaleKey(r.scale);
     if (!scale) continue;
 
-    const band = normText(r.band).toLowerCase();
+    const band = normKey(r.band);
     const bandLabel = normText(r.band_label);
     const bandFromLabel = normalizeBandLabelToKey(bandLabel);
 
     if (band) textMap.set(`${scale}__${band}`, r);
-    if (bandLabel) textMap.set(`${scale}__label__${bandLabel}`, r);
     if (bandFromLabel) textMap.set(`${scale}__${bandFromLabel}`, r);
   }
 
@@ -245,6 +311,7 @@ export function scoreEndureAssessment(args: {
 
     const rawVal = raw_responses[it.itemcode];
     const ord = mapResponseToOrdinal(rawVal, it);
+
     if (ord === null) continue;
 
     const ord2 = invertIfNeeded(ord, it);
@@ -272,7 +339,7 @@ export function scoreEndureAssessment(args: {
       band = wb.band;
       band_label = wb.band_label;
     } else {
-      const norm = normMap.get(`${scale}__${raw_score}`) ?? null;
+      const norm = normMap.get(`${scaleKey(scale)}__${raw_score}`) ?? null;
 
       percentile = parseMaybeNumber(norm?.percentile);
       t_score = parseMaybeNumber(norm?.t_score);
@@ -284,8 +351,8 @@ export function scoreEndureAssessment(args: {
     }
 
     const txtRow =
-      textMap.get(`${scale}__${band}`) ??
-      textMap.get(`${scale}__label__${band_label}`) ??
+      textMap.get(`${scaleKey(scale)}__${band}`) ??
+      textMap.get(`${scaleKey(scale)}__${normalizeBandLabelToKey(band_label) ?? ""}`) ??
       null;
 
     const scored: ScoredScale = {

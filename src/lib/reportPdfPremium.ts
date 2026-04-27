@@ -7,6 +7,7 @@ import {
   type PDFPage,
 } from "pdf-lib";
 import { loadReportAssets, type ReportAssets } from "./reports/reportAssets";
+import { displayScaleName } from "./endure/displayNames";
 
 type AthleteRow = {
   full_name: string | null;
@@ -77,14 +78,14 @@ const WORKING_MODEL_PT: Record<string, string[]> = {
     "Depression",
     "Fatigue",
     "Rumination",
-    "Mastery avoidance goals",
-    "Performance avoidance goals",
+    "Mastery goals",
+    "Performance goals",
     "Perfectionism-concerns",
   ],
   "Afetividade positiva": [
     "Vigor",
-    "Mastery approach goals",
-    "Performance approach goals",
+    "Mastery goals",
+    "Performance goals",
     "Self-efficacy",
   ],
   "Autorregulação": [
@@ -975,6 +976,17 @@ function drawWorkingModelCard(opts: {
   return cardH;
 }
 
+
+function factorDisplayName(f: any): string {
+  return displayScaleName(f?.score_scale ?? f?.scale ?? "");
+}
+
+function factorName(f: any): string {
+  const direct = String(f?.display_scale ?? "").trim();
+  if (direct) return direct;
+
+  return displayScaleName(f?.score_scale ?? f?.scale ?? "");
+}
 export async function buildEndurePremiumPdf(params: {
   athlete: AthleteRow;
   assessment: AssessmentRow;
@@ -1448,10 +1460,10 @@ export async function buildEndurePremiumPdf(params: {
   const displayNameByKey: Record<string, string> = {
     "autodiálogo": "Autodiálogo",
     "grit": "Grit",
-    "mastery-approach-goals": "Mastery approach goals",
+    "mastery-approach-goals": "Mastery goals",
     "mental-practice": "Mental practice",
     "mindfulness": "Mindfulness",
-    "performance-approach-goals": "Performance approach goals",
+    "performance-approach-goals": "Performance goals",
     "perfectionism-strivings": "Perfectionism-strivings",
     "self-efficacy": "Self-efficacy",
     "task-oriented-coping": "Task-oriented coping",
@@ -1461,7 +1473,7 @@ export async function buildEndurePremiumPdf(params: {
     "anxiety": "Anxiety",
     "depression": "Depression",
     "fatigue": "Fatigue",
-    "mastery-avoidance-goals": "Mastery avoidance goals",
+    "mastery-avoidance-goals": "Mastery goals",
     "perfectionism-concerns": "Perfectionism-concerns",
     "rumination": "Rumination"
   };
@@ -1646,7 +1658,7 @@ for (const factor of factorList) {
     drawHeader(page, img.logoLight, "FATORES SOCIOEMOCIONAIS", regular);
 
 
-    const title = cleanText(factor.score_scale) || "—";
+    const title = cleanText(factorName(factor)) || "—";
     page.drawText(title, {
       x: 28,
       y: PAGE_H - 162,

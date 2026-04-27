@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { useEffect, useMemo, useState } from "react";
 import { supabaseBrowser as supabase } from "@/src/lib/supabaseBrowser";
+import { displayScaleName, sortScaleNamesForDisplay } from "@/src/lib/endure/displayNames";
 import { getMyAthleteId } from "@/src/lib/athlete";
 
 type Row = {
@@ -416,9 +417,7 @@ export default function AthleteDashboardClient({ athleteIdOverride }: { athleteI
           }
         }
 
-        const instrumentScaleList = Array.from(scaleMap.values()).sort((a, b) =>
-          a.localeCompare(b)
-        );
+        const instrumentScaleList = sortScaleNamesForDisplay(Array.from(scaleMap.values()));
         if (instrumentScaleList.length > 0) {
           setScale((prev) => prev || instrumentScaleList[0]);
         } else {
@@ -882,7 +881,7 @@ export default function AthleteDashboardClient({ athleteIdOverride }: { athleteI
                 </label>
 
                 <select
-                  value={scale}
+                  value={displayScaleName(scale)}
                   onChange={(e) => setScale(e.target.value)}
                   style={{
                     width: "100%",
@@ -900,9 +899,7 @@ export default function AthleteDashboardClient({ athleteIdOverride }: { athleteI
                     <option value="">Sem escalas disponíveis</option>
                   ) : (
                     availableScales.map((s) => (
-                      <option key={s} value={s}>
-                        {s}
-                      </option>
+                      <option key={s} value={s}>{displayScaleName(s)}</option>
                     ))
                   )}
                 </select>
@@ -918,7 +915,7 @@ export default function AthleteDashboardClient({ athleteIdOverride }: { athleteI
                 <EmptyBox text="Ainda não há pontos históricos para esta escala." />
               ) : (
                 <PercentileChart
-                  title={scale}
+                  title={displayScaleName(scale)}
                   points={series.map((p) => ({
                     label: p.dateLabel,
                     y: Number(p.percentile),
