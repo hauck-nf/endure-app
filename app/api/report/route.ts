@@ -6,7 +6,7 @@ import { displayScaleName } from "@/src/lib/endure/displayNames";
 
 export const dynamic = "force-dynamic";
 
-const CURRENT_REPORT_VERSION = "premium_v4_pt_scale_labels";
+const CURRENT_REPORT_VERSION = "premium_v6_pt_labels_everywhere";
 
 function json(status: number, body: any) {
   return NextResponse.json(body, { status });

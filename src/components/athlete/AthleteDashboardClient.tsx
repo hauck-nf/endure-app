@@ -457,8 +457,24 @@ export default function AthleteDashboardClient({ athleteIdOverride }: { athleteI
   }, [rows]);
 
   const availableScales = useMemo(() => {
-    return instrumentScales.length > 0 ? instrumentScales : scoredScaleFallback;
-  }, [instrumentScales, scoredScaleFallback]);
+    const fromRows = new Set<string>();
+
+    for (const r of rows) {
+      const extracted = extractScales(r.scores_json);
+
+      for (const item of extracted) {
+        if (item?.scale) fromRows.add(item.scale);
+      }
+    }
+
+    const dataScales = sortScaleNamesForDisplay(Array.from(fromRows));
+
+    if (dataScales.length > 0) {
+      return dataScales;
+    }
+
+    return sortScaleNamesForDisplay(instrumentScales);
+  }, [rows, instrumentScales]);
 
   useEffect(() => {
     if (!scale && availableScales.length > 0) {

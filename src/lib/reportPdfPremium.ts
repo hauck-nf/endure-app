@@ -29,6 +29,7 @@ type AssessmentRow = {
 
 type FactorScore = {
   score_scale: string;
+  display_scale?: string | null;
   definition?: string | null;
   raw_score: number | null;
   t_score: number | null;
@@ -241,7 +242,7 @@ function computeBroadDimensions(factors: FactorScore[]): BroadDimension[] {
 
 function sortFactorsAlphabetically(factors: FactorScore[]) {
   return [...factors].sort((a, b) =>
-    cleanText(a.score_scale).localeCompare(cleanText(b.score_scale), "pt-BR")
+    factorLabel(a).localeCompare(factorLabel(b), "pt-BR")
   );
 }
 
@@ -987,6 +988,13 @@ function factorName(f: any): string {
 
   return displayScaleName(f?.score_scale ?? f?.scale ?? "");
 }
+
+function factorLabel(f: any): string {
+  const direct = String(f?.display_scale ?? "").trim();
+  if (direct) return direct;
+
+  return displayScaleName(f?.score_scale ?? f?.scale ?? "");
+}
 export async function buildEndurePremiumPdf(params: {
   athlete: AthleteRow;
   assessment: AssessmentRow;
@@ -1281,7 +1289,7 @@ export async function buildEndurePremiumPdf(params: {
       let x = tableX + 10;
 
       const vals = [
-        cleanText(r.score_scale) || "—",
+        cleanText(factorLabel(r)) || "—",
         fmtNum(r.raw_score, 0),
         fmtNum(r.t_score, 0),
         fmtPct(r.percentile),
