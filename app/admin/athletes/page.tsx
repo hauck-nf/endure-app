@@ -128,7 +128,7 @@ export default function AdminAthletesPage() {
       const { data, error } = await supabaseBrowser
         .from("athletes")
         .select("*")
-        .order("created_at", { ascending: false });
+        .order("full_name", { ascending: true });
 
       if (error) throw error;
 
