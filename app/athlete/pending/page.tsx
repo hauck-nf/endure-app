@@ -4,10 +4,25 @@ import { createClient } from "@/src/lib/supabaseServer";
 
 export const dynamic = "force-dynamic";
 
+type RequestRow = {
+  request_id: string;
+  title: string | null;
+  status: string | null;
+  due_at: string | null;
+  created_at: string | null;
+};
+
 function fmtDate(s?: string | null) {
   if (!s) return "Sem prazo definido";
+
   try {
-    return new Date(s).toLocaleString("pt-BR");
+    return new Date(s).toLocaleDateString("pt-BR", {
+      day: "2-digit",
+      month: "2-digit",
+      year: "2-digit",
+      hour: "2-digit",
+      minute: "2-digit",
+    });
   } catch {
     return s;
   }
@@ -17,15 +32,16 @@ function statusLabel(status?: string | null) {
   if (status === "pending") return "Pendente";
   if (status === "in_progress") return "Em andamento";
   if (!status) return "Sem status";
+
   return status;
 }
 
-function statusStyle(status?: string | null): React.CSSProperties {
+function statusTone(status?: string | null) {
   if (status === "pending") {
     return {
-      background: "#fff7ed",
-      border: "1px solid #fed7aa",
-      color: "#9a3412",
+      background: "#fffbeb",
+      border: "1px solid #fde68a",
+      color: "#92400e",
     };
   }
 
@@ -41,6 +57,31 @@ function statusStyle(status?: string | null): React.CSSProperties {
     background: "#f8fafc",
     border: "1px solid #e5e7eb",
     color: "#475569",
+  };
+}
+
+function cardStyle(extra?: React.CSSProperties): React.CSSProperties {
+  return {
+    background: "rgba(255,255,255,.94)",
+    border: "1px solid rgba(226,232,240,.92)",
+    borderRadius: 28,
+    padding: 22,
+    boxShadow: "0 22px 60px rgba(15,23,42,.08)",
+    backdropFilter: "blur(10px)",
+    minWidth: 0,
+    boxSizing: "border-box",
+    ...extra,
+  };
+}
+
+function miniLabelStyle(): React.CSSProperties {
+  return {
+    margin: 0,
+    color: "#64748b",
+    fontSize: 12,
+    fontWeight: 900,
+    letterSpacing: 0.5,
+    textTransform: "uppercase",
   };
 }
 
@@ -61,78 +102,80 @@ export default async function AthletePendingPage() {
 
   if (athErr || !ath?.athlete_id) {
     return (
-      <div style={{ display: "grid", gap: 16 }}>
-        <section
-          style={{
-            background:
-              "linear-gradient(180deg, rgba(255,255,255,1) 0%, rgba(248,250,252,1) 100%)",
-            border: "1px solid #e5e7eb",
-            borderRadius: 24,
-            padding: 22,
-            boxShadow: "0 18px 48px rgba(15,23,42,.06)",
-          }}
-        >
-          <div
-            style={{
-              display: "inline-flex",
-              alignItems: "center",
-              gap: 8,
-              border: "1px solid #dbeafe",
-              background: "#eff6ff",
-              color: "#1d4ed8",
-              borderRadius: 999,
-              padding: "8px 12px",
-              fontSize: 12,
-              fontWeight: 800,
-              letterSpacing: 0.3,
-            }}
-          >
-            Área do atleta
-          </div>
+      <main className="athlete-pending-page">
+        <PageStyles />
 
-          <h1
-            style={{
-              margin: "14px 0 10px",
-              fontSize: 30,
-              lineHeight: 1.1,
-              letterSpacing: -0.6,
-              color: "#0f172a",
-            }}
+        <div className="athlete-pending-shell">
+          <section
+            className="hero-card"
+            style={cardStyle({
+              padding: 28,
+              background:
+                "linear-gradient(135deg, rgba(15,23,42,.97), rgba(30,41,59,.95))",
+              color: "#ffffff",
+              overflow: "hidden",
+              position: "relative",
+            })}
           >
-            Avaliações pendentes
-          </h1>
+            <HeroDecor />
 
-          <p
-            style={{
-              margin: 0,
-              color: "#64748b",
-              lineHeight: 1.75,
-              fontSize: 15,
-            }}
-          >
-            Não consegui identificar seu cadastro de atleta.
-          </p>
-        </section>
+            <div style={{ position: "relative", zIndex: 1 }}>
+              <p
+                style={{
+                  margin: 0,
+                  color: "#99f6e4",
+                  fontSize: 12,
+                  fontWeight: 900,
+                  letterSpacing: 0.6,
+                  textTransform: "uppercase",
+                }}
+              >
+                Área do atleta
+              </p>
 
-        <div
-          style={{
-            border: "1px solid #fecaca",
-            background: "#fff1f2",
-            color: "#9f1239",
-            borderRadius: 18,
-            padding: 16,
-          }}
-        >
-          <div style={{ fontWeight: 800 }}>Cadastro não localizado</div>
-          <div style={{ marginTop: 8, lineHeight: 1.7 }}>
-            Verifique se sua conta está vinculada corretamente ao seu perfil de
-            atleta.
-          </div>
-          <div style={{ marginTop: 10, fontSize: 12, opacity: 0.8 }}>
-            user_id: {user.id}
-          </div>
+              <h1 className="hero-title">Avaliações pendentes</h1>
+
+              <p
+                style={{
+                  margin: "12px 0 0",
+                  maxWidth: 780,
+                  color: "#cbd5e1",
+                  lineHeight: 1.65,
+                }}
+              >
+                Não consegui identificar seu cadastro de atleta.
+              </p>
+            </div>
+          </section>
+
+          <section style={{ ...cardStyle(), marginTop: 16 }}>
+            <p style={miniLabelStyle()}>Cadastro não localizado</p>
+
+            <h2 style={{ margin: "6px 0 0", fontSize: 24 }}>
+              Verifique o vínculo da sua conta
+            </h2>
+
+            <p style={{ margin: "8px 0 0", color: "#64748b", lineHeight: 1.65 }}>
+              Sua conta precisa estar vinculada corretamente ao seu perfil de atleta para que as avaliações apareçam aqui.
+            </p>
+
+            <div
+              style={{
+                marginTop: 16,
+                padding: 14,
+                borderRadius: 16,
+                border: "1px solid #e5e7eb",
+                background: "#f8fafc",
+                color: "#475569",
+                fontSize: 13,
+                fontWeight: 700,
+              }}
+            >
+              user_id: {user.id}
+            </div>
+          </section>
         </div>
-      </div>
+      </main>
     );
   }
 
@@ -144,227 +187,421 @@ export default async function AthletePendingPage() {
     .order("created_at", { ascending: false })
     .limit(200);
 
-  const requests = reqs ?? [];
+  const requests = (reqs ?? []) as RequestRow[];
+  const pendingCount = requests.filter((r) => r.status === "pending").length;
+  const inProgressCount = requests.filter((r) => r.status === "in_progress").length;
 
   return (
-    <div style={{ display: "grid", gap: 16 }}>
-      <section
-        style={{
-          background:
-            "linear-gradient(180deg, rgba(255,255,255,1) 0%, rgba(248,250,252,1) 100%)",
-          border: "1px solid #e5e7eb",
-          borderRadius: 24,
-          padding: 22,
-          boxShadow: "0 18px 48px rgba(15,23,42,.06)",
-        }}
-      >
-        <div
-          style={{
-            display: "inline-flex",
-            alignItems: "center",
-            gap: 8,
-            border: "1px solid #dbeafe",
-            background: "#eff6ff",
-            color: "#1d4ed8",
-            borderRadius: 999,
-            padding: "8px 12px",
-            fontSize: 12,
-            fontWeight: 800,
-            letterSpacing: 0.3,
-          }}
-        >
-          Área do atleta
-        </div>
+    <main className="athlete-pending-page">
+      <PageStyles />
 
-        <h1
-          style={{
-            margin: "14px 0 10px",
-            fontSize: 30,
-            lineHeight: 1.1,
-            letterSpacing: -0.6,
-            color: "#0f172a",
-          }}
-        >
-          Avaliações pendentes
-        </h1>
-
-        <p
-          style={{
-            margin: 0,
-            color: "#64748b",
-            lineHeight: 1.75,
-            fontSize: 15,
-            maxWidth: 760,
-          }}
-        >
-          Aqui você encontra as avaliações que ainda precisam ser respondidas ou
-          que foram iniciadas e ainda não concluídas.
-        </p>
-
-        <div
-          style={{
-            marginTop: 16,
-            display: "inline-flex",
-            alignItems: "center",
-            gap: 8,
-            borderRadius: 999,
-            padding: "8px 12px",
-            background: "#f8fafc",
-            border: "1px solid #e5e7eb",
-            color: "#475569",
-            fontSize: 13,
-            fontWeight: 700,
-          }}
-        >
-          {requests.length} {requests.length === 1 ? "avaliação" : "avaliações"}
-        </div>
-      </section>
-
-      {rErr ? (
-        <div
-          style={{
-            border: "1px solid #fecaca",
-            background: "#fff1f2",
-            color: "#9f1239",
-            borderRadius: 18,
-            padding: 16,
-            lineHeight: 1.7,
-          }}
-        >
-          Erro ao buscar avaliações: {rErr.message}
-        </div>
-      ) : null}
-
-      {requests.length === 0 ? (
+      <div className="athlete-pending-shell">
         <section
-          style={{
-            border: "1px solid #bbf7d0",
-            background: "linear-gradient(180deg, #f0fdf4 0%, #f8fafc 100%)",
-            borderRadius: 24,
-            padding: 20,
-            boxShadow: "0 18px 48px rgba(15,23,42,.04)",
-          }}
+          className="hero-card"
+          style={cardStyle({
+            padding: 28,
+            background:
+              "linear-gradient(135deg, rgba(15,23,42,.97), rgba(30,41,59,.95))",
+            color: "#ffffff",
+            overflow: "hidden",
+            position: "relative",
+          })}
         >
-          <div
-            style={{
-              fontWeight: 800,
-              color: "#166534",
-              fontSize: 16,
-            }}
-          >
-            Nenhuma avaliação pendente no momento.
-          </div>
+          <HeroDecor />
 
           <div
             style={{
-              marginTop: 6,
-              color: "#4b5563",
-              fontSize: 14,
-              lineHeight: 1.7,
+              position: "relative",
+              zIndex: 1,
+              display: "flex",
+              justifyContent: "space-between",
+              gap: 18,
+              alignItems: "flex-start",
+              flexWrap: "wrap",
             }}
           >
-            Quando uma nova solicitação for designada, ela aparecerá aqui.
-          </div>
-        </section>
-      ) : (
-        <div style={{ display: "grid", gap: 14 }}>
-          {requests.map((r) => (
-            <article
-              key={r.request_id}
+            <div>
+              <p
+                style={{
+                  margin: 0,
+                  color: "#99f6e4",
+                  fontSize: 12,
+                  fontWeight: 900,
+                  letterSpacing: 0.6,
+                  textTransform: "uppercase",
+                }}
+              >
+                Área do atleta
+              </p>
+
+              <h1 className="hero-title">Avaliações pendentes</h1>
+
+              <p
+                style={{
+                  margin: "12px 0 0",
+                  maxWidth: 780,
+                  color: "#cbd5e1",
+                  lineHeight: 1.65,
+                }}
+              >
+                Aqui você encontra as avaliações que ainda precisam ser respondidas ou que foram iniciadas e ainda não concluídas.
+              </p>
+            </div>
+
+            <div
               style={{
-                border: "1px solid #e5e7eb",
-                borderRadius: 22,
-                background: "#ffffff",
-                padding: 18,
-                boxShadow: "0 18px 48px rgba(15,23,42,.05)",
-                display: "grid",
-                gap: 14,
+                minHeight: 44,
+                padding: "0 14px",
+                borderRadius: 14,
+                border: "1px solid rgba(153,246,228,.30)",
+                background: "rgba(15,23,42,.32)",
+                color: "#ffffff",
+                display: "inline-flex",
+                alignItems: "center",
+                fontWeight: 900,
               }}
             >
-              <div style={{ display: "grid", gap: 10 }}>
-                <div
-                  style={{
-                    display: "flex",
-                    justifyContent: "space-between",
-                    gap: 10,
-                    alignItems: "start",
-                    flexWrap: "wrap",
-                  }}
-                >
+              {requests.length} {requests.length === 1 ? "avaliação" : "avaliações"}
+            </div>
+          </div>
+        </section>
+
+        {rErr ? (
+          <section
+            style={{
+              marginTop: 16,
+              padding: 14,
+              borderRadius: 18,
+              border: "1px solid #fecaca",
+              background: "#fef2f2",
+              color: "#991b1b",
+              fontWeight: 800,
+            }}
+          >
+            Erro ao buscar avaliações: {rErr.message}
+          </section>
+        ) : null}
+
+        <section className="kpi-grid">
+          <KpiCard
+            label="Pendentes"
+            value={String(pendingCount)}
+            helper="Aguardando início"
+          />
+
+          <KpiCard
+            label="Em andamento"
+            value={String(inProgressCount)}
+            helper="Já iniciadas"
+          />
+
+          <KpiCard
+            label="Total"
+            value={String(requests.length)}
+            helper="Solicitações abertas"
+          />
+        </section>
+
+        <section style={{ ...cardStyle(), marginTop: 16 }} className="content-card">
+          <div
+            style={{
+              display: "flex",
+              justifyContent: "space-between",
+              gap: 14,
+              alignItems: "flex-start",
+              flexWrap: "wrap",
+              marginBottom: 16,
+            }}
+          >
+            <div>
+              <p style={miniLabelStyle()}>Fila de avaliações</p>
+
+              <h2
+                style={{
+                  margin: "6px 0 0",
+                  fontSize: 24,
+                  lineHeight: 1.08,
+                  letterSpacing: -0.5,
+                }}
+              >
+                Suas solicitações
+              </h2>
+
+              <p style={{ margin: "8px 0 0", color: "#64748b", lineHeight: 1.6 }}>
+                Abra uma avaliação para responder ou continuar de onde parou.
+              </p>
+            </div>
+          </div>
+
+          {requests.length === 0 ? (
+            <EmptyState />
+          ) : (
+            <div className="request-list">
+              {requests.map((r) => (
+                <article key={r.request_id} className="request-card">
                   <div style={{ minWidth: 0 }}>
-                    <div
-                      style={{
-                        fontSize: 18,
-                        fontWeight: 900,
-                        color: "#0f172a",
-                        lineHeight: 1.3,
-                      }}
-                    >
+                    <div className="request-title">
                       {r.title ?? "Avaliação"}
+                    </div>
+
+                    <div className="request-meta">
+                      Criada em {fmtDate(r.created_at)} · Prazo: {fmtDate(r.due_at)}
                     </div>
                   </div>
 
-                  <span
-                    style={{
-                      ...statusStyle(r.status),
-                      borderRadius: 999,
-                      padding: "6px 10px",
-                      fontSize: 12,
-                      fontWeight: 800,
-                      whiteSpace: "nowrap",
-                    }}
-                  >
-                    {statusLabel(r.status)}
-                  </span>
-                </div>
+                  <div className="request-actions">
+                    <span
+                      className="status-badge"
+                      style={statusTone(r.status)}
+                    >
+                      {statusLabel(r.status)}
+                    </span>
 
-                <div
-                  style={{
-                    display: "grid",
-                    gap: 6,
-                    color: "#64748b",
-                    fontSize: 14,
-                    lineHeight: 1.7,
-                  }}
-                >
-                  <div>
-                    <strong style={{ color: "#334155" }}>Prazo:</strong>{" "}
-                    {fmtDate(r.due_at)}
+                    <Link
+                      href={`/athlete/flow/${r.request_id}`}
+                      className="primary-action"
+                    >
+                      Abrir avaliação
+                    </Link>
                   </div>
-                  <div>
-                    <strong style={{ color: "#334155" }}>Criada em:</strong>{" "}
-                    {fmtDate(r.created_at)}
-                  </div>
-                </div>
-              </div>
+                </article>
+              ))}
+            </div>
+          )}
+        </section>
+      </div>
+    </main>
+  );
+}
 
-              <div>
-                <Link
-                  href={`/athlete/flow/${r.request_id}`}
-                  style={{
-                    display: "inline-flex",
-                    alignItems: "center",
-                    justifyContent: "center",
-                    gap: 8,
-                    borderRadius: 14,
-                    border: "1px solid #0f172a",
-                    background: "#0f172a",
-                    color: "#fff",
-                    padding: "12px 16px",
-                    fontWeight: 800,
-                    minHeight: 46,
-                    textDecoration: "none",
-                    width: "100%",
-                    maxWidth: 220,
-                  }}
-                >
-                  Abrir avaliação <span aria-hidden="true">→</span>
-                </Link>
-              </div>
-            </article>
-          ))}
-        </div>
-      )}
+function HeroDecor() {
+  return (
+    <>
+      <div
+        style={{
+          position: "absolute",
+          right: -80,
+          top: -80,
+          width: 260,
+          height: 260,
+          borderRadius: 999,
+          background: "rgba(20,184,166,.22)",
+        }}
+      />
+
+      <div
+        style={{
+          position: "absolute",
+          right: 120,
+          bottom: -110,
+          width: 260,
+          height: 260,
+          borderRadius: 999,
+          background: "rgba(249,115,22,.18)",
+        }}
+      />
+    </>
+  );
+}
+
+function KpiCard({
+  label,
+  value,
+  helper,
+}: {
+  label: string;
+  value: string;
+  helper: string;
+}) {
+  return (
+    <section style={cardStyle({ padding: 18 })} className="kpi-card">
+      <p style={miniLabelStyle()}>{label}</p>
+
+      <div
+        style={{
+          marginTop: 8,
+          fontSize: 34,
+          fontWeight: 950,
+          letterSpacing: -0.9,
+          color: "#0f172a",
+        }}
+      >
+        {value}
+      </div>
+
+      <p
+        style={{
+          margin: "6px 0 0",
+          color: "#64748b",
+          fontSize: 13,
+          lineHeight: 1.2,
+        }}
+      >
+        {helper}
+      </p>
+    </section>
+  );
+}
+
+function EmptyState() {
+  return (
+    <div
+      style={{
+        padding: 22,
+        borderRadius: 20,
+        border: "1px dashed #cbd5e1",
+        background: "#f8fafc",
+        color: "#64748b",
+        lineHeight: 1.65,
+      }}
+    >
+      <div style={{ color: "#0f172a", fontWeight: 950, fontSize: 18 }}>
+        Nenhuma avaliação pendente no momento.
+      </div>
+
+      <div style={{ marginTop: 6 }}>
+        Quando uma nova solicitação for designada, ela aparecerá aqui.
+      </div>
     </div>
+  );
+}
+
+function PageStyles() {
+  return (
+    <style>{`
+      .athlete-pending-page {
+        min-height: 100vh;
+        background:
+          radial-gradient(circle at top left, rgba(20,184,166,.14), transparent 30%),
+          radial-gradient(circle at top right, rgba(249,115,22,.12), transparent 28%),
+          #f8fafc;
+        color: #0f172a;
+        padding: 24px;
+        overflow-x: hidden;
+      }
+
+      .athlete-pending-shell {
+        width: min(100%, 1180px);
+        margin: 0 auto;
+        box-sizing: border-box;
+      }
+
+      .hero-title {
+        margin: 8px 0 0;
+        font-size: clamp(32px, 5vw, 44px);
+        line-height: 1.03;
+        letter-spacing: -1px;
+        color: #ffffff;
+      }
+
+      .kpi-grid {
+        display: grid;
+        grid-template-columns: repeat(3, minmax(0, 1fr));
+        gap: 16px;
+        margin-top: 16px;
+      }
+
+      .request-list {
+        display: grid;
+        gap: 12px;
+      }
+
+      .request-card {
+        display: grid;
+        grid-template-columns: minmax(0, 1fr) auto;
+        gap: 16px;
+        align-items: center;
+        padding: 16px;
+        border-radius: 20px;
+        border: 1px solid #e5e7eb;
+        background: #ffffff;
+      }
+
+      .request-title {
+        color: #0f172a;
+        font-weight: 750;
+        font-size: 16.5px;
+        line-height: 1.35;
+        letter-spacing: -0.1px;
+      }
+
+      .request-meta {
+        margin-top: 5px;
+        color: #64748b;
+        font-size: 13px;
+        line-height: 1.45;
+      }
+
+      .request-actions {
+        display: inline-flex;
+        align-items: center;
+        gap: 10px;
+        flex-wrap: wrap;
+        justify-content: flex-end;
+      }
+
+      .status-badge {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        min-height: 30px;
+        padding: 0 10px;
+        border-radius: 999px;
+        font-size: 12px;
+        font-weight: 900;
+        white-space: nowrap;
+      }
+
+      .primary-action {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        min-height: 40px;
+        padding: 0 14px;
+        border-radius: 13px;
+        border: 1px solid #111827;
+        background: #111827;
+        color: #ffffff;
+        text-decoration: none;
+        font-size: 13px;
+        font-weight: 900;
+        white-space: nowrap;
+      }
+
+      @media (max-width: 760px) {
+        .kpi-grid {
+          grid-template-columns: 1fr;
+        }
+
+        .request-card {
+          grid-template-columns: 1fr;
+        }
+
+        .request-actions {
+          justify-content: flex-start;
+        }
+      }
+
+      @media (max-width: 560px) {
+        .athlete-pending-page {
+          padding: 12px;
+        }
+
+        .hero-card {
+          padding: 22px 18px !important;
+          border-radius: 26px !important;
+        }
+
+        .content-card {
+          padding: 18px !important;
+          border-radius: 24px !important;
+        }
+
+        .kpi-card {
+          padding: 14px !important;
+          border-radius: 22px !important;
+        }
+      }
+    `}</style>
   );
 }

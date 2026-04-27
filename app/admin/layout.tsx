@@ -1,5 +1,6 @@
-﻿import AdminShell from "./AdminShell";
+import type { ReactNode } from "react";
+import AdminChrome from "./_components/AdminChrome";
 
-export default function AdminLayout({ children }: { children: React.ReactNode }) {
-  return <AdminShell>{children}</AdminShell>;
+export default function AdminLayout({ children }: { children: ReactNode }) {
+  return <AdminChrome>{children}</AdminChrome>;
 }

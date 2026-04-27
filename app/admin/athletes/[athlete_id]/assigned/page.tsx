@@ -33,11 +33,14 @@ function isUuid(x: string) {
 
 function cardStyle(): React.CSSProperties {
   return {
-    background: "#ffffff",
-    border: "1px solid #e5e7eb",
-    borderRadius: 24,
-    padding: 20,
-    boxShadow: "0 18px 48px rgba(15,23,42,.06)",
+    background: "rgba(255,255,255,.94)",
+    border: "1px solid rgba(226,232,240,.92)",
+    borderRadius: 28,
+    padding: 22,
+    boxShadow: "0 22px 60px rgba(15,23,42,.08)",
+    backdropFilter: "blur(10px)",
+    minWidth: 0,
+    boxSizing: "border-box",
   };
 }
 
@@ -55,11 +58,12 @@ function actionCellStyle(disabled = false): React.CSSProperties {
     color: disabled ? "#94a3b8" : "#ffffff",
     textDecoration: "none",
     fontSize: 13,
-    fontWeight: 700,
+    fontWeight: 850,
     whiteSpace: "nowrap",
     fontFamily: "inherit",
     cursor: disabled ? "not-allowed" : "pointer",
     opacity: disabled ? 0.75 : 1,
+    boxSizing: "border-box",
   };
 }
 
@@ -417,14 +421,15 @@ export default function AssignedEvaluationsPageClient() {
     <main
       style={{
         minHeight: "100vh",
-        background: "#f8fafc",
+        background:
+          "radial-gradient(circle at top left, rgba(20,184,166,.14), transparent 30%), radial-gradient(circle at top right, rgba(249,115,22,.12), transparent 28%), #f8fafc",
         padding: 24,
         color: "#0f172a",
       }}
     >
       <div style={{ maxWidth: 1280, margin: "0 auto" }}>
         <a
-          href={`/admin/athletes/${athleteId}/profile`}
+          href="/admin/athletes"
           style={{
             display: "inline-flex",
             alignItems: "center",
@@ -442,47 +447,110 @@ export default function AssignedEvaluationsPageClient() {
           ← Voltar
         </a>
 
-        <section style={{ ...cardStyle(), marginTop: 16, marginBottom: 16 }}>
+        <section
+          style={{
+            ...cardStyle(),
+            marginTop: 16,
+            marginBottom: 16,
+            padding: 28,
+            background:
+              "linear-gradient(135deg, rgba(15,23,42,.97), rgba(30,41,59,.95))",
+            color: "#ffffff",
+            overflow: "hidden",
+            position: "relative",
+          }}
+        >
           <div
             style={{
+              position: "absolute",
+              right: -80,
+              top: -80,
+              width: 260,
+              height: 260,
+              borderRadius: 999,
+              background: "rgba(20,184,166,.22)",
+            }}
+          />
+
+          <div
+            style={{
+              position: "absolute",
+              right: 120,
+              bottom: -110,
+              width: 260,
+              height: 260,
+              borderRadius: 999,
+              background: "rgba(249,115,22,.18)",
+            }}
+          />
+
+          <div
+            style={{
+              position: "relative",
+              zIndex: 1,
               display: "flex",
               justifyContent: "space-between",
+              gap: 18,
               alignItems: "flex-start",
-              gap: 16,
               flexWrap: "wrap",
             }}
           >
             <div>
-              <p
+              <div
                 style={{
-                  margin: 0,
-                  color: "#64748b",
-                  fontSize: 13,
-                  fontWeight: 800,
-                  letterSpacing: 0.3,
-                  textTransform: "uppercase",
+                  display: "inline-flex",
+                  alignItems: "center",
+                  gap: 8,
+                  border: "1px solid rgba(153,246,228,.35)",
+                  background: "rgba(15,23,42,.38)",
+                  color: "#99f6e4",
+                  borderRadius: 999,
+                  padding: "8px 12px",
+                  fontSize: 12,
+                  fontWeight: 900,
+                  letterSpacing: 0.4,
                 }}
               >
                 Avaliações do atleta
-              </p>
+              </div>
 
-              <h1 style={{ margin: "6px 0 0", fontSize: 28 }}>
+              <h1
+                style={{
+                  margin: "14px 0 10px",
+                  fontSize: "clamp(32px, 5vw, 44px)",
+                  lineHeight: 1.03,
+                  letterSpacing: -1,
+                  color: "#ffffff",
+                  fontWeight: 950,
+                }}
+              >
                 Avaliações designadas
               </h1>
 
-              <p style={{ margin: "10px 0 0", color: "#475569", maxWidth: 820 }}>
-                Consulte pendências atribuídas ao atleta, status de realização,
-                links de acesso e relatórios disponíveis.
+              <p
+                style={{
+                  margin: 0,
+                  color: "#cbd5e1",
+                  lineHeight: 1.65,
+                  fontSize: 15,
+                  maxWidth: 780,
+                }}
+              >
+                Consulte pendências atribuídas ao atleta, status de realização, links de acesso e relatórios disponíveis.
               </p>
             </div>
 
             <div
               style={{
-                background: "#f8fafc",
-                border: "1px solid #e5e7eb",
-                borderRadius: 16,
-                padding: "10px 14px",
-                fontWeight: 800,
+                minHeight: 44,
+                padding: "0 14px",
+                borderRadius: 14,
+                border: "1px solid rgba(153,246,228,.30)",
+                background: "rgba(15,23,42,.32)",
+                color: "#ffffff",
+                display: "inline-flex",
+                alignItems: "center",
+                fontWeight: 900,
               }}
             >
               {requests.length} item(ns)
@@ -520,6 +588,7 @@ export default function AssignedEvaluationsPageClient() {
                   width: "100%",
                   borderCollapse: "collapse",
                   fontSize: 14,
+                  color: "#0f172a",
                 }}
               >
                 <thead>
@@ -529,9 +598,9 @@ export default function AssignedEvaluationsPageClient() {
                     <th style={{ padding: "0 12px 12px" }}>Designada em</th>
                     <th style={{ padding: "0 12px 12px" }}>Prazo</th>
                     <th style={{ padding: "0 12px 12px" }}>Realização</th>
-                    <th style={{ padding: "0 12px 12px" }}>Relatório</th>
-                    <th style={{ padding: "0 12px 12px" }}>Ações</th>
-                    <th style={{ padding: "0 0 12px 12px" }}>Cancelar</th>
+                    <th style={{ padding: "0 12px 12px", color: "#64748b", fontSize: 12, textTransform: "uppercase", letterSpacing: .35 }}>Relatório</th>
+                    <th style={{ padding: "0 12px 12px", color: "#64748b", fontSize: 12, textTransform: "uppercase", letterSpacing: .35 }}>Ações</th>
+                    <th style={{ padding: "0 0 12px 12px", color: "#64748b", fontSize: 12, textTransform: "uppercase", letterSpacing: .35 }}>Cancelar</th>
                   </tr>
                 </thead>
 

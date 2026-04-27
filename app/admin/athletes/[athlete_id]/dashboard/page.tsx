@@ -1,18 +1,11 @@
-﻿"use client";
+"use client";
 
-import { useEffect } from "react";
-import { useParams, useRouter } from "next/navigation";
+import { useParams } from "next/navigation";
+import AthleteDashboardClient from "@/src/components/athlete/AthleteDashboardClient";
 
-export default function DashboardRedirect() {
+export default function AdminAthleteDashboardPage() {
   const params = useParams();
-  const router = useRouter();
+  const athleteId = String(params?.athlete_id ?? "");
 
-  const athleteId = String((params as any)?.athlete_id ?? "").trim();
-
-  useEffect(() => {
-    if (!athleteId) return;
-    router.replace(`/admin/athletes/${athleteId}/dashboard/view`);
-  }, [athleteId, router]);
-
-  return <div style={{ padding: 16, color: "#6b7280" }}>Abrindo dashboard…</div>;
+  return <AthleteDashboardClient athleteIdOverride={athleteId} />;
 }
