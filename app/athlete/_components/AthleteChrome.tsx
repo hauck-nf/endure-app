@@ -8,6 +8,7 @@ import { supabaseBrowser } from "@/src/lib/supabaseBrowser";
 const navItems = [
   { href: "/athlete/dashboard", label: "Dashboard" },
   { href: "/athlete/pending", label: "Pendentes" },
+  { href: "/athlete/interventions", label: "Intervenções" },
   { href: "/athlete/history", label: "Histórico" },
   { href: "/athlete/me", label: "Meus dados" },
 ];
